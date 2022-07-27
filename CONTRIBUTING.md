@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for considering contributing to Default!
+Thanks for considering contributing to rustwasm-loader!
 
 ## Opening issues
 
