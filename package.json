@@ -27,13 +27,12 @@
     "dependencies": {
         "json2toml": "^3.0.1",
         "loader-utils": "^3.2.0",
-        "md5": "^2.3.0",
         "toml": "^3.0.0",
-        "wasm-pack": "^0.10.3",
-        "webpack-node-externals": "^3.0.0",
+        "wasm-pack": ">=0.10.x",
         "which": "^2.0.2"
     },
     "peerDependencies": {
+        "wasm-pack": ">=0.10.x",
         "webpack": "^5.0.0"
     },
     "devDependencies": {

@@ -2,6 +2,7 @@ import rsLib from "./lib.rs";
 import fibonacci from "./fibonacci";
 
 const NUM = 43;
+
 console.time("Fibonacci (wasm-bindgen)");
 console.log(rsLib.fibonacci_bindgen(NUM));
 console.timeEnd("Fibonacci (wasm-bindgen)");
