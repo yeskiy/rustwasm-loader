@@ -7,8 +7,8 @@ const spawnWasmPack = require("./utils/spawnWasmPack.util");
 const findNearestCargoBy = require("./utils/findNearestCargo.util");
 
 const constants = Object.seal({
-    CARGO_LOCK: "Cargo.toml",
-    CARGO_TOML: "Cargo.lock",
+    CARGO_LOCK: "Cargo.lock",
+    CARGO_TOML: "Cargo.toml",
 });
 
 module.exports = async function rustWasmLoader(source) {
@@ -22,9 +22,10 @@ module.exports = async function rustWasmLoader(source) {
                 this._compilation.outputOptions.webassemblyModuleFilename,
             baseFolder: this._compilation.options.context,
             resourcePath: this.resourcePath,
+            type: this._compilation.chunkTemplate._outputOptions.wasmLoading,
         };
 
-        // Get base and dir from rescources
+        // Get base and dir from resources
         const { base, dir } = path.parse(path.normalize(values.resourcePath));
 
         // Create name of wasm file
