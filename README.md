@@ -74,8 +74,17 @@ crate-type = ["cdylib"]
 wasm-bindgen = "0.2.73"
 ```
 
-## Considerations
-When
+## Options
+|              parameter |      type       | default | description                                                                 |
+|-----------------------:|:---------------:|:-------:|:----------------------------------------------------------------------------|
+|                  `web` |    `object`     |         | options, which used for `web` target                                        |
+|                 `node` |    `object`     |         | options, which used for `node` target                                       |
+|     `web.asyncLoading` |    `boolean`    | `false` | enables load `.wasm` file asynchronously, instead of bundling in .js file   |
+| `web.wasmPathModifier` | `array<string>` | `["/"]` | rewrite wasm requestPath, if wrong publicPath used                          |
+|       `web.publicPath` |    `boolean`    | `true`  | use webpack PublicPath                                                      |
+|          `node.bundle` |    `boolean`    | `false` | Bundle `.wasm` file in `.js` file (additional `.wasm` file will not create) |
+
+
 
 ## Examples
 Check the **[example](./example)** folder for a better understanding of how the loader works
