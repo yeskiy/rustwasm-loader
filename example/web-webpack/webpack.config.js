@@ -20,7 +20,9 @@ module.exports = {
             {
                 test: /\.rs$/,
                 exclude: /node_modules/,
-                use: "rust-wasmpack-loader",
+                use: {
+                    loader: "rust-wasmpack-loader",
+                },
             },
         ],
     },

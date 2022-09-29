@@ -1,10 +1,46 @@
 const fs = require("fs");
 const loaderUtils = require("loader-utils");
+const schemaUtils = require("schema-utils");
 const path = require("path");
 const crypto = require("crypto");
 const os = require("os");
 const spawnWasmPack = require("./utils/spawnWasmPack.util");
 const findNearestCargoBy = require("./utils/findNearestCargo.util");
+
+const optionsSchema = {
+    type: "object",
+    properties: {
+        web: {
+            description: "Options, which used for `web` target",
+            type: "object",
+            properties: {
+                asyncLoading: {
+                    type: "boolean",
+                    description:
+                        "enables load `.wasm` file asynchronously, instead of bundling in .js file",
+                },
+                wasmPathModifier: {
+                    type: "array",
+                    minItems: 1,
+                },
+                publicPath: "boolean",
+            },
+            additionalProperties: false,
+        },
+        node: {
+            description: "Options, which used for `node` target",
+            type: "object",
+            properties: {
+                bundle: {
+                    type: "boolean",
+                    description: "Bundle `.wasm` file in `.js` file",
+                },
+            },
+            additionalProperties: false,
+        },
+    },
+    additionalProperties: false,
+};
 
 const constants = Object.seal({
     CARGO_LOCK: "Cargo.lock",
@@ -12,12 +48,30 @@ const constants = Object.seal({
 });
 
 module.exports = async function rustWasmLoader(source) {
+    const passedOptions = this.getOptions();
+    const options = {
+        web: {
+            ...(passedOptions.web || {
+                asyncLoading: false,
+                wasmPathModifier: ["/"],
+                publicPath: true,
+            }),
+        },
+        node: {
+            ...(passedOptions.node || {
+                bundle: false,
+            }),
+        },
+    };
+    schemaUtils.validate(optionsSchema, options, {
+        name: "rust-wasmpack-loader",
+    });
+
     const callback = this.async();
 
     try {
         // Get all required values from webpack
         const values = {
-            outputPath: this._compilation.outputOptions.path,
             fileNameStruct:
                 this._compilation.outputOptions.webassemblyModuleFilename,
             baseFolder: this._compilation.options.context,
@@ -86,14 +140,42 @@ module.exports = async function rustWasmLoader(source) {
         });
 
         // Add generated .wasm bin to webpack files
-        if (values.target !== "web") {
+        if (
+            (values.target === "web" && options.web.asyncLoading) ||
+            (values.target === "node" && !options.node.bundle)
+        ) {
             this.emitFile(
                 wasmName,
                 fs.readFileSync(path.join(wasmBuildSource, wasmName))
             );
         }
 
+        // Find publicPath
+        const webpackPublicPath = this._compilation.getAssetPath(
+            this._compilation.outputOptions.publicPath,
+            { hash: this._compilation.hash }
+        );
+        const publicPath =
+            webpackPublicPath.trim() !== "" && webpackPublicPath !== "auto"
+                ? webpackPublicPath
+                : path
+                      .relative(
+                          path.resolve(
+                              this._compilation.options.output.path,
+                              path.dirname(
+                                  this._compilation.getAssetPath(
+                                      wasmName,
+                                      this.context
+                                  )
+                              )
+                          ),
+                          this._compilation.options.output.path
+                      )
+                      .split(path.sep)
+                      .join("/");
+
         // update generated .js script by wasm to remove bad imports and resolve native rs functions without __wasm ident
+        const toArrayBuffer = `function toArrayBuffer(buffer) {\n    const ab = new ArrayBuffer(buffer.length);\n    const view = new Uint8Array(ab);\n    for (var i = 0; i < buffer.length; ++i) {\n        view[i] = buffer[i];\n    }\n    return ab;\n}`;
         const patch = {
             node: (generatedJs) => {
                 const lines = generatedJs.split("\n");
@@ -107,6 +189,17 @@ module.exports = async function rustWasmLoader(source) {
                         )
                     ),
                     `const init = {}`,
+                    `initSync(${
+                        options.node.bundle
+                            ? `toArrayBuffer(${JSON.stringify(
+                                  fs
+                                      .readFileSync(
+                                          path.join(wasmBuildSource, wasmName)
+                                      )
+                                      .toJSON().data
+                              )})`
+                            : `require('fs').readFileSync(require('path').join(__dirname, '${wasmName}'))`
+                    });`,
                     `const exportedFunctions = {${lines
                         .filter(
                             (item) =>
@@ -115,24 +208,47 @@ module.exports = async function rustWasmLoader(source) {
                         .map((item) => item.split("function")[1].split("(")[0])
                         .map((item) => `${item}:${item}`)
                         .join(",")}};`,
-                    `initSync(require('fs').readFileSync(require('path').join(__dirname, '${wasmName}')));`,
+                    ...(options.node.bundle ? [toArrayBuffer] : []),
                     `export default {...exportedFunctions, ...Object.entries(wasm).filter(([item]) => Object.keys(exportedFunctions).indexOf(item) === -1).reduce((acc, item) => ({...acc,[item[0]]: item[1]}), {})}`,
                 ].join("\n")}`;
             },
 
             web: (generatedJs) => {
-                const lines = generatedJs.split("\n");
+                const lines = generatedJs
+                    .replaceAll("_bg.wasm", "")
+                    .split("\n");
+                const clearMatch = options.web.asyncLoading
+                    ? /export { initSync }/g
+                    : /async function init\(input\) {/g;
+                const badImportIndex = lines.findIndex(
+                    (item) => !!item.match(/import.meta.url/g)?.length
+                );
+                lines[badImportIndex] = `       input = "${path.posix.join(
+                    ...options.web.wasmPathModifier,
+                    ...(options.web.publicPath ? publicPath : []),
+                    wasmName
+                )}"`;
+                const exportGen = `{...exportedFunctions, ...Object.entries(wasm).filter(([item]) => Object.keys(exportedFunctions).indexOf(item) === -1).reduce((acc, item) => ({...acc,[item[0]]: item[1]}), {})}`;
                 return `${[
                     ...lines.slice(
                         0,
                         lines.findIndex(
-                            (item) =>
-                                !!item.match(/async function init\(input\) {/g)
-                                    ?.length
+                            (item) => !!item.match(clearMatch)?.length
                         )
                     ),
-                    `function toArrayBuffer(buffer) {\n    const ab = new ArrayBuffer(buffer.length);\n    const view = new Uint8Array(ab);\n    for (var i = 0; i < buffer.length; ++i) {\n        view[i] = buffer[i];\n    }\n    return ab;\n}`,
-                    `const init = {}`,
+                    toArrayBuffer,
+                    ...(options.web.asyncLoading
+                        ? []
+                        : [
+                              `const init = {}`,
+                              `initSync(toArrayBuffer(${JSON.stringify(
+                                  fs
+                                      .readFileSync(
+                                          path.join(wasmBuildSource, wasmName)
+                                      )
+                                      .toJSON().data
+                              )}));`,
+                          ]),
                     `const exportedFunctions = {${lines
                         .filter(
                             (item) =>
@@ -141,12 +257,11 @@ module.exports = async function rustWasmLoader(source) {
                         .map((item) => item.split("function")[1].split("(")[0])
                         .map((item) => `${item}:${item}`)
                         .join(",")}};`,
-                    `initSync(toArrayBuffer(${JSON.stringify(
-                        fs
-                            .readFileSync(path.join(wasmBuildSource, wasmName))
-                            .toJSON().data
-                    )}));`,
-                    `export default {...exportedFunctions, ...Object.entries(wasm).filter(([item]) => Object.keys(exportedFunctions).indexOf(item) === -1).reduce((acc, item) => ({...acc,[item[0]]: item[1]}), {})}`,
+                    `export default ${
+                        options.web.asyncLoading
+                            ? `new Promise(async (resolve, reject)=> { try{await init(); resolve(${exportGen})}catch(e){reject(e)}})`
+                            : exportGen
+                    }`,
                 ].join("\n")}`;
             },
         };
