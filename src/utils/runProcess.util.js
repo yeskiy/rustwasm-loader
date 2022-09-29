@@ -7,7 +7,7 @@ module.exports = async function runProcess(bin, args, options) {
 
         p.on("close", (code) => {
             if (code === 0) {
-                resolve();
+                setTimeout(resolve, 100);
             } else {
                 reject(new Error("Rust compilation."));
             }

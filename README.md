@@ -1,7 +1,7 @@
 [![MIT License](https://img.shields.io/npm/l/rust-wasmpack-loader.svg?)](https://npmjs.org/package/rust-wasmpack-loader)
 [![View this project on NPM](https://img.shields.io/npm/v/rust-wasmpack-loader.svg)](https://npmjs.org/package/rust-wasmpack-loader)
 [![View this project on NPM](https://img.shields.io/npm/dm/rust-wasmpack-loader.svg)](https://npmjs.org/package/rust-wasmpack-loader)
-[![Quality Gate Status](https://c.io/api/project_badges/measure?project=yeskiy_rustwasm-loader&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=yeskiy_rustwasm-loader)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yeskiy_rustwasm-loader&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=yeskiy_rustwasm-loader)
 [![Known Vulnerabilities](https://snyk.io/test/github/yeskiy/rustwasm-loader/badge.svg)](https://snyk.io/test/github/yeskiy/rustwasm-loader)
 
 # Rust Wasm-pack Loader
@@ -9,6 +9,8 @@
 Native wasm Webpack loader for `.rs` (Rust) resources
 
 > Works with webpack `^5.0.0`
+
+> Works fine with `web` and `node` (`node-async`) targets
 
 Dynamically finds the `Cargo.toml` file for building the wasm source.
 Provides the ability to use both wasm_bindgen and regular functions.
@@ -71,6 +73,9 @@ crate-type = ["cdylib"]
 [dependencies]
 wasm-bindgen = "0.2.73"
 ```
+
+## Considerations
+When
 
 ## Examples
 Check the **[example](./example)** folder for a better understanding of how the loader works
