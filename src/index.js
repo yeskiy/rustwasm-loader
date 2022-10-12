@@ -41,6 +41,11 @@ const optionsSchema = {
             },
             additionalProperties: false,
         },
+        logLevel: {
+            type: "string",
+            description:
+                "Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)",
+        },
     },
     additionalProperties: false,
 };
@@ -51,6 +56,17 @@ const constants = Object.seal({
     CARGO_LOCK: "Cargo.lock",
     CARGO_TOML: "Cargo.toml",
 });
+
+function logLevelSelector(level) {
+    switch (level) {
+        case "quiet":
+            return ["--quiet"];
+        case "verbose":
+            return ["--verbose"];
+        default:
+            return ["--log-level", level];
+    }
+}
 
 module.exports = async function rustWasmLoader(source) {
     // this loader is async
@@ -81,11 +97,11 @@ module.exports = async function rustWasmLoader(source) {
                 node: {
                     bundle: false,
                 },
+                logLevel: "info",
             },
             this.getOptions()
         );
 
-        console.log(options);
         schemaUtils.validate(optionsSchema, options, {
             name: "rust-wasmpack-loader",
         });
@@ -150,6 +166,7 @@ module.exports = async function rustWasmLoader(source) {
             cwd: buildFolder,
             outDir: wasmBuildSource,
             outName: wasmName,
+            args: [...logLevelSelector(options.logLevel)],
             // use `web` target because generated file of this target modifies easily
             extraArgs: ["--target", "web", "--no-typescript"],
         });

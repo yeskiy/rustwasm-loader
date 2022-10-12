@@ -83,6 +83,7 @@ wasm-bindgen = "0.2.73"
 | `web.wasmPathModifier` | `array<string>` | `["/"]` | rewrite wasm requestPath, if wrong publicPath used                          |
 |       `web.publicPath` |    `boolean`    | `true`  | use webpack PublicPath                                                      |
 |          `node.bundle` |    `boolean`    | `false` | Bundle `.wasm` file in `.js` file (additional `.wasm` file will not create) |
+|             `logLevel` |    `string`     | `info`  | Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)                     |
 
 
 

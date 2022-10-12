@@ -9,7 +9,7 @@ module.exports = async function runProcess(bin, args, options) {
             if (code === 0) {
                 setTimeout(resolve, 100);
             } else {
-                reject(new Error("Rust compilation."));
+                reject(new Error("Rust compilation error."));
             }
         });
 
