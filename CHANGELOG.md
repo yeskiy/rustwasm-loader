@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.1.0](https://github.com/yeskiy/rustwasm-loader/compare/v2.0.0...v2.1.0) (2022-10-12)
+
+
+### Features
+
+* Add logLevel option ([51bab71](https://github.com/yeskiy/rustwasm-loader/commit/51bab712d8023ad7e6b174fdb6c273231acc3f87))
+
 ## [2.0.0](https://github.com/yeskiy/rustwasm-loader/compare/v1.1.1...v2.0.0) (2022-09-29)
 
 
