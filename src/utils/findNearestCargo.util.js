@@ -63,7 +63,7 @@ module.exports = function findNearestCargoBy(constants) {
 
             // if this lib already have a path, check if this path equals to our .rs file
             if (data.lib.path) {
-                const fullPath = path.resolve(currentFolder, data.package.path);
+                const fullPath = path.resolve(currentFolder, data.lib.path);
                 if (path.normalize(fullPath) === fileEntry) {
                     return complete(data);
                 }
