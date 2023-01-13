@@ -17,6 +17,7 @@ Provides the ability to use both wasm_bindgen and regular functions.
 Allows you to use the standard import of a `.rs` file in a `.js` or `.ts` file without any headache
 
 ## Installation
+> Please be sure, that [cargo](https://doc.rust-lang.org/cargo/commands/cargo-install.html) and [rustup](https://rustup.rs/) are installed
 
 Install `rust-wasmpack-loader` with npm
 
