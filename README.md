@@ -13,7 +13,7 @@ Native wasm Webpack loader for `.rs` (Rust) resources
 > Works fine with `web` and `node` (`node-async`) targets
 
 Dynamically finds the `Cargo.toml` file for building the wasm source.
-Provides the ability to use both wasm_bindgen and regular functions.
+Provides the ability to use both `wasm_bindgen` and regular functions.
 Allows you to use the standard import of a `.rs` file in a `.js` or `.ts` file without any headache
 
 ## Installation
