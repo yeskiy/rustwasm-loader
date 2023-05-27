@@ -13,18 +13,6 @@ module.exports = function findWasmPack() {
         return inPath;
     }
 
-    // TEMPORARY: This is a workaround for getting wasm-pack bin from binary-install pacakge
-    const inBinaryInstallUnix = path.join(
-        require.resolve("binary-install"),
-        "..",
-        "node_modules",
-        ".bin",
-        "wasm-pack"
-    );
-
-    if (fs.existsSync(inBinaryInstallUnix)) {
-        return inBinaryInstallUnix;
-    }
     const inBinaryInstallWin = path.join(
         require.resolve("binary-install"),
         "..",
