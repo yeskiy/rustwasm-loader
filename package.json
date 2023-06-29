@@ -28,7 +28,7 @@
         "json2toml": "^4.0.1",
         "loader-utils": "^3.2.1",
         "lodash": "^4.17.21",
-        "schema-utils": "^4.0.1",
+        "schema-utils": "^4.1.0",
         "toml": "^3.0.0",
         "wasm-pack": "0.11.1",
         "which": "^3.0.1"
