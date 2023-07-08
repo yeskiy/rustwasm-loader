@@ -30,7 +30,7 @@
         "lodash": "^4.17.21",
         "schema-utils": "^4.0.1",
         "toml": "^3.0.0",
-        "wasm-pack": "0.11.1",
+        "wasm-pack": "0.12.0",
         "which": "^3.0.1"
     },
     "peerDependencies": {
