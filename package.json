@@ -1,7 +1,7 @@
 {
     "name": "rust-wasmpack-loader",
     "version": "2.3.3",
-    "description": "Native wasm Webpack loader for .rs (Rust) resources",
+    "description": "wasm Webpack loader for .rs (Rust) resources. Boost your Webpack-powered projects with native WebAssembly support using the 'rust-wasmpack-loader'. This powerful loader enables seamless integration of Rust resources, unlocking high-performance capabilities for your web applications.",
     "main": "./src/index.js",
     "scripts": {
         "release": "npx standard-version"
@@ -20,7 +20,26 @@
         "Webpack",
         "loader",
         "wasm",
-        "WebAssembly"
+        "WebAssembly",
+        "Rust",
+        "Rust programming language",
+        "Rust WebAssembly",
+        "Rust Webpack loader",
+        "Rust loader for Webpack",
+        "WebAssembly",
+        "WebAssembly loader",
+        "WebAssembly support",
+        "Webpack",
+        "Webpack loader",
+        "Webpack plugin",
+        "Rust resources",
+        "Rust integration",
+        "Native WebAssembly",
+        "High-performance web applications",
+        "Optimized Webpack builds",
+        "Frontend development",
+        "Backend development",
+        "Rust ecosystem"
     ],
     "author": "Yehor Brodskiy",
     "license": "MIT",
