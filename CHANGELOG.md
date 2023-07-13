@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [2.3.3](https://github.com/yeskiy/rustwasm-loader/compare/v2.3.2...v2.3.3) (2023-07-13)
+
+
+### Bug Fixes
+
+* Upgrade dependency versions. Upgrade `wasm-pack` to `0.12.1` ([35df276](https://github.com/yeskiy/rustwasm-loader/commit/35df2768329ae607064a55c5043ec7c194b12b64))
+
 ### [2.3.2](https://github.com/yeskiy/rustwasm-loader/compare/v2.3.1...v2.3.2) (2023-05-27)
 
 
