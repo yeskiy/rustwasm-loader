@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0](https://github.com/yeskiy/rustwasm-loader/compare/v2.3.6...v3.0.0) (2023-11-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* Drop `Node.js v16` support. Upgrade dependencies. Upgrade `LICENSE` year.
+
+### Features
+
+* Drop `Node.js v16` support. Upgrade dependencies. Upgrade `LICENSE` year. ([cd95c46](https://github.com/yeskiy/rustwasm-loader/commit/cd95c46eecb9b2355643ee70384e85da1fa8bf88))
+
 ### [2.3.6](https://github.com/yeskiy/rustwasm-loader/compare/v2.3.5...v2.3.6) (2023-07-13)
 
 
