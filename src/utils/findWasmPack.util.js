@@ -18,7 +18,7 @@ module.exports = function findWasmPack() {
         "..",
         "node_modules",
         ".bin",
-        "wasm-pack.exe"
+        "wasm-pack.exe",
     );
     if (fs.existsSync(inBinaryInstallWin)) {
         return inBinaryInstallWin;

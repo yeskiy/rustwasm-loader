@@ -84,7 +84,7 @@ module.exports = async function rustWasmLoader(source) {
     try {
         if (constants.supportedTargets.indexOf(params.target) === -1) {
             throw new Error(
-                `patch is not presented for this target (${params.target}). Please, create new Issue or check the documentation.`
+                `patch is not presented for this target (${params.target}). Please, create new Issue or check the documentation.`,
             );
         }
         const options = merge(
@@ -99,7 +99,7 @@ module.exports = async function rustWasmLoader(source) {
                 },
                 logLevel: "info",
             },
-            this.getOptions()
+            this.getOptions(),
         );
 
         schemaUtils.validate(optionsSchema, options, {
@@ -109,11 +109,11 @@ module.exports = async function rustWasmLoader(source) {
         // Get base and dir from resources
         const { base, dir } = path.parse(path.normalize(params.resourcePath));
 
-        // Create build folder and name with md5 of source
+        // Create build folder and name with md5 of a source
         const tmp = os.tmpdir();
         const buildFolder = path.join(
             tmp,
-            `${base}.${crypto.createHash("md5").update(source).digest("hex")}`
+            `${base}.${crypto.createHash("md5").update(source).digest("hex")}`,
         );
 
         // Set wasm build folder
@@ -125,7 +125,7 @@ module.exports = async function rustWasmLoader(source) {
             params.fileNameStruct,
             {
                 content: source,
-            }
+            },
         );
 
         // create required folders for build
@@ -138,7 +138,7 @@ module.exports = async function rustWasmLoader(source) {
             dir,
             path.normalize(params.baseFolder),
             path.normalize(params.resourcePath),
-            buildFolder
+            buildFolder,
         );
 
         // Write files to build dir
@@ -147,17 +147,17 @@ module.exports = async function rustWasmLoader(source) {
             cargoData[constants.CARGO_TOML],
             {
                 encoding: "utf8",
-            }
+            },
         );
 
-        // If got .lock file, also create it in build folder
+        // If got .lock file, also create it in the build folder
         if (cargoData[constants.CARGO_LOCK]) {
             fs.writeFileSync(
                 path.join(buildFolder, constants.CARGO_LOCK),
                 cargoData[constants.CARGO_LOCK],
                 {
                     encoding: "utf8",
-                }
+                },
             );
         }
 
@@ -167,7 +167,7 @@ module.exports = async function rustWasmLoader(source) {
             outDir: wasmBuildSource,
             outName: wasmName,
             args: [...logLevelSelector(options.logLevel)],
-            // use `web` target because generated file of this target modifies easily
+            // use `web` target because the generated file of this target modifies easily
             extraArgs: ["--target", "web", "--no-typescript"],
         });
 
@@ -178,14 +178,14 @@ module.exports = async function rustWasmLoader(source) {
         ) {
             this.emitFile(
                 wasmName,
-                fs.readFileSync(path.join(wasmBuildSource, wasmName))
+                fs.readFileSync(path.join(wasmBuildSource, wasmName)),
             );
         }
 
         // Find publicPath
         const webpackPublicPath = this._compilation.getAssetPath(
             this._compilation.outputOptions.publicPath,
-            { hash: this._compilation.hash }
+            { hash: this._compilation.hash },
         );
         const publicPath =
             webpackPublicPath.trim() !== "" && webpackPublicPath !== "auto"
@@ -197,11 +197,11 @@ module.exports = async function rustWasmLoader(source) {
                               path.dirname(
                                   this._compilation.getAssetPath(
                                       wasmName,
-                                      this.context
-                                  )
-                              )
+                                      this.context,
+                                  ),
+                              ),
                           ),
-                          this._compilation.options.output.path
+                          this._compilation.options.output.path,
                       )
                       .split(path.sep)
                       .join("/");
@@ -216,8 +216,8 @@ module.exports = async function rustWasmLoader(source) {
                         lines.findIndex(
                             (item) =>
                                 !!item.match(/async function init\(input\) {/g)
-                                    ?.length
-                        )
+                                    ?.length,
+                        ),
                     ),
                     `const init = {}`,
                     `initSync(${
@@ -225,16 +225,16 @@ module.exports = async function rustWasmLoader(source) {
                             ? `toArrayBuffer(${JSON.stringify(
                                   fs
                                       .readFileSync(
-                                          path.join(wasmBuildSource, wasmName)
+                                          path.join(wasmBuildSource, wasmName),
                                       )
-                                      .toJSON().data
+                                      .toJSON().data,
                               )})`
                             : `require('fs').readFileSync(require('path').join(__dirname, '${wasmName}'))`
                     });`,
                     `const exportedFunctions = {${lines
                         .filter(
                             (item) =>
-                                !!item.match(/export function .+ {$/g)?.length
+                                !!item.match(/export function .+ {$/g)?.length,
                         )
                         .map((item) => item.split("function")[1].split("(")[0])
                         .map((item) => `${item}:${item}`)
@@ -252,20 +252,20 @@ module.exports = async function rustWasmLoader(source) {
                     ? /export { initSync }/g
                     : /async function init\(input\) {/g;
                 const badImportIndex = lines.findIndex(
-                    (item) => !!item.match(/import.meta.url/g)?.length
+                    (item) => !!item.match(/import.meta.url/g)?.length,
                 );
                 lines[badImportIndex] = `       input = "${path.posix.join(
                     ...options.web.wasmPathModifier,
                     ...(options.web.publicPath ? publicPath : []),
-                    wasmName
+                    wasmName,
                 )}"`;
                 const exportGen = `{...exportedFunctions, ...Object.entries(wasm).filter(([item]) => Object.keys(exportedFunctions).indexOf(item) === -1).reduce((acc, item) => ({...acc,[item[0]]: item[1]}), {})}`;
                 return `${[
                     ...lines.slice(
                         0,
                         lines.findIndex(
-                            (item) => !!item.match(clearMatch)?.length
-                        )
+                            (item) => !!item.match(clearMatch)?.length,
+                        ),
                     ),
                     constants.toArrayBuffer,
                     ...(options.web.asyncLoading
@@ -275,15 +275,15 @@ module.exports = async function rustWasmLoader(source) {
                               `initSync(toArrayBuffer(${JSON.stringify(
                                   fs
                                       .readFileSync(
-                                          path.join(wasmBuildSource, wasmName)
+                                          path.join(wasmBuildSource, wasmName),
                                       )
-                                      .toJSON().data
+                                      .toJSON().data,
                               )}));`,
                           ]),
                     `const exportedFunctions = {${lines
                         .filter(
                             (item) =>
-                                !!item.match(/export function .+ {$/g)?.length
+                                !!item.match(/export function .+ {$/g)?.length,
                         )
                         .map((item) => item.split("function")[1].split("(")[0])
                         .map((item) => `${item}:${item}`)
@@ -302,7 +302,7 @@ module.exports = async function rustWasmLoader(source) {
             path.join(wasmBuildSource, `${wasmName.replace(".wasm", "")}.js`),
             {
                 encoding: "utf8",
-            }
+            },
         );
         callback(null, patch[params.target](generatedJs));
     } catch (e) {

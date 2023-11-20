@@ -8,19 +8,19 @@ module.exports = function findNearestCargoBy(constants) {
         currentFolder,
         endFolder,
         fileEntry,
-        buildFolder
+        buildFolder,
     ) {
         function stepDown() {
             if (path.normalize(currentFolder) === endFolder) {
                 throw new Error(
-                    `Cannot Find "${constants.CARGO_TOML}" to create wasm`
+                    `Cannot Find "${constants.CARGO_TOML}" to create wasm`,
                 );
             } else {
                 return findNearestCargo(
                     path.resolve(currentFolder, "../"),
                     endFolder,
                     fileEntry,
-                    buildFolder
+                    buildFolder,
                 );
             }
         }
@@ -38,7 +38,7 @@ module.exports = function findNearestCargoBy(constants) {
                                 .join(path.posix.sep),
                         },
                     },
-                    { indent: 2, newlineAfterSection: true }
+                    { indent: 2, newlineAfterSection: true },
                 ),
             };
             // try to find Cargo.lock file in folder
@@ -51,14 +51,14 @@ module.exports = function findNearestCargoBy(constants) {
             return returnData;
         }
 
-        // Check, if this folder consist Cargo file
+        // Check, if this folder consists Cargo file
         const tomlFile = path.join(currentFolder, constants.CARGO_TOML);
         if (fs.existsSync(tomlFile)) {
             // Parsing .toml file
             const data = tomlToJson(
                 fs.readFileSync(tomlFile, {
                     encoding: "utf8",
-                })
+                }),
             );
 
             // if this lib already have a path, check if this path equals to our .rs file
