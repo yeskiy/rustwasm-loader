@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [3.0.2](https://github.com/yeskiy/rustwasm-loader/compare/v3.0.1...v3.0.2) (2024-01-31)
+
+
+### Bug Fixes
+
+* add release commands ([e585cf0](https://github.com/yeskiy/rustwasm-loader/commit/e585cf09573314b348da6a24d2fe1ed7950284dc))
+
 ### [3.0.1](https://github.com/yeskiy/rustwasm-loader/compare/v3.0.0...v3.0.1) (2024-01-31)
 
 
