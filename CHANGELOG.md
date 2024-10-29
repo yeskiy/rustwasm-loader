@@ -1,6 +1,13 @@
 # Changelog
 
-All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
+All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
+
+## [3.1.0](https://github.com/yeskiy/rustwasm-loader/compare/v3.0.2...v3.1.0) (2024-10-29)
+
+
+### Features
+
+* **loader:** add Bun support and update dependencies ([75b287e](https://github.com/yeskiy/rustwasm-loader/commit/75b287e7d70cbd3c5e85b2840e3b30c7f926adea))
 
 ### [3.0.2](https://github.com/yeskiy/rustwasm-loader/compare/v3.0.1...v3.0.2) (2024-01-31)
 

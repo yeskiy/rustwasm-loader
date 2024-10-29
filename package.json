@@ -1,10 +1,11 @@
 {
     "name": "rust-wasmpack-loader",
-    "version": "3.0.2",
+    "version": "3.1.0",
     "description": "wasm Webpack loader for .rs (Rust) resources. Boost your Webpack-powered projects with native WebAssembly support using the 'rust-wasmpack-loader'. This powerful loader enables seamless integration of Rust resources, unlocking high-performance capabilities for your web applications.",
     "main": "./src/index.js",
     "scripts": {
-        "release": "npx commit-and-tag-version"
+        "release": "npx commit-and-tag-version",
+        "release:push": "npx commit-and-tag-version --push"
     },
     "repository": {
         "type": "git",
