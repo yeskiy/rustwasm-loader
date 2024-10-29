@@ -3,7 +3,10 @@ const { spawn } = require("child_process");
 
 module.exports = async function runProcess(bin, args, options) {
     return new Promise((resolve, reject) => {
-        const p = spawn(bin, args, options);
+        const p = spawn(bin, args, {
+            ...options,
+            shell: process.platform === "win32",
+        });
 
         p.on("close", (code) => {
             if (code === 0) {

@@ -1,0 +1,1 @@
+preload = ["./node_modules/rust-wasmpack-loader/bun/preload.js"]
