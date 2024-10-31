@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [3.1.1](https://github.com/yeskiy/rustwasm-loader/compare/v3.1.0...v3.1.1) (2024-10-31)
+
+
+### Bug Fixes
+
+* **dependencies:** update `wasm-pack` to version `^0.13.1` and clean up redundant dependencies in `package-lock.json` ([10b0004](https://github.com/yeskiy/rustwasm-loader/commit/10b000467cafe1dcac4f7fbba510d6edd17fb129))
+
 ## [3.1.0](https://github.com/yeskiy/rustwasm-loader/compare/v3.0.2...v3.1.0) (2024-10-29)
 
 
