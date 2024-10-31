@@ -89,7 +89,7 @@
         "lodash": "^4.17.21",
         "schema-utils": "^4.2.0",
         "toml": "^3.0.0",
-        "wasm-pack": "0.13.0",
+        "wasm-pack": "^0.13.1",
         "which": "^5.0.0"
     },
     "peerDependencies": {
