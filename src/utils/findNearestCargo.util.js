@@ -33,19 +33,40 @@ module.exports = function findNearestCargoBy(constants) {
                         lib: {
                             ...data.lib,
                             path: (() => {
-                                const fileEntryDirs = fileEntry.split(path.sep);
+                                const parsedFileEntry = path.parse(fileEntry);
+                                const parsedBuildFolder =
+                                    path.parse(buildFolder);
                                 if (
-                                    buildFolder
-                                        .split(path.sep)
-                                        .some((dir) =>
-                                            fileEntryDirs.includes(dir),
-                                        )
+                                    path.join(
+                                        parsedFileEntry.root,
+                                        parsedFileEntry.dir
+                                            .split(path.sep)
+                                            .filter(Boolean)[0],
+                                    ) ===
+                                    path.join(
+                                        parsedBuildFolder.root,
+                                        parsedBuildFolder.dir
+                                            .split(path.sep)
+                                            .filter(Boolean)[0],
+                                    )
                                 ) {
-                                    return path
-                                        .relative(buildFolder, fileEntry)
-                                        .split(path.sep)
-                                        .join(path.posix.sep);
+                                    const fileEntryDirs = fileEntry.split(
+                                        path.sep,
+                                    );
+                                    if (
+                                        buildFolder
+                                            .split(path.sep)
+                                            .some((dir) =>
+                                                fileEntryDirs.includes(dir),
+                                            )
+                                    ) {
+                                        return path
+                                            .relative(buildFolder, fileEntry)
+                                            .split(path.sep)
+                                            .join(path.posix.sep);
+                                    }
                                 }
+
                                 return fileEntry;
                             })(),
                         },
