@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [3.1.2](https://github.com/yeskiy/rustwasm-loader/compare/v3.1.1...v3.1.2) (2024-11-05)
+
+
+### Bug Fixes
+
+* **utils:** adjust path handling in `findNearestCargo.util.js` ([03974ca](https://github.com/yeskiy/rustwasm-loader/commit/03974ca4cfc383e1b3046907bf1fa9e62b111778))
+
 ## [3.1.1](https://github.com/yeskiy/rustwasm-loader/compare/v3.1.0...v3.1.1) (2024-10-31)
 
 
