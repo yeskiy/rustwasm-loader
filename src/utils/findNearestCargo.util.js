@@ -32,10 +32,22 @@ module.exports = function findNearestCargoBy(constants) {
                         ...data,
                         lib: {
                             ...data.lib,
-                            path: path
-                                .relative(buildFolder, fileEntry)
-                                .split(path.sep)
-                                .join(path.posix.sep),
+                            path: (() => {
+                                const fileEntryDirs = fileEntry.split(path.sep);
+                                if (
+                                    buildFolder
+                                        .split(path.sep)
+                                        .some((dir) =>
+                                            fileEntryDirs.includes(dir),
+                                        )
+                                ) {
+                                    return path
+                                        .relative(buildFolder, fileEntry)
+                                        .split(path.sep)
+                                        .join(path.posix.sep);
+                                }
+                                return fileEntry;
+                            })(),
                         },
                     },
                     { indent: 2, newlineAfterSection: true },

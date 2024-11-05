@@ -132,7 +132,7 @@ module.exports = async function pack(params, emitFile) {
                                   )
                                   .toJSON().data,
                           )})}`
-                        : `require('fs').readFileSync(require('path').join(__dirname, '${params.wasmName}'))`
+                        : `{module:require('fs').readFileSync(require('path').join(__dirname, '${params.wasmName}'))}`
                 });`,
                 `const exportedFunctions = {${lines
                     .filter(
