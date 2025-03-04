@@ -32,9 +32,9 @@ jobs:
                     if [[ "$RUNNER_OS" == "Windows" ]]; then
                       echo Adding .cargo/bin to PATH on Windows...
                       $env:Path += ";$env:USERPROFILE\.cargo\bin"
-                    else
-                      echo Adding .cargo/bin to PATH on Linux/macOS...
-                      echo "::add-path::$HOME/.cargo/bin"
+#                    else
+#                      echo Adding .cargo/bin to PATH on Linux/macOS...
+#                      echo "::add-path::$HOME/.cargo/bin"
                     fi
 
             -   name: Verify Rust installation
