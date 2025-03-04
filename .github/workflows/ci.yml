@@ -21,8 +21,7 @@ jobs:
             -   name: Install Rust
                 run: |
                     if [[ "$RUNNER_OS" == "Windows" ]]; then
-                      Invoke-WebRequest -Uri https://win.rustup.rs/x86_64 -OutFile rustup-init.exe; `
-                      .\rustup-init.exe -y
+                      Invoke-WebRequest -Uri https://win.rustup.rs/x86_64 -OutFile rustup-init.exe; .\rustup-init.exe -y
                     elif [[ "$RUNNER_OS" == "macOS" || "$RUNNER_OS" == "Linux" ]]; then
                       curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
                     fi
