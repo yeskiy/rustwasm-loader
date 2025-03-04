@@ -29,6 +29,7 @@ jobs:
                     if [[ "$RUNNER_OS" == "Windows" ]]; then
                       echo Adding .cargo/bin to PATH on Windows...
                       $env:Path += ";$env:USERPROFILE\.cargo\bin"
+                    fi
 
             -   name: Verify Rust installation
                 run: rustc --version
