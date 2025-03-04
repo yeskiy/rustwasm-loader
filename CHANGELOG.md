@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [3.2.0](https://github.com/yeskiy/rustwasm-loader/compare/v3.1.3...v3.2.0) (2025-03-04)
+
+
+### Features
+
+* **workspace:** update dependencies and upgrade eslint config, provide some tests. ([#12](https://github.com/yeskiy/rustwasm-loader/issues/12)) ([7166d42](https://github.com/yeskiy/rustwasm-loader/commit/7166d429ed2f3d0d68c7bfbb3c3176763e1356ef))
+
 ## [3.1.3](https://github.com/yeskiy/rustwasm-loader/compare/v3.1.2...v3.1.3) (2024-11-05)
 
 
