@@ -1,0 +1,43 @@
+name: CI
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+
+jobs:
+    test:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+                os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest ]
+                node: [ 18, 20 ]
+                test: [ example/node-bun, example/node-webpack ]
+        steps:
+            -   uses: actions/checkout@v4
+            -   uses: actions/setup-node@v4
+                with:
+                    node-version: ${{ matrix.node }}
+            -   name: Install Rust
+                shell: bash
+                run: |
+                    echo "Setting up Rust on $RUNNER_OS platform..."
+                    if [ "$RUNNER_OS" = "Windows" ]; then
+                    echo "Installing Rust on Windows..."
+                    curl https://win.rustup.rs/x86_64 -o rustup-init.exe
+                    ./rustup-init.exe -y
+                    else
+                    echo "Installing Rust on macOS/Linux..."
+                    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+                    fi
+            -   name: Verify Rust installation
+                run: rustc --version
+
+            -   name: Install dependencies
+                run: |
+                    npm install
+                    cd ${{ matrix.test }} && npm install
+            -   name: Run tests
+                run: npm test
+                working-directory: ${{ matrix.test }}

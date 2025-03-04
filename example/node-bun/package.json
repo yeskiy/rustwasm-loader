@@ -1,9 +1,10 @@
 {
     "scripts": {
-        "start": "bun --watch run src/index.js"
+        "start": "bun --watch run src/index.js",
+        "test": "bun test"
     },
     "devDependencies": {
-        "bun": "^1.1.33",
+        "bun": "^1.2.4",
         "rust-wasmpack-loader": "file:../../"
     }
 }
