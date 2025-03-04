@@ -1,0 +1,50 @@
+name: CI
+
+on: [ push, pull_request ]
+
+jobs:
+    test-bun:
+        runs-on: ${{ matrix.os }}
+        strategy:
+            matrix:
+#                                os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest ]
+                #                node: [ 18, 20 ]
+                #                test: [ example/node-bun, example/node-webpack ]
+                os: [ ubuntu-latest ]
+                node: [ 18 ]
+                test: [ example/node-bun ]
+        steps:
+            -   uses: actions/checkout@v4
+            -   uses: actions/setup-node@v4
+                with:
+                    node-version: ${{ matrix.node }}
+            -   name: Install Rust
+                run: |
+                    if [[ "$RUNNER_OS" == "Windows" ]]; then
+                      Invoke-WebRequest -Uri https://win.rustup.rs/x86_64 -OutFile rustup-init.exe; `
+                      .\rustup-init.exe -y
+                    elif [[ "$RUNNER_OS" == "macOS" || "$RUNNER_OS" == "Linux" ]]; then
+                      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+                    fi
+
+            -   name: Add Rust to PATH
+                shell: bash
+                run: |
+                    if [[ "$RUNNER_OS" == "Windows" ]]; then
+                      echo Adding .cargo/bin to PATH on Windows...
+                      $env:Path += ";$env:USERPROFILE\.cargo\bin"
+                    else
+                      echo Adding .cargo/bin to PATH on Linux/macOS...
+                      echo "::add-path::$HOME/.cargo/bin"
+                    fi
+
+            -   name: Verify Rust installation
+                run: rustc --version
+
+            -   name: Install dependencies
+                run: |
+                    npm install
+                    cd ${{ matrix.test }} && npm install
+            -   name: Run tests
+                run: npm test
+                working-directory: ${{ matrix.test }}
