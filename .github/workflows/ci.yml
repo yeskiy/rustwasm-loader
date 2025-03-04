@@ -1,15 +1,19 @@
 name: CI
 
-on: [ push, pull_request ]
+on:
+    push:
+        branches:
+            - main
+    pull_request:
 
 jobs:
     test-bun:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
-                os: [ ubuntu-latest ]
-                node: [ 18 ]
-                test: [ example/node-bun ]
+                os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest ]
+                node: [ 18, 20 ]
+                test: [ example/node-bun, example/node-webpack ]
         steps:
             -   uses: actions/checkout@v4
             -   uses: actions/setup-node@v4
