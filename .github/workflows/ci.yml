@@ -7,7 +7,7 @@ on:
     pull_request:
 
 jobs:
-    test-bun:
+    test:
         runs-on: ${{ matrix.os }}
         strategy:
             matrix:
@@ -20,20 +20,26 @@ jobs:
                 with:
                     node-version: ${{ matrix.node }}
             -   name: Install Rust
-                run: |
-                    if [[ "$RUNNER_OS" == "Windows" ]]; then
-                      Invoke-WebRequest -Uri https://win.rustup.rs/x86_64 -OutFile rustup-init.exe; .\rustup-init.exe -y
-                    elif [[ "$RUNNER_OS" == "macOS" || "$RUNNER_OS" == "Linux" ]]; then
-                      curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-                    fi
-
-            -   name: Add Rust to PATH
                 shell: bash
                 run: |
-                    if [[ "$RUNNER_OS" == "Windows" ]]; then
-                      echo Adding .cargo/bin to PATH on Windows...
-                      $env:Path += ";$env:USERPROFILE\.cargo\bin"
+                    echo "Setting up Rust on $RUNNER_OS platform..."
+                    if [ "$RUNNER_OS" = "Windows" ]; then
+                    echo "Installing Rust on Windows..."
+                    curl https://win.rustup.rs/x86_64 -o rustup-init.exe
+                    ./rustup-init.exe -y
+                    else
+                    echo "Installing Rust on macOS/Linux..."
+                    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
                     fi
+
+
+#            -   name: Add Rust to PATH
+#                shell: bash
+#                run: |
+#                    if [[ "$RUNNER_OS" == "Windows" ]]; then
+#                      echo Adding .cargo/bin to PATH on Windows...
+#                      $env:Path += ";$env:USERPROFILE\.cargo\bin"
+#                    fi
 
             -   name: Verify Rust installation
                 run: rustc --version
