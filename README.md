@@ -12,7 +12,7 @@ Native wasm Webpack/Bun loader for `.rs` (Rust) resources
 
 > Works fine with `web` and `node` (`node-async`) targets
 
-> **NEW!** [Bun](https://bun.sh/) support (node target only)
+> [Bun](https://bun.sh/) support (node target only)
 
 Dynamically finds the `Cargo.toml` file for building the wasm source.
 Provides the ability to use both `wasm_bindgen` and regular functions.
