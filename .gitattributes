@@ -1,1 +1,53 @@
+# JavaScript and TypeScript files
 *.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.jsx text eol=lf
+
+# JSON and configuration files
+*.json text eol=lf
+*.jsonc text eol=lf
+
+# Markdown and documentation
+*.md text eol=lf
+*.mdx text eol=lf
+
+# Web files
+*.html text eol=lf
+*.htm text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.sass text eol=lf
+*.less text eol=lf
+
+# Configuration files
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.ini text eol=lf
+*.cfg text eol=lf
+*.conf text eol=lf
+
+# Shell scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Other text files
+*.txt text eol=lf
+*.log text eol=lf
+*.xml text eol=lf
+*.svg text eol=lf
+
+# Lock files
+package-lock.json text eol=lf
+yarn.lock text eol=lf
+Cargo.lock text eol=lf
+
+# Rust files
+*.rs text eol=lf
+
+# Git files
+.gitignore text eol=lf
+.gitattributes text eol=lf
