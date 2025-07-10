@@ -1,0 +1,247 @@
+# Quick Start
+
+Get up and running with rust-wasmpack-loader in just a few minutes! This guide will walk you through creating your first Rust-WebAssembly project with **Webpack** in `web` target and **rust-wasmpack-loader**.
+:::tip
+For other examples, check out our [Examples Section](../examples).
+:::
+
+## Step 1: Create a New Project
+
+```bash
+mkdir my-rust-wasm-app
+cd my-rust-wasm-app
+npm init -y
+```
+
+## Step 2: Install Dependencies
+
+```bash
+# Install rust-wasmpack-loader
+npm install --save-dev rust-wasmpack-loader webpack webpack-cli webpack-dev-server
+
+# For TypeScript support (optional)
+npm install --save-dev typescript ts-loader @types/node
+```
+
+## Step 3: Create Cargo.toml
+
+Create a `Cargo.toml` file in your project root:
+
+```toml title="Cargo.toml"
+[package]
+name = "my-rust-wasm-app"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2.95"
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+  "console",
+]
+```
+
+## Step 4: Write Your First Rust Function
+
+Create a `src/lib.rs` file:
+
+```rust title="src/lib.rs"
+use wasm_bindgen::prelude::*;
+
+// Import the `console.log` function from the browser
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
+
+// Define a macro to make console.log easier to use
+macro_rules! console_log {
+    ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
+}
+
+// Export a `greet` function from Rust to JavaScript
+#[wasm_bindgen]
+pub fn greet(name: &str) {
+    console_log!("Hello, {}!", name);
+}
+
+// Export a function that calculates fibonacci numbers
+#[wasm_bindgen]
+pub fn fibonacci(n: u32) -> u32 {
+    match n {
+        0 => 0,
+        1 => 1,
+        _ => fibonacci(n - 1) + fibonacci(n - 2),
+    }
+}
+
+// Export a function that adds two numbers
+#[wasm_bindgen]
+pub fn add(a: i32, b: i32) -> i32 {
+    a + b
+}
+```
+
+## Step 5: Configure Webpack
+
+Create a `webpack.config.js` file:
+
+```javascript title="webpack.config.js"
+const path = require("path");
+
+module.exports = {
+  entry: "./src/index.js",
+  output: {
+    path: path.resolve(__dirname, "dist"),
+    filename: "bundle.js"
+  },
+  module: {
+    rules: [
+      {
+        test: /\.rs$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: "rust-wasmpack-loader",
+            options: {
+              logLevel: "info"
+            }
+          }
+        ]
+      }
+    ]
+  },
+  mode: "development",
+  devServer: {
+    static: {
+      directory: path.join(__dirname, "dist")
+    },
+    compress: true,
+    port: 9000
+  }
+};
+```
+
+## Step 6: Create JavaScript Entry Point
+
+Create a `src/index.js` file:
+
+```javascript title="src/index.js"
+// Import the Rust module
+import wasmModule from './lib.rs';
+
+// Call the greet function
+wasmModule.greet('WebAssembly');
+
+// Calculate fibonacci number
+const fibResult = wasmModule.fibonacci(10);
+console.log(`Fibonacci(10) = ${fibResult}`);
+
+// Add two numbers
+const sum = wasmModule.add(5, 3);
+console.log(`5 + 3 = ${sum}`);
+
+// Update the page
+document.body.innerHTML = `
+    <h1>Rust + WebAssembly + Webpack</h1>
+    <p>Fibonacci(10) = ${fibResult}</p>
+    <p>5 + 3 = ${sum}</p>
+    <p>Check the console for the greeting!</p>
+`;
+```
+
+## Step 7: Create HTML File
+
+Create a `dist/index.html` file:
+
+```html title="dist/index.html"
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Rust WebAssembly App</title>
+</head>
+<body>
+    <div id="app">Loading...</div>
+    <script src="bundle.js"></script>
+</body>
+</html>
+```
+
+## Step 8: Add Build Scripts
+
+Update your `package.json`:
+
+```json title="package.json"
+{
+  ...
+  "scripts": {
+    "build": "webpack",
+    "start": "webpack serve",
+    "dev": "webpack serve --mode development"
+  },
+  ...
+}
+```
+
+## Step 9: Build and Run
+
+```bash
+# Build the project
+npm run build
+
+# Start the development server
+npm start
+```
+
+Open your browser and navigate to `http://localhost:9000`. You should see:
+
+- Fibonacci(10) = 55
+- 5 + 3 = 8
+- A greeting message in the console
+
+## What Just Happened?
+
+1. **Rust Code**: You wrote Rust functions and exported them with `#[wasm_bindgen]`
+2. **Compilation**: rust-wasmpack-loader automatically compiled your Rust code to WebAssembly
+3. **Integration**: The loader generated JavaScript bindings for your Rust functions
+4. **Import**: You imported the `.rs` file directly in JavaScript
+5. **Execution**: Your Rust functions ran in the browser!
+
+## Next Steps
+
+### Advanced Configuration
+
+Customize the loader behavior:
+
+```javascript title="webpack.config.js"
+// In your webpack.config.js rules array
+const rule = {
+  test: /\.rs$/,
+  exclude: /node_modules/,
+  use: [
+    {
+      loader: "rust-wasmpack-loader",
+      options: {
+        web: {
+          asyncLoading: true,
+          publicPath: true
+        },
+        logLevel: "verbose"
+      }
+    }
+  ]
+};
+```
+
+---
+
+:::tip Congratulations! 🎉
+You've successfully created your first Rust-WebAssembly application! The combination of Rust's performance and JavaScript's flexibility opens up endless possibilities.
+:::

@@ -1,0 +1,158 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Prerequisites
+
+Before you can use rust-wasmpack-loader, you need to set up your development environment with the required tools and dependencies.
+
+## System Requirements
+
+### Operating Systems
+- **Windows** 10/11 (x64)
+- **macOS** 10.15+ (Intel/Apple Silicon)
+- **Linux** (Ubuntu 18.04+, CentOS 7+, or equivalent)
+
+### Hardware Requirements
+- **RAM**: 4GB minimum, 8GB recommended
+- **Storage**: 2GB free space for tools and dependencies
+- **CPU**: Any modern x64 or ARM64 processor
+
+### Version Compatibility
+
+| Tool    | Minimum Version | Recommended |
+|---------|-----------------|-------------|
+| Node.js | 18.0.0          | 20.x.x      |
+| Rust    | 1.30.0          | >1.85.0     |
+| npm     | 10.0.0          | Latest      |
+
+## Required Software
+
+### 1. Node.js
+
+rust-wasmpack-loader requires Node.js version 18.0.0 or higher.
+
+:::tip Best Practice
+We recommend using [Volta](https://volta.sh/) for managing Node.js versions. Volta helps ensure consistent Node.js environments across development and CI/CD systems.
+:::
+
+#### Installation
+
+<Tabs groupId="operating-systems" queryString="current-os">
+    <TabItem value="windows" label="Windows" default>
+
+        ```bash
+        # Using Volta (recommended)
+        curl https://get.volta.sh | bash
+        volta install node@20
+
+        # Using winget
+        winget install OpenJS.NodeJS
+
+        # Using chocolatey
+        choco install nodejs
+
+        # Or download from https://nodejs.org/
+        ```
+
+    </TabItem>
+    <TabItem value="macos" label="macOS">
+
+        ```bash
+        # Using Volta (recommended)
+        curl https://get.volta.sh | bash
+        volta install node@20
+
+        # Using Homebrew
+        brew install node
+
+        # Using MacPorts
+        sudo port install nodejs20
+
+        # Or download from https://nodejs.org/
+        ```
+
+    </TabItem>
+    <TabItem value="linux" label="Linux">
+        **All distributions:**
+        ```bash
+        # Using Volta (recommended)
+        curl https://get.volta.sh | bash
+        volta install node@20
+        ```
+
+        **Ubuntu/Debian:**
+        ```bash
+        # Using NodeSource repository
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+
+        # Using snap
+        sudo snap install node --classic
+        ```
+
+        **CentOS/RHEL:**
+        ```bash
+        # Using NodeSource repository
+        curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+        sudo yum install -y nodejs npm
+        ```
+
+    </TabItem>
+</Tabs>
+
+#### Verify Installation
+
+```bash
+node --version  # Should show v20.0.0 or higher
+npm --version   # Should show 10.0.0 or higher
+
+# If using Volta
+volta list  # Should show the installed Node.js version
+```
+
+### 2. Rust
+
+Rust is required to compile your `.rs` files to WebAssembly.
+
+#### Installation
+
+<Tabs groupId="operating-systems" queryString="current-os">
+    <TabItem value="windows" label="Windows" default>
+
+        ```bash
+        # Option 1: Using winget
+        winget install Rustlang.Rustup
+
+        # Option 2: Download from https://rustup.rs/
+        ```
+
+    </TabItem>
+    <TabItem value="macos" label="macOS">
+
+        ```bash
+        # Install rustup (Rust installer and version manager)
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+        ```
+
+    </TabItem>
+    <TabItem value="linux" label="Linux">
+
+        ```bash
+        # Install rustup (Rust installer and version manager)
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+        ```
+
+    </TabItem>
+</Tabs>
+
+#### Verify Installation
+
+```bash
+rustc --version    # Should show 1.30.0 or higher
+cargo --version    # Should show 1.30.0 or higher
+```
+---
+
+:::tip Environment Ready! ✅
+Your development environment is now configured for Rust-WebAssembly development with rust-wasmpack-loader!
+:::

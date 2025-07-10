@@ -4,158 +4,115 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yeskiy_rustwasm-loader&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=yeskiy_rustwasm-loader)
 [![Known Vulnerabilities](https://snyk.io/test/github/yeskiy/rustwasm-loader/badge.svg)](https://snyk.io/test/github/yeskiy/rustwasm-loader)
 
-# rust-wasmpack-loader
+# Welcome to rust-wasmpack-loader
 
-Native wasm Webpack/Bun loader for `.rs` (Rust) resources
+**rust-wasmpack-loader** is a powerful Webpack and Bun loader that enables seamless integration of Rust resources into
+your JavaScript/TypeScript projects through WebAssembly (WASM).
 
-> Works with webpack `^5.0.0`
+## What is rust-wasmpack-loader?
 
-> Works fine with `web` and `node` (`node-async`) targets
+rust-wasmpack-loader is a native WASM loader for `.rs` (Rust) resources that works with:
 
-> [Bun](https://bun.sh/) support (node target only)
+- [**Webpack**](https://webpack.js.org/) `^5.0.0` (Both `web` and `node` (`node-async`) targets)
+- [**Bun**](https://bun.sh/) runtime (node target only)
 
-Dynamically finds the `Cargo.toml` file for building the wasm source.
-Provides the ability to use both `wasm_bindgen` and regular functions.
-Allows you to use the standard import of a `.rs` file in a `.js` or `.ts` file without any headache
+## Key Features
 
-## Installation
+🚀 **Easy Integration** — Import `.rs` files directly in your `.js` or `.ts` files without any headache
 
-> Please be sure that rust is installed on your machine. 
-> If not, please install it from [the official site](https://www.rust-lang.org/tools/install)
+🔧 **Flexible Configuration** — Supports both `wasm_bindgen` and regular functions
 
-Install `rust-wasmpack-loader` with npm
+📦 **Smart Discovery** — Dynamically finds the `Cargo.toml` file for building the WASM source
 
-```shell script
-  npm i rust-wasmpack-loader
+🌐 **Multi-Target Webpack Support** — Works with `web` and `node` applications
+
+⚡ **Bun Compatible** — Full support for Bun runtime (node target only for now)
+
+## Why Use rust-wasmpack-loader?
+
+- **Simplicity**: The most obvious one — No complex build setups, import and use
+- **Write computation-heavy code in Rust**: Leverage Rust's performance for CPU-intensive tasks
+- **Ecosystem**: Access the rich Rust ecosystem from your any projects
+
+## Quick Example
+
+```javascript
+// Import Rust code directly
+import wasmModule from './fibonacci.rs';
+
+// Use the compiled WASM module
+const result = wasmModule.fibonacci(10);
+console.log(result); // Output: 55
 ```
 
-Or install into Dev dependencies
+```rust
+// fibonacci.rs
+use wasm_bindgen::prelude::*;
 
-```shell script
-  npm i --save-dev rust-wasmpack-loader
-```
-
-
-
-## Usage
-Create `Cargo.toml` file (in root or in a folder, where you want to create `.rs` file)
-
-```toml
-# Cargo.toml
-
-[package]
-name = "wasm-fibonacci-test"
-version = "0.1.0"
-authors = ["Yehor Brodskiy"]
-
-[lib]
-crate-type = ["cdylib"]
-
-[dependencies]
-wasm-bindgen = "0.2.95"
-```
-
-### Webpack Configuration
-
-Add `.rs` rule to webpack config
-
-```js 
-// webpack.config.js
-
-module.exports = {
-    // ...
-    module: {
-        // ...
-        rules: [
-            // ...
-            {
-                test: /\.rs$/,
-                exclude: /node_modules/,
-                use: [
-                    {
-                        loader: "rust-wasmpack-loader",
-                    },
-                ],
-            },
-        ]
+#[wasm_bindgen]
+pub fn fibonacci(n: u32) -> u32 {
+    match n {
+        0 => 0,
+        1 => 1,
+        _ => fibonacci(n - 1) + fibonacci(n - 2),
     }
 }
 ```
-### Bun Configuration
 
-#### Basic Configuration
-Add `preload.js` into bun configuration file
+## Getting Started
 
-```toml
-# bunfig.toml
-preload = [
-    #    ...
-    "./node_modules/rust-wasmpack-loader/bun/preload.js"
-    #    ...
-]
-```
-This preload file will load default `rust-wasmpack-loader` configuration
+Ready to boost your projects with native WebAssembly support? Let us get started!
 
-#### Advanced Configuration
-If you want to override default configuration, you can create your own `init.js` file
-```js
-// init.js | init.ts
-import { plugin } from "bun";
-import loader from "rust-wasmpack-loader";
-// ...
+👉 [Installation Guide](docs/getting-started/installation)
 
-plugin(loader.bun({
-    // here you can override default configuration
-}));
-
-// ...
-```
-And then add it to preload
-```toml
-# bunfig.toml
-preload = [
-    #    ...
-    "./path/to/init.js"
-    #    ...
-]
-```
-
-
-## Webpack Options
-
-|              parameter |      type       | default | description                                                                 |
-|-----------------------:|:---------------:|:-------:|:----------------------------------------------------------------------------|
-|                  `web` |    `object`     |         | options, which used for `web` target                                        |
-|                 `node` |    `object`     |         | options, which used for `node` target                                       |
-|     `web.asyncLoading` |    `boolean`    | `false` | enables load `.wasm` file asynchronously, instead of bundling in .js file   |
-| `web.wasmPathModifier` | `array<string>` | `["/"]` | rewrite wasm requestPath, if wrong publicPath used                          |
-|       `web.publicPath` |    `boolean`    | `true`  | use webpack PublicPath                                                      |
-|          `node.bundle` |    `boolean`    | `false` | Bundle `.wasm` file in `.js` file (additional `.wasm` file will not create) |
-|             `logLevel` |    `string`     | `info`  | Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)                     |
-
-## Bun Options
-Currently, `bun` supports only `node` target.
-Built `.wasm` file will be bundled in `.js` file (since `bun` doesn't support external file watching)
-
-|  parameter |   type   | default | description                                             |
-|-----------:|:--------:|:-------:|:--------------------------------------------------------|
-| `logLevel` | `string` | `info`  | Log Level (`verbose`, `info`, `warn`, `error`, `quiet`) |
+👉 [Quick Start Tutorial](docs/getting-started/quick-start)
 
 ## Examples
 
-Check the **[example](./example)** folder for a better understanding of how the loader works
+[View Examples documentation](docs/examples)
+
+Check the **[example](https://github.com/yeskiy/rustwasm-loader/tree/main/example)** folder in the repository for a
+better understanding of how the loader works with different setups:
+
+- **[Web Webpack](https://github.com/yeskiy/rustwasm-loader/tree/main/example/web-webpack)** - Browser applications
+- **[Node.js Webpack](https://github.com/yeskiy/rustwasm-loader/tree/main/example/node-webpack)** - Server-side
+  applications
+- **[Bun Node.js](https://github.com/yeskiy/rustwasm-loader/tree/main/example/node-bun)** - High-performance Bun runtime
 
 ## Contributing
 
 Contributions are always welcome!
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for ways to get started.
+See [CONTRIBUTING.md](https://github.com/yeskiy/rustwasm-loader/blob/main/CONTRIBUTING.md) for ways to get started.
+
+Please feel free to:
+
+- 🐛 Report bugs and issues
+- 💡 Suggest new features
+- 📖 Improve documentation
+- 🔧 Submit pull requests
 
 ## Acknowledgements
 
-- [@wasm-tool/wasm-pack-plugin](https://github.com/wasm-tool/wasm-pack-plugin)
-- [wasm-pack](https://github.com/rustwasm/wasm-pack)
+Special thanks to the projects that inspired and helped make rust-wasmpack-loader possible:
+
+- [@wasm-tool/wasm-pack-plugin](https://github.com/wasm-tool/wasm-pack-plugin) - Original inspiration for WebAssembly
+  integration
+- [wasm-pack](https://github.com/rustwasm/wasm-pack) - The amazing tool that makes Rust-to-WASM compilation seamless
 
 ## License
 
-[MIT](https://choosealicense.com/licenses/mit/)
+This project is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
+
+See the [LICENSE](https://github.com/yeskiy/rustwasm-loader/blob/main/LICENSE) file for details.
+
+## Community & Support
+
+- 📚 [Documentation](https://yeskiy.github.io/rustwasm-loader/)
+- 🐛 [Report Issues](https://github.com/yeskiy/rustwasm-loader/issues)
+- 💬 [GitHub Discussions](https://github.com/yeskiy/rustwasm-loader/discussions)
+- 📦 [NPM Package](https://www.npmjs.com/package/rust-wasmpack-loader)
+
+---
+
+*Built with ❤️ by [Yehor Brodskiy](https://github.com/yeskiy)*
