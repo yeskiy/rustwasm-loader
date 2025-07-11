@@ -1,0 +1,158 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  --ifm-color-primary: #2e8555;
+  --ifm-color-primary-dark: #29784c;
+  --ifm-color-primary-darker: #277148;
+  --ifm-color-primary-darkest: #205d3b;
+  --ifm-color-primary-light: #33925d;
+  --ifm-color-primary-lighter: #359962;
+  --ifm-color-primary-lightest: #3cad6e;
+  --ifm-code-font-size: 95%;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #25c2a0;
+  --ifm-color-primary-dark: #21af90;
+  --ifm-color-primary-darker: #1fa588;
+  --ifm-color-primary-darkest: #1a8870;
+  --ifm-color-primary-light: #29d5b0;
+  --ifm-color-primary-lighter: #32d8b4;
+  --ifm-color-primary-lightest: #4fddbf;
+  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Custom styles for rust-wasmpack-loader */
+.hero__title {
+  font-size: 3rem;
+  font-weight: 800;
+}
+
+.hero__subtitle {
+  font-size: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Code block improvements */
+.prism-code {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Improve table styling */
+table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+table th,
+table td {
+  border: 1px solid var(--ifm-table-border-color);
+  padding: 0.75rem;
+}
+
+table th {
+  background-color: var(--ifm-table-head-background);
+  font-weight: 600;
+}
+
+/* Custom admonition styles */
+.admonition {
+  margin: 1.5rem 0;
+}
+
+/* Navbar improvements */
+.navbar__title {
+  font-weight: 700;
+}
+
+/* Footer improvements */
+.footer {
+  background-color: var(--ifm-footer-background-color);
+  padding: 2rem 0;
+}
+
+/* Sidebar improvements */
+.menu__link {
+  border-radius: 0.25rem;
+}
+
+.menu__link--active {
+  font-weight: 600;
+}
+
+/* Custom button styles */
+.button--rust {
+  background-color: #ce422b;
+  border-color: #ce422b;
+  color: white;
+}
+
+.button--rust:hover {
+  background-color: #a0341f;
+  border-color: #a0341f;
+}
+
+.button--wasm {
+  background-color: #654ff0;
+  border-color: #654ff0;
+  color: white;
+}
+
+.button--wasm:hover {
+  background-color: #5a47d7;
+  border-color: #5a47d7;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .hero__title {
+    font-size: 2rem;
+  }
+  
+  .hero__subtitle {
+    font-size: 1.2rem;
+  }
+}
+
+/* Syntax highlighting improvements */
+.token.keyword {
+  color: #d73a49;
+}
+
+.token.string {
+  color: #032f62;
+}
+
+.token.function {
+  color: #6f42c1;
+}
+
+.token.comment {
+  color: #6a737d;
+  font-style: italic;
+}
+
+/* Dark mode syntax highlighting */
+[data-theme='dark'] .token.keyword {
+  color: #f97583;
+}
+
+[data-theme='dark'] .token.string {
+  color: #9ecbff;
+}
+
+[data-theme='dark'] .token.function {
+  color: #b392f0;
+}
+
+[data-theme='dark'] .token.comment {
+  color: #8b949e;
+}

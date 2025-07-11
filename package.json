@@ -5,7 +5,13 @@
     "main": "./src/index.js",
     "scripts": {
         "release": "npx commit-and-tag-version && npm run postrelease",
-        "postrelease": "cd ./example/node-webpack && npm i && cd ../../ && cd ./example/web-webpack && npm i && cd ../../ && cd ./example/node-bun && npm i"
+        "postrelease": "cd ./example/node-webpack && npm i && cd ../../ && cd ./example/web-webpack && npm i && cd ../../ && cd ./example/node-bun && npm i",
+        "docs:start": "docusaurus start --config ./docs/docusaurus.config.js",
+        "docs:build": "docusaurus build --config ./docs/docusaurus.config.js",
+        "docs:swizzle": "docusaurus swizzle --config ./docs/docusaurus.config.js",
+        "docs:deploy": "docusaurus deploy --config ./docs/docusaurus.config.js",
+        "docs:clear": "docusaurus clear --config ./docs/docusaurus.config.js",
+        "docs:serve": "docusaurus serve --config ./docs/docusaurus.config.js"
     },
     "repository": {
         "type": "git",
@@ -84,6 +90,7 @@
     "author": "Yehor Brodskiy",
     "license": "MIT",
     "dependencies": {
+        "@docusaurus/theme-mermaid": "^3.8.1",
         "json2toml": "^6.1.1",
         "loader-utils": "^3.3.1",
         "lodash": "^4.17.21",
@@ -105,6 +112,11 @@
         }
     },
     "devDependencies": {
+        "@docusaurus/core": "^3.8.1",
+        "@docusaurus/module-type-aliases": "^3.8.1",
+        "@docusaurus/preset-classic": "^3.8.1",
+        "@docusaurus/tsconfig": "^3.8.1",
+        "@docusaurus/types": "^3.8.1",
         "@eslint/eslintrc": "^3.3.1",
         "@eslint/js": "^9.30.1",
         "@kesills/eslint-config-airbnb-typescript": "^20.0.0",
@@ -117,6 +129,7 @@
         "globals": "^16.3.0",
         "npm-check-updates": "^18.0.1",
         "prettier": "^3.6.2",
+        "prism-react-renderer": "^2.4.1",
         "typescript": "^5.8.3"
     },
     "engines": {

@@ -1,0 +1,255 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Installation
+
+This guide will walk you through installing rust-wasmpack-loader.
+
+## Prerequisites
+
+:::tip
+Need help with prerequisites? Check our [Prerequisites Guide](./prerequisites) for detailed installation instructions.
+:::
+
+## Package Installation
+### Version Compatibility
+
+| rust-wasmpack-loader | Webpack-node | Webpack-web | Bun   | Node.js  | Rust     |
+|----------------------|--------------|-------------|-------|----------|----------|
+| 3.x.x                | ^5.0.0       | ^5.0.0      | 1.x.x | >=20.0.0 | >=1.85.1 |
+| 2.x.x                | ^5.0.0       | ^5.0.0      | ❌     | >=16.0.0 | >=1.30.0 |
+| 1.x.x                | ^5.0.0       | ❌           | ❌     | >=16.0.0 | >=1.30.0 |
+| 0.x.x                | ⚠️           | ❌           | ❌     | >=14.0.0 | >=1.30.0 |
+
+
+### Install as Dependency
+
+For production use, install rust-wasmpack-loader as a regular dependency:
+
+<Tabs groupId="package-managers" queryString="current-pm">
+  <TabItem value="npm" label="npm" default>
+    ```bash
+    npm install rust-wasmpack-loader
+    # or install as dev dependency
+    npm install --save-dev rust-wasmpack-loader
+    ```
+  </TabItem>
+  <TabItem value="yarn" label="yarn">
+    ```bash
+    yarn add rust-wasmpack-loader
+    # or install as dev dependency
+    yarn add --dev rust-wasmpack-loader
+    ```
+  </TabItem>
+  <TabItem value="bun" label="bun">
+    ```bash
+    bun add rust-wasmpack-loader
+    # or install as dev dependency
+    bun add -d rust-wasmpack-loader
+    ```
+  </TabItem>
+</Tabs>
+
+## Project Setup
+
+### 1. Create Cargo.toml
+
+Create a `Cargo.toml` file in your project root or in a subdirectory where you plan to write Rust code:
+
+```toml title="Cargo.toml"
+[package]
+name = "my-wasm-project"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2.95"
+
+# Optional: for more advanced features
+[dependencies.web-sys]
+version = "0.3"
+features = [
+  "console",
+]
+```
+
+### 2. Configure Your Build Tool
+
+#### Webpack Configuration
+
+Add the loader to your `webpack.config.js`:
+
+```javascript title="webpack.config.js"
+module.exports = {
+  // ... other configuration
+  module: {
+    rules: [
+      // ... other rules
+      {
+        test: /\.rs$/,
+        exclude: /node_modules/,
+        use: [
+          {
+            loader: "rust-wasmpack-loader",
+            options: {
+              // Optional configuration
+            }
+          }
+        ]
+      }
+    ]
+  }
+};
+```
+
+#### Bun Configuration
+
+Add the preload script to your `bunfig.toml`:
+
+```toml title="bunfig.toml"
+preload = [
+    "./node_modules/rust-wasmpack-loader/bun/preload.js"
+]
+```
+
+
+## Troubleshooting Installation
+
+### Common Issues
+
+<Tabs groupId="operating-systems" queryString="current-os">
+  <TabItem value="windows" label="Windows" default>
+
+    #### Build Tools Required
+
+    You might need Visual Studio Build Tools:
+
+    ```bash
+    npm install --global windows-build-tools
+    ```
+
+    #### Rust Installation Issues
+
+    If Rust is not found, ensure it's in your PATH:
+
+    ```bash
+    # Add Rust to PATH in PowerShell profile
+    echo '$env:PATH += ";$env:USERPROFILE\.cargo\bin"' >> $PROFILE
+
+    # Or restart your terminal after installation
+    ```
+
+    #### Network Issues
+
+    For corporate networks or firewalls:
+
+    ```bash
+    # Configure npm registry
+    npm config set registry https://registry.npmjs.org/
+
+    # Or use a proxy
+    npm config set proxy http://proxy.company.com:8080
+    npm config set https-proxy http://proxy.company.com:8080
+    ```
+
+  </TabItem>
+  <TabItem value="macos" label="macOS">
+
+    #### Permission Errors
+
+    If you encounter permission errors, try:
+
+    ```bash
+    sudo npm install -g rust-wasmpack-loader
+    ```
+
+    Or use a Node version manager like `nvm`:
+
+    ```bash
+    # Install nvm first, then:
+    nvm install node
+    npm install rust-wasmpack-loader
+    ```
+
+    #### Rust Installation Issues
+
+    If Rust is not found, ensure it's in your PATH:
+
+    ```bash
+    # Add to your shell profile (.zshrc, .bash_profile, etc.)
+    export PATH="$HOME/.cargo/bin:$PATH"
+    ```
+
+    #### Network Issues
+
+    For corporate networks or firewalls:
+
+    ```bash
+    # Configure npm registry
+    npm config set registry https://registry.npmjs.org/
+
+    # Or use a proxy
+    npm config set proxy http://proxy.company.com:8080
+    npm config set https-proxy http://proxy.company.com:8080
+    ```
+
+  </TabItem>
+  <TabItem value="linux" label="Linux">
+
+    #### Permission Errors
+
+    If you encounter permission errors, try:
+
+    ```bash
+    sudo npm install -g rust-wasmpack-loader
+    ```
+
+    Or use a Node version manager like `nvm`:
+
+    ```bash
+    # Install nvm first, then:
+    nvm install node
+    npm install rust-wasmpack-loader
+    ```
+
+    #### Rust Installation Issues
+
+    If Rust is not found, ensure it's in your PATH:
+
+    ```bash
+    # Add to your shell profile (.bashrc, .zshrc, etc.)
+    export PATH="$HOME/.cargo/bin:$PATH"
+    ```
+
+    #### Network Issues
+
+    For corporate networks or firewalls:
+
+    ```bash
+    # Configure npm registry
+    npm config set registry https://registry.npmjs.org/
+
+    # Or use a proxy
+    npm config set proxy http://proxy.company.com:8080
+    npm config set https-proxy http://proxy.company.com:8080
+    ```
+
+  </TabItem>
+</Tabs>
+
+## Next Steps
+
+Now that you have rust-wasmpack-loader installed:
+
+- 🚀 [Quick Start](./quick-start) - Create your first Rust-WASM project
+- 🛠️ [Examples](../examples/web-webpack) - Explore working examples
+- 📚 [API Reference](../api) - Learn about available options and configurations
+
+---
+
+:::info
+**Need help?** Join our community discussions or report issues on [GitHub](https://github.com/yeskiy/rustwasm-loader).
+:::
