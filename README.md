@@ -63,13 +63,13 @@ pub fn fibonacci(n: u32) -> u32 {
 
 Ready to boost your projects with native WebAssembly support? Let us get started!
 
-👉 [Installation Guide](docs/getting-started/installation)
+👉 [Installation Guide](https://yeskiy.github.io/rustwasm-loader/docs/getting-started/installation)
 
-👉 [Quick Start Tutorial](docs/getting-started/quick-start)
+👉 [Quick Start Tutorial](https://yeskiy.github.io/rustwasm-loader/docs/getting-started/quick-start)
 
 ## Examples
 
-[View Examples documentation](docs/examples)
+[View Examples documentation](https://yeskiy.github.io/rustwasm-loader/docs/examples)
 
 Check the **[example](https://github.com/yeskiy/rustwasm-loader/tree/main/example)** folder in the repository for a
 better understanding of how the loader works with different setups:
@@ -83,7 +83,7 @@ better understanding of how the loader works with different setups:
 
 Contributions are always welcome!
 
-See [CONTRIBUTING.md](https://github.com/yeskiy/rustwasm-loader/blob/main/CONTRIBUTING.md) for ways to get started.
+See [CONTRIBUTING.md](https://yeskiy.github.io/rustwasm-loader/contributing) for ways to get started.
 
 Please feel free to:
 
