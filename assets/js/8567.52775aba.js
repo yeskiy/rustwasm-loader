@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkrust_wasmpack_loader=self.webpackChunkrust_wasmpack_loader||[]).push([[8567],{8567:(e,a,r)=>{r.d(a,{createArchitectureServices:()=>s.S});var s=r(3333);r(9089)}}]);

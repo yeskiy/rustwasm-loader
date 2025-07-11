@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkrust_wasmpack_loader=self.webpackChunkrust_wasmpack_loader||[]).push([[3834],{3834:(e,a,s)=>{s.d(a,{createPacketServices:()=>c.$});var c=s(8569);s(9089)}}]);
