@@ -14,6 +14,7 @@ const config = {
 
     organizationName: "yeskiy",
     projectName: "rustwasm-loader",
+    trailingSlash: false,
 
     onBrokenLinks: "warn",
     onBrokenMarkdownLinks: "warn",
