@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [3.3.1](https://github.com/yeskiy/rustwasm-loader/compare/v3.3.0...v3.3.1) (2025-07-11)
+
+
+### Bug Fixes
+
+* **docs:** simplify installation guide and update Node.js version in workflow ([9bf787a](https://github.com/yeskiy/rustwasm-loader/commit/9bf787a53a0e6bc2de5745b07d48c5baa2b33320))
+
 ## [3.3.0](https://github.com/yeskiy/rustwasm-loader/compare/v3.2.0...v3.3.0) (2025-07-11)
 
 
