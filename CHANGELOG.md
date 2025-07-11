@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [3.3.0](https://github.com/yeskiy/rustwasm-loader/compare/v3.2.0...v3.3.0) (2025-07-11)
+
+
+### Features
+
+* **ci:** reintroduce and enhance CI workflow with multiple environments ([fabb08b](https://github.com/yeskiy/rustwasm-loader/commit/fabb08bf79a3f48691a5739b756c116414f4515f))
+* **docs:** add API reference and examples for rust-wasmpack-loader ([90f70b4](https://github.com/yeskiy/rustwasm-loader/commit/90f70b4ef95da35e3367aea04977f4240f233d3b))
+* **docs:** add dedicated workflow for documentation deployment ([84fe184](https://github.com/yeskiy/rustwasm-loader/commit/84fe184f270a7def13d63cb16d82fae2ed52e822))
+* **docs:** update links to use absolute URLs for better accessibility ([ba901dc](https://github.com/yeskiy/rustwasm-loader/commit/ba901dc2839dd1757f280247b44f54387063f704))
+* **docs:** update navigation links and enhance workflow permissions ([b6c906c](https://github.com/yeskiy/rustwasm-loader/commit/b6c906cdd76541a2b00771b03f9b18bdb22c399b))
+* **docs:** update navigation links and enhance workflow permissions ([e514157](https://github.com/yeskiy/rustwasm-loader/commit/e5141579c0beb179beebdde153da7881751ce142))
+* **docs:** update navigation links and enhance workflow permissions ([b01f43a](https://github.com/yeskiy/rustwasm-loader/commit/b01f43a609337f3fc1b232f64ac7e307ba709cad))
+* **docs:** update navigation links and enhance workflow permissions ([25c3ae4](https://github.com/yeskiy/rustwasm-loader/commit/25c3ae4287fc81efff3b01e34a446e19a68d4af3))
+* **docs:** update navigation links and enhance workflow permissions ([5cb3e3c](https://github.com/yeskiy/rustwasm-loader/commit/5cb3e3c123fdbf6676f471b098c0d99b2bc2ac36))
+* **docs:** update Node.js version and fix build command in workflow ([6d8376e](https://github.com/yeskiy/rustwasm-loader/commit/6d8376e16be1a65f6cf56cf41cec41038438e861))
+* **docs:** update workflow for GitHub Pages deployment ([6213ee5](https://github.com/yeskiy/rustwasm-loader/commit/6213ee5b9df6a0289583876035cd0125e24e38b2))
+* **workspace:** disable fail-fast in CI matrix and update README ([85c77fa](https://github.com/yeskiy/rustwasm-loader/commit/85c77fa42513777be24a0d8a87d211b3801e3489))
+* **workspace:** expand CI matrix and update dependencies ([e7ff185](https://github.com/yeskiy/rustwasm-loader/commit/e7ff1856f3edbe5b1a12eaa09f93ef9c4a2ead2f))
+
 ## [3.2.0](https://github.com/yeskiy/rustwasm-loader/compare/v3.1.3...v3.2.0) (2025-03-04)
 
 
