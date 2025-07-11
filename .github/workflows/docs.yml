@@ -3,7 +3,7 @@ name: Documentation
 permissions:
     contents: write
     pages: write
-
+    id-token: write
 
 on:
     push:
@@ -21,11 +21,6 @@ on:
 jobs:
     deploy:
         runs-on: ubuntu-latest
-        permissions:
-            contents: read
-            pages: write
-            id-token: write
-        
         environment:
             name: github-pages
             url: ${{ steps.deployment.outputs.page_url }}
@@ -33,6 +28,8 @@ jobs:
         steps:
             -   name: Checkout
                 uses: actions/checkout@v4
+                with:
+                    fetch-depth: 0
 
             -   name: Setup Node.js
                 uses: actions/setup-node@v4
@@ -54,3 +51,5 @@ jobs:
                 with:
                     github_token: ${{ secrets.GITHUB_TOKEN }}
                     publish_dir: ./build
+                    force_orphan: true
+                    full_commit_message: "Deploy: ${{ github.sha }}"
