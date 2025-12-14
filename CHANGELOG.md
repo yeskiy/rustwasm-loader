@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [3.3.2](https://github.com/yeskiy/rustwasm-loader/compare/v3.3.1...v3.3.2) (2025-12-14)
+
+
+### Bug Fixes
+
+* **docs:** correct example links in the documentation ([62d96c0](https://github.com/yeskiy/rustwasm-loader/commit/62d96c0ca51bad66908a2b85b617728fe0dab12b))
+
 ## [3.3.1](https://github.com/yeskiy/rustwasm-loader/compare/v3.3.0...v3.3.1) (2025-07-11)
 
 
