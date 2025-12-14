@@ -7,10 +7,10 @@ example includes complete setup instructions, configuration files, and working c
 
 ### 🌐 Web Applications
 
-- **[Web Webpack](./web-webpack)** - Browser applications using Webpack
+- **[Web Webpack](./examples/web-webpack)** - Browser applications using Webpack
 
 ### 🚀 Backend/CLI Applications
 
-- **[Node.js Webpack](./node-webpack)** - Server-side applications using Webpack
-- **[⚡Bun](./node-bun)** - High-performance applications using Bun runtime
+- **[Node.js Webpack](./examples/node-webpack)** - Server-side applications using Webpack
+- **[⚡Bun](./examples/node-bun)** - High-performance applications using Bun runtime
 
