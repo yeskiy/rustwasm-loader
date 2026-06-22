@@ -23,6 +23,7 @@ const sidebars = {
                 "docs/examples/esbuild",
                 "docs/examples/rspack",
                 "docs/examples/rollup",
+                "docs/examples/vite",
             ],
         },
         {

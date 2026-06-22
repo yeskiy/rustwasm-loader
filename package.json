@@ -5,7 +5,7 @@
     "main": "./src/index.js",
     "scripts": {
         "release": "npx commit-and-tag-version && npm run postrelease",
-        "postrelease": "cd ./example/node-webpack && npm i && cd ../../ && cd ./example/web-webpack && npm i && cd ../../ && cd ./example/node-bun && npm i && cd ../../ && cd ./example/esbuild && npm i && cd ../../ && cd ./example/rspack && npm i && cd ../../ && cd ./example/rollup && npm i",
+        "postrelease": "cd ./example/node-webpack && npm i && cd ../../ && cd ./example/web-webpack && npm i && cd ../../ && cd ./example/node-bun && npm i && cd ../../ && cd ./example/esbuild && npm i && cd ../../ && cd ./example/rspack && npm i && cd ../../ && cd ./example/rollup && npm i && cd ../../ && cd ./example/vite && npm i",
         "docs:start": "docusaurus start --config ./docs/docusaurus.config.js",
         "docs:build": "docusaurus build --config ./docs/docusaurus.config.js",
         "docs:swizzle": "docusaurus swizzle --config ./docs/docusaurus.config.js",
@@ -104,6 +104,7 @@
         "bun": "1.x.x",
         "esbuild": ">=0.17.0",
         "rollup": ">=4.0.0",
+        "vite": ">=5.0.0",
         "webpack": "^5.0.0"
     },
     "peerDependenciesMeta": {
@@ -117,6 +118,9 @@
             "optional": true
         },
         "rollup": {
+            "optional": true
+        },
+        "vite": {
             "optional": true
         },
         "webpack": {

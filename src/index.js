@@ -9,6 +9,7 @@ const pack = require("./pack");
 const bun = require("./bun");
 const esbuild = require("./esbuild");
 const rollup = require("./rollup");
+const vite = require("./vite");
 
 const optionsSchema = {
     type: "object",
@@ -184,4 +185,5 @@ async function rustWasmLoader(source) {
 rustWasmLoader.bun = bun;
 rustWasmLoader.esbuild = esbuild;
 rustWasmLoader.rollup = rollup;
+rustWasmLoader.vite = vite;
 module.exports = rustWasmLoader;

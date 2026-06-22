@@ -144,14 +144,18 @@ rustWasmLoader.rollup({
 
 ## Using It with Vite
 
-Vite builds on Rollup, so the same plugin slots into a Vite config without changes:
+Vite builds on Rollup, so this plugin works inside a Vite config. For Vite,
+prefer the dedicated `rustWasmLoader.vite` plugin: it picks the `node` strategy
+for SSR and the `web` strategy for the client automatically, where this Rollup
+plugin uses a single fixed `target`. See the [Vite example](./vite) for the
+full setup.
 
 ```javascript title="vite.config.mjs"
 import { defineConfig } from "vite";
 import rustWasmLoader from "rust-wasmpack-loader";
 
 export default defineConfig({
-    plugins: [rustWasmLoader.rollup({ target: "web" })],
+    plugins: [rustWasmLoader.vite()],
 });
 ```
 
