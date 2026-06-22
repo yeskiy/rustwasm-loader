@@ -1,31 +1,33 @@
-/* eslint-disable import/no-extraneous-dependencies,import/no-unresolved */
-import prettier from "eslint-plugin-prettier";
-import stylistic from "@stylistic/eslint-plugin";
-import globals from "globals";
-import tsParser from "@typescript-eslint/parser";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import js from "@eslint/js";
-import { FlatCompat } from "@eslint/eslintrc";
+import { defineConfig, globalIgnores } from "eslint/config";
+import { configs, plugins } from "eslint-config-airbnb-extended";
+import { rules as prettierConfigRules } from "eslint-config-prettier";
+import prettierPlugin from "eslint-plugin-prettier";
+import globals from "globals";
 
-const compat = new FlatCompat({
-    baseDirectory: path.dirname(fileURLToPath(import.meta.url)),
-    recommendedConfig: js.configs.recommended,
-    allConfig: js.configs.all,
-});
+export default defineConfig([
+    globalIgnores([
+        "**/node_modules/**",
+        "**/dist/**",
+        "**/build/**",
+        "**/target/**",
+        ".docusaurus/**",
+    ]),
 
-export default [
-    ...compat.extends(
-        "prettier",
-        "airbnb-base",
-        "@kesills/eslint-config-airbnb-typescript/base",
-    ),
+    { name: "js/config", ...js.configs.recommended },
+
+    // --- Airbnb base (JS rules + import-x + stylistic), no React ---
+    plugins.stylistic,
+    plugins.importX,
+    ...configs.base.recommended,
+    plugins.node,
+    ...configs.node.recommended,
+    plugins.typescriptEslint,
+    ...configs.base.typescript,
+
+    // --- Project language options ---
     {
-        plugins: {
-            prettier,
-            "@stylistic": stylistic,
-        },
-
+        name: "project/language-options",
         languageOptions: {
             globals: {
                 ...globals.node,
@@ -34,52 +36,80 @@ export default [
                 SharedArrayBuffer: "readonly",
                 logger: "readonly",
             },
-
-            parser: tsParser,
-            ecmaVersion: 2023,
-            sourceType: "commonjs",
-
-            parserOptions: {
-                project: ["./tsconfig.json"],
-            },
         },
+    },
+    {
+        name: "project/commonjs-sources",
+        files: [
+            "src/**/*.js",
+            "*.cjs",
+            "docs/**/*.js",
+            "example/**/webpack.config.js",
+            "example/**/test.webpack.config.js",
+        ],
+        languageOptions: {
+            sourceType: "commonjs",
+        },
+    },
 
+    // --- Prettier (must come last to disable conflicting formatting rules) ---
+    {
+        name: "prettier/plugin",
+        plugins: { prettier: prettierPlugin },
+    },
+    {
+        name: "prettier/config",
         rules: {
-            "prettier/prettier": [
-                "warn",
-                {
-                    endOfLine: "auto",
-                },
-            ],
+            ...prettierConfigRules,
+            "prettier/prettier": ["warn", { endOfLine: "auto" }],
+        },
+    },
 
-            "operator-linebreak": "off",
-            "linebreak-style": "off",
-            "@stylistic/semi": ["error", "always"],
-            indent: "off",
-            "@stylistic/indent": "off",
-            "@stylistic/comma-dangle": "off",
+    // --- Project rule overrides (kept relaxed so src/ stays clean) ---
+    {
+        name: "project/rules",
+        rules: {
             "no-console": "off",
-            "@stylistic/no-unused-expressions": "off",
-            "@stylistic/quotes": "off",
             eqeqeq: "warn",
-            "wrap-iife": "off",
             "no-underscore-dangle": "off",
-            "implicit-arrow-linebreak": "off",
-            "function-paren-newline": "off",
-            "nonblock-statement-body-position": "off",
             curly: "off",
-            "object-curly-newline": "off",
-            "@stylistic/object-curly-spacing": "off",
             "no-async-promise-executor": "off",
-            "max-len": "off",
             "no-await-in-loop": "off",
             "no-restricted-syntax": "off",
             "no-plusplus": "off",
             camelcase: "warn",
-            "no-confusing-arrow": "off",
             "no-constructor-return": "off",
             "no-return-assign": "off",
             "max-classes-per-file": "off",
+            "n/no-sync": "off",
+            "n/no-process-exit": "off",
+            "n/prefer-node-protocol": "off",
+            "n/global-require": "off",
         },
     },
-];
+
+    // --- Example test files (Bun/Jest runtime globals, virtual modules) ---
+    {
+        name: "project/example-tests",
+        files: ["example/**/*.test.js"],
+        languageOptions: {
+            globals: {
+                ...globals.jest,
+                Bun: "readonly",
+            },
+        },
+        rules: {
+            "import-x/no-unresolved": "off",
+            "import-x/no-extraneous-dependencies": "off",
+        },
+    },
+
+    // --- Docs config (Docusaurus tooling lives in devDependencies) ---
+    {
+        name: "project/docs",
+        files: ["docs/**/*.js"],
+        rules: {
+            "import-x/no-extraneous-dependencies": "off",
+        },
+    },
+]);
