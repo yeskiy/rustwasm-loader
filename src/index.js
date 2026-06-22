@@ -62,7 +62,8 @@ async function rustWasmLoader(source) {
     // Get all required params from webpack
     const params = {
         fileNameStruct:
-            this._compilation.outputOptions.webassemblyModuleFilename,
+            this._compilation.outputOptions.webassemblyModuleFilename ||
+            "[hash].module.wasm",
         baseFolder: this._compilation.options.context,
         resourcePath: this.resourcePath,
         target: this.target,

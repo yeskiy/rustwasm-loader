@@ -21,6 +21,7 @@ const sidebars = {
                 "docs/examples/node-webpack",
                 "docs/examples/node-bun",
                 "docs/examples/esbuild",
+                "docs/examples/rspack",
             ],
         },
         {

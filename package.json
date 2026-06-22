@@ -5,7 +5,7 @@
     "main": "./src/index.js",
     "scripts": {
         "release": "npx commit-and-tag-version && npm run postrelease",
-        "postrelease": "cd ./example/node-webpack && npm i && cd ../../ && cd ./example/web-webpack && npm i && cd ../../ && cd ./example/node-bun && npm i && cd ../../ && cd ./example/esbuild && npm i",
+        "postrelease": "cd ./example/node-webpack && npm i && cd ../../ && cd ./example/web-webpack && npm i && cd ../../ && cd ./example/node-bun && npm i && cd ../../ && cd ./example/esbuild && npm i && cd ../../ && cd ./example/rspack && npm i",
         "docs:start": "docusaurus start --config ./docs/docusaurus.config.js",
         "docs:build": "docusaurus build --config ./docs/docusaurus.config.js",
         "docs:swizzle": "docusaurus swizzle --config ./docs/docusaurus.config.js",
@@ -100,11 +100,15 @@
         "which": "^7.0.0"
     },
     "peerDependencies": {
+        "@rspack/core": ">=1.0.0",
         "bun": "1.x.x",
         "esbuild": ">=0.17.0",
         "webpack": "^5.0.0"
     },
     "peerDependenciesMeta": {
+        "@rspack/core": {
+            "optional": true
+        },
         "bun": {
             "optional": true
         },
