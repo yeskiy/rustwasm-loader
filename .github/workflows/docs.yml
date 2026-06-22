@@ -18,10 +18,10 @@ jobs:
         name: Build Docusaurus
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v4
+            -   uses: actions/checkout@v5
                 with:
                     fetch-depth: 0
-            -   uses: actions/setup-node@v4
+            -   uses: actions/setup-node@v5
                 with:
                     node-version: 20
                     cache: npm
@@ -29,13 +29,13 @@ jobs:
             -   name: Install dependencies
                 run: |
                     npm ci
-                    npm install @docusaurus/core @docusaurus/module-type-aliases @docusaurus/preset-classic @docusaurus/tsconfig @docusaurus/types @docusaurus/theme-mermaid
+                    npm install @docusaurus/core@3.10.1 @docusaurus/module-type-aliases@3.10.1 @docusaurus/preset-classic@3.10.1 @docusaurus/tsconfig@3.10.1 @docusaurus/types@3.10.1 @docusaurus/theme-mermaid@3.10.1 @mermaid-js/layout-elk@0.1.9
             
             -   name: Build website
                 run: npm run docs:build
 
             -   name: Upload Build Artifact
-                uses: actions/upload-pages-artifact@v3
+                uses: actions/upload-pages-artifact@v5
                 with:
                     path: build
     
@@ -55,4 +55,4 @@ jobs:
         steps:
             -   name: Deploy to GitHub Pages
                 id: deployment
-                uses: actions/deploy-pages@v4
+                uses: actions/deploy-pages@v5
