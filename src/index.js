@@ -62,7 +62,8 @@ async function rustWasmLoader(source) {
     // Get all required params from webpack
     const params = {
         fileNameStruct:
-            this._compilation.outputOptions.webassemblyModuleFilename,
+            this._compilation.outputOptions.webassemblyModuleFilename ||
+            "[hash].module.wasm",
         baseFolder: this._compilation.options.context,
         resourcePath: this.resourcePath,
         target: this.target,
@@ -118,28 +119,33 @@ async function rustWasmLoader(source) {
         );
 
         // Find publicPath
-        const webpackPublicPath = this._compilation.getAssetPath(
-            this._compilation.outputOptions.publicPath,
-            { hash: this._compilation.hash },
-        );
         const publicPath =
-            webpackPublicPath.trim() !== "" && webpackPublicPath !== "auto"
-                ? webpackPublicPath
-                : path
-                      .relative(
-                          path.resolve(
-                              this._compilation.options.output.path,
-                              path.dirname(
-                                  this._compilation.getAssetPath(
-                                      wasmName,
-                                      this.context,
-                                  ),
-                              ),
-                          ),
-                          this._compilation.options.output.path,
-                      )
-                      .split(path.sep)
-                      .join("/");
+            params.target === "web"
+                ? (() => {
+                      const webpackPublicPath = this._compilation.getAssetPath(
+                          this._compilation.outputOptions.publicPath,
+                          { hash: this._compilation.hash || "" },
+                      );
+                      return webpackPublicPath.trim() !== "" &&
+                          webpackPublicPath !== "auto"
+                          ? webpackPublicPath
+                          : path
+                                .relative(
+                                    path.resolve(
+                                        this._compilation.options.output.path,
+                                        path.dirname(
+                                            this._compilation.getAssetPath(
+                                                wasmName,
+                                                this.context,
+                                            ),
+                                        ),
+                                    ),
+                                    this._compilation.options.output.path,
+                                )
+                                .split(path.sep)
+                                .join("/");
+                  })()
+                : "";
 
         const content = await pack(
             {

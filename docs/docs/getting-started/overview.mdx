@@ -31,6 +31,7 @@ graph LR
 - **Hot reload support** during development
 - **TypeScript integration** with generated type definitions
 - **Webpack 5+** support with explicit targets (web, node)
+- **Rspack** support through the same Webpack-compatible loader
 - **Bun runtime** compatibility for modern JavaScript environments
 - **esbuild plugin** for fast bundling on Node.js or the browser
 
@@ -53,12 +54,14 @@ graph LR
 
 ## Supported Targets
 
-| Target       | Webpack           | Bun | esbuild |
-|--------------|-------------------|-----|---------|
-| `web`        | ✅                 | ❌   | ✅       |
-| `node`       | ✅                 | ✅   | ✅       |
-| `node-async` | ✅                 | ✅   | ❌       |
-| `electron`   | ⚠️ *(not tested)* | ❌   | ❌       |
+| Target       | Webpack           | Rspack            | Bun | esbuild |
+|--------------|-------------------|-------------------|-----|---------|
+| `web`        | ✅                 | ✅                 | ❌   | ✅       |
+| `node`       | ✅                 | ✅                 | ✅   | ✅       |
+| `node-async` | ✅                 | ✅                 | ✅   | ❌       |
+| `electron`   | ⚠️ *(not tested)* | ⚠️ *(not tested)* | ❌   | ❌       |
+
+Rspack reuses the Webpack loader context, so the loader works with it through the same configuration.
 
 ## Comparison with Alternatives
 
@@ -96,7 +99,7 @@ graph LR
 - Offering **native Bun runtime support** (unique in the ecosystem)
 - Providing **automatic Cargo.toml discovery** up the directory tree
 - Requiring **zero configuration** for basic usage
-- Supporting **Webpack, Bun, and esbuild** from a single package
+- Supporting **Webpack, Rspack, Bun, and esbuild** from a single package
 
 **Alternative approaches:**
 - **Manual wasm-pack**: Requires separate build steps and manual integration

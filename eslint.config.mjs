@@ -44,8 +44,7 @@ export default defineConfig([
             "src/**/*.js",
             "*.cjs",
             "docs/**/*.js",
-            "example/**/webpack.config.js",
-            "example/**/test.webpack.config.js",
+            "example/**/*.config.js",
         ],
         languageOptions: {
             sourceType: "commonjs",
@@ -113,10 +112,10 @@ export default defineConfig([
         },
     },
 
-    // --- Example build scripts (resolve deps only after the example is installed) ---
+    // --- Example build scripts and configs (resolve deps only after the example is installed) ---
     {
         name: "project/example-build-scripts",
-        files: ["example/**/build.mjs"],
+        files: ["example/**/build.mjs", "example/**/*.config.js"],
         rules: {
             "import-x/no-unresolved": "off",
             "import-x/no-extraneous-dependencies": "off",
