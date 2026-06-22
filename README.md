@@ -18,6 +18,8 @@ rust-wasmpack-loader is a native WASM loader for `.rs` (Rust) resources that wor
 - [**Bun**](https://bun.sh/) runtime (node target only)
 - [**esbuild**](https://esbuild.github.io/) plugin (`node` and `web` targets, inline WASM)
 - [**Rollup**](https://rollupjs.org/) plugin (`node` and `web` targets, inline WASM)
+- [**Vite**](https://vite.dev/) plugin (SSR uses the `node` strategy, the client uses `web`, with an emitted `.wasm`
+  asset on production builds)
 
 ## Key Features
 
@@ -34,6 +36,8 @@ rust-wasmpack-loader is a native WASM loader for `.rs` (Rust) resources that wor
 📦 **esbuild Plugin** — First-class esbuild plugin for `node` and `web` builds
 
 📦 **Rollup Plugin** — First-class Rollup plugin for `node` and `web` builds
+
+📦 **Vite Plugin** — SSR and client builds from one `.rs` import (`node` strategy for the server, `web` for the client)
 
 ## Why Use rust-wasmpack-loader?
 
@@ -91,6 +95,8 @@ better understanding of how the loader works with different setups:
   browser
 - **[Rollup](https://github.com/yeskiy/rustwasm-loader/tree/main/example/rollup)** - Bundling for Node.js or the browser
   using the Rollup plugin
+- **[Vite](https://github.com/yeskiy/rustwasm-loader/tree/main/example/vite)** - SSR and client builds using the Vite
+  plugin
 
 ## Contributing
 

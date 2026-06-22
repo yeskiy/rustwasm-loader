@@ -1,0 +1,14 @@
+{
+    "type": "module",
+    "engines": {
+        "node": ">=22.22.2"
+    },
+    "scripts": {
+        "build": "vite build",
+        "test": "node --test src/index.test.js"
+    },
+    "devDependencies": {
+        "rust-wasmpack-loader": "file:../..",
+        "vite": "^8.0.0"
+    }
+}
