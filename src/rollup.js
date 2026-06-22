@@ -22,7 +22,7 @@ const optionsSchema = {
 
 // Rollup passes the resolved module id, which may carry a `?query` or `#hash`
 // suffix added by other plugins. Strip it before testing the extension.
-const isRustModule = (id) => /\.rs$/.test(id.split("?")[0].split("#")[0]);
+const isRustModule = (id) => id.split("?")[0].split("#")[0].endsWith(".rs");
 
 /**
  * Builds a Rollup plugin that compiles `.rs` modules to inline-wasm JavaScript.
