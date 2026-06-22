@@ -19,17 +19,17 @@ Before you can use rust-wasmpack-loader, you need to set up your development env
 
 ### Version Compatibility
 
-| Tool    | Minimum Version | Recommended |
-|---------|-----------------|-------------|
-| Node.js | 18.0.0          | 20.x.x      |
-| Rust    | 1.30.0          | >1.85.0     |
-| npm     | 10.0.0          | Latest      |
+| Tool    | Minimum Version | Recommended   |
+|---------|-----------------|---------------|
+| Node.js | 22.22.2         | 22.x.x (LTS)  |
+| Rust    | 1.88.0          | latest stable |
+| npm     | 10.0.0          | Latest        |
 
 ## Required Software
 
 ### 1. Node.js
 
-rust-wasmpack-loader requires Node.js version 18.0.0 or higher.
+rust-wasmpack-loader requires Node.js version 22.22.2 or higher.
 
 :::tip Best Practice
 We recommend using [Volta](https://volta.sh/) for managing Node.js versions. Volta helps ensure consistent Node.js environments across development and CI/CD systems.
@@ -43,7 +43,7 @@ We recommend using [Volta](https://volta.sh/) for managing Node.js versions. Vol
         ```bash
         # Using Volta (recommended)
         curl https://get.volta.sh | bash
-        volta install node@20
+        volta install node@22
 
         # Using winget
         winget install OpenJS.NodeJS
@@ -60,13 +60,13 @@ We recommend using [Volta](https://volta.sh/) for managing Node.js versions. Vol
         ```bash
         # Using Volta (recommended)
         curl https://get.volta.sh | bash
-        volta install node@20
+        volta install node@22
 
         # Using Homebrew
         brew install node
 
         # Using MacPorts
-        sudo port install nodejs20
+        sudo port install nodejs22
 
         # Or download from https://nodejs.org/
         ```
@@ -77,13 +77,13 @@ We recommend using [Volta](https://volta.sh/) for managing Node.js versions. Vol
         ```bash
         # Using Volta (recommended)
         curl https://get.volta.sh | bash
-        volta install node@20
+        volta install node@22
         ```
 
         **Ubuntu/Debian:**
         ```bash
         # Using NodeSource repository
-        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
         sudo apt-get install -y nodejs
 
         # Using snap
@@ -93,7 +93,7 @@ We recommend using [Volta](https://volta.sh/) for managing Node.js versions. Vol
         **CentOS/RHEL:**
         ```bash
         # Using NodeSource repository
-        curl -fsSL https://rpm.nodesource.com/setup_20.x | sudo bash -
+        curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash -
         sudo yum install -y nodejs npm
         ```
 
@@ -103,7 +103,7 @@ We recommend using [Volta](https://volta.sh/) for managing Node.js versions. Vol
 #### Verify Installation
 
 ```bash
-node --version  # Should show v20.0.0 or higher
+node --version  # Should show v22.22.2 or higher
 npm --version   # Should show 10.0.0 or higher
 
 # If using Volta
@@ -112,7 +112,7 @@ volta list  # Should show the installed Node.js version
 
 ### 2. Rust
 
-Rust is required to compile your `.rs` files to WebAssembly.
+Rust is required to compile your `.rs` files to WebAssembly. Building `.rs` sources uses wasm-pack 0.15, which requires Rust 1.88.0 or higher.
 
 #### Installation
 
@@ -148,8 +148,8 @@ Rust is required to compile your `.rs` files to WebAssembly.
 #### Verify Installation
 
 ```bash
-rustc --version    # Should show 1.30.0 or higher
-cargo --version    # Should show 1.30.0 or higher
+rustc --version    # Should show 1.88.0 or higher
+cargo --version    # Should show 1.88.0 or higher
 ```
 ---
 
