@@ -11,6 +11,9 @@ section documents all available options, their types, default values, and usage 
 
 ```typescript
 interface LoaderOptions {
+    // Override webpack's target ("web" or "node")
+    target?: "web" | "node";
+
     // Target-specific options
     web?: WebOptions;
     node?: NodeOptions;
@@ -25,13 +28,14 @@ interface LoaderOptions {
 
 ## Quick Reference
 
-| Option                 | Type       | Default  | Description               |
-|------------------------|------------|----------|---------------------------|
-| `web.asyncLoading`     | `boolean`  | `false`  | Enable async WASM loading |
-| `web.publicPath`       | `boolean`  | `true`   | Use webpack public path   |
-| `web.wasmPathModifier` | `string[]` | `["/"]`  | Modify WASM request path  |
-| `node.bundle`          | `boolean`  | `false`  | Bundle WASM in JS file    |
-| `logLevel`             | `string`   | `"info"` | Logging verbosity         |
+| Option                 | Type       | Default        | Description                 |
+|------------------------|------------|----------------|-----------------------------|
+| `target`               | `string`   | webpack target | Override the build target   |
+| `web.asyncLoading`     | `boolean`  | `false`        | Enable async WASM loading   |
+| `web.publicPath`       | `boolean`  | `true`         | Use webpack public path     |
+| `web.wasmPathModifier` | `string[]` | `["/"]`        | Modify WASM request path    |
+| `node.bundle`          | `boolean`  | `false`        | Bundle WASM in JS file      |
+| `logLevel`             | `string`   | `"info"`       | Logging verbosity           |
 
 ## Target Environments
 
@@ -126,9 +130,10 @@ plugin(loader.bun({
 
 #### Global Options
 
-| Option     | Type                                                  | Default  | Description               |
-|------------|-------------------------------------------------------|----------|---------------------------|
-| `logLevel` | `"verbose" \| "info" \| "warn" \| "error" \| "quiet"` | `"info"` | Control logging verbosity |
+| Option     | Type                                                  | Default          | Description                    |
+|------------|-------------------------------------------------------|------------------|--------------------------------|
+| `target`   | `"web" \| "node"`                                     | webpack `target` | Override the build target      |
+| `logLevel` | `"verbose" \| "info" \| "warn" \| "error" \| "quiet"` | `"info"`         | Control logging verbosity      |
 
 ### Bun Options
 
@@ -137,6 +142,27 @@ plugin(loader.bun({
 | `logLevel` | `"verbose" \| "info" \| "warn" \| "error" \| "quiet"` | `"info"` | Control logging verbosity |
 
 ## Detailed Option Reference
+
+### `target`
+
+**Type:** `"web" | "node"`  
+**Default:** webpack's `target`  
+**Target:** Webpack
+
+Overrides the build target the loader derives from webpack's own `target`. Set it
+when webpack's target does not map cleanly to `web` or `node`, or when a single
+config compiles `.rs` files for a different environment than the rest of the build.
+When omitted, the loader uses webpack's `target` as before.
+
+```javascript
+{
+    // Force the node build strategy regardless of webpack's target
+    target: "node",
+    node: {
+        bundle: true
+    }
+}
+```
 
 ### `web.asyncLoading`
 
