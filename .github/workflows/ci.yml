@@ -15,7 +15,7 @@ jobs:
                 os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest ]
                 node: [ 22, 24 ]
                 rust: [ "1.88.0", "1.93.0" ]
-                test: [ example/node-bun, example/node-webpack ]
+                test: [ example/node-bun, example/node-webpack, example/esbuild ]
         steps:
             -   uses: actions/checkout@v5
             -   uses: actions/setup-node@v5

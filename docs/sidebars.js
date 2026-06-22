@@ -20,6 +20,7 @@ const sidebars = {
                 "docs/examples/web-webpack",
                 "docs/examples/node-webpack",
                 "docs/examples/node-bun",
+                "docs/examples/esbuild",
             ],
         },
         {

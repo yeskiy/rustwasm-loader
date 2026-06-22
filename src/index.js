@@ -7,6 +7,7 @@ const schemaUtils = require("schema-utils");
 const { merge } = require("lodash");
 const pack = require("./pack");
 const bun = require("./bun");
+const esbuild = require("./esbuild");
 
 const optionsSchema = {
     type: "object",
@@ -164,4 +165,5 @@ async function rustWasmLoader(source) {
 }
 
 rustWasmLoader.bun = bun;
+rustWasmLoader.esbuild = esbuild;
 module.exports = rustWasmLoader;

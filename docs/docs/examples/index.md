@@ -13,4 +13,5 @@ example includes complete setup instructions, configuration files, and working c
 
 - **[Node.js Webpack](./examples/node-webpack)** - Server-side applications using Webpack
 - **[⚡Bun](./examples/node-bun)** - High-performance applications using Bun runtime
+- **[esbuild](./examples/esbuild)** - Fast bundling for Node.js or the browser using esbuild
 

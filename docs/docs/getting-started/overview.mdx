@@ -32,6 +32,7 @@ graph LR
 - **TypeScript integration** with generated type definitions
 - **Webpack 5+** support with explicit targets (web, node)
 - **Bun runtime** compatibility for modern JavaScript environments
+- **esbuild plugin** for fast bundling on Node.js or the browser
 
 ## Use Cases
 
@@ -52,12 +53,12 @@ graph LR
 
 ## Supported Targets
 
-| Target       | Webpack           | Bun |
-|--------------|-------------------|-----|
-| `web`        | ✅                 | ❌   |
-| `node`       | ✅                 | ✅   |
-| `node-async` | ✅                 | ✅   |
-| `electron`   | ⚠️ *(not tested)* | ❌   |
+| Target       | Webpack           | Bun | esbuild |
+|--------------|-------------------|-----|---------|
+| `web`        | ✅                 | ❌   | ✅       |
+| `node`       | ✅                 | ✅   | ✅       |
+| `node-async` | ✅                 | ✅   | ❌       |
+| `electron`   | ⚠️ *(not tested)* | ❌   | ❌       |
 
 ## Comparison with Alternatives
 
@@ -78,7 +79,7 @@ graph LR
 | **Bun runtime support**       | ✅                    | 🤚               | ❌                           | ❌                | ❌           | 🤚           | 🤚               |
 | **Webpack integration**       | ✅                    | ❌                | ✅                           | ❌                | ❌           | ❌            | ⚠️               |
 | **Vite/Rollup integration**   | ❌                    | ❌                | ❌                           | ✅                | ✅           | ❌            | ⚠️               |
-| **esbuild integration**       | ❌                    | ❌                | ❌                           | ❌                | ❌           | ✅            | ⚠️               |
+| **esbuild integration**       | ✅                    | ❌                | ❌                           | ❌                | ❌           | ✅            | ⚠️               |
 | **TypeScript bindings**       | ✅                    | ✅                | ✅                           | ✅                | ✅           | ✅            | ❌                |
 | **Zero configuration**        | ✅                    | ❌                | ❌                           | ❌                | ❌           | ❌            | ❌                |
 | **Async WASM loading**        | ✅                    | ✅                | ✅                           | ✅                | ✅           | ✅            | ✅                |
@@ -95,7 +96,7 @@ graph LR
 - Offering **native Bun runtime support** (unique in the ecosystem)
 - Providing **automatic Cargo.toml discovery** up the directory tree
 - Requiring **zero configuration** for basic usage
-- Supporting both **Webpack and Bun** in a single package
+- Supporting **Webpack, Bun, and esbuild** from a single package
 
 **Alternative approaches:**
 - **Manual wasm-pack**: Requires separate build steps and manual integration

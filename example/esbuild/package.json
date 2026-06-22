@@ -1,0 +1,15 @@
+{
+    "type": "module",
+    "engines": {
+        "node": ">=22.22.2"
+    },
+    "scripts": {
+        "build": "node build.mjs",
+        "start": "node build.mjs && node dist/index.js",
+        "test": "node build.mjs && node --test dist/index.test.js"
+    },
+    "devDependencies": {
+        "esbuild": "^0.25.0",
+        "rust-wasmpack-loader": "file:../.."
+    }
+}

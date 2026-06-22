@@ -112,4 +112,14 @@ export default defineConfig([
             "import-x/no-extraneous-dependencies": "off",
         },
     },
+
+    // --- Example build scripts (resolve deps only after the example is installed) ---
+    {
+        name: "project/example-build-scripts",
+        files: ["example/**/build.mjs"],
+        rules: {
+            "import-x/no-unresolved": "off",
+            "import-x/no-extraneous-dependencies": "off",
+        },
+    },
 ]);
