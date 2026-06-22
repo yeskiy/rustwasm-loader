@@ -1,3 +1,6 @@
 /dist
+/dist-ssr
+/dist-client
+/pkg
 /node_modules
 /target

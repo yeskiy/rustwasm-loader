@@ -9,6 +9,9 @@ export default defineConfig([
     globalIgnores([
         "**/node_modules/**",
         "**/dist/**",
+        "**/dist-ssr/**",
+        "**/dist-client/**",
+        "**/pkg/**",
         "**/build/**",
         "**/target/**",
         ".docusaurus/**",

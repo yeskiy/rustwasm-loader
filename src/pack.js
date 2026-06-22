@@ -240,10 +240,10 @@ module.exports = async function pack(params, emitFile) {
                 .map((item) => item.split("function")[1].split("(")[0])
                 .map((item) => `${item}:${item}`)
                 .join(",")}};`;
-            // `fetch` reuses wasm-bindgen's own loader by feeding the URL into the
-            // existing `import.meta.url` input slot, then awaiting init() -> Promise
-            // default export (same shape as the web async path). `fs` strips the
-            // bootstrap and inits synchronously from the URL read off disk.
+            // `fetch` reuses wasm-bindgen's own loader: it swaps the default
+            // `import.meta.url` URL for the host asset URL, then awaits __wbg_init()
+            // so the wasm is fetched at runtime (Promise default export). `fs` strips
+            // the bootstrap and inits synchronously from the URL read off disk.
             const body =
                 strategy === "fetch"
                     ? (() => {
@@ -252,7 +252,7 @@ module.exports = async function pack(params, emitFile) {
                                   !!item.match(/import.meta.url/g)?.length,
                           );
                           lines[badImportIndex] =
-                              `       input = ${urlExpression}`;
+                              `        module_or_path = ${urlExpression};`;
                           return [
                               ...lines.slice(
                                   0,
@@ -263,7 +263,7 @@ module.exports = async function pack(params, emitFile) {
                                   ),
                               ),
                               exportedFunctions,
-                              `export default new Promise(async (resolve, reject)=> { try{await init(); resolve(${exportGenExpr})}catch(e){reject(e)}})`,
+                              `export default new Promise(async (resolve, reject)=> { try{await __wbg_init(); resolve(${exportGenExpr})}catch(e){reject(e)}})`,
                           ];
                       })()
                     : [
