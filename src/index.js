@@ -43,6 +43,12 @@ const optionsSchema = {
             },
             additionalProperties: false,
         },
+        target: {
+            type: "string",
+            enum: ["web", "node"],
+            description:
+                "Build target (`web` or `node`). Overrides webpack's `target` when set.",
+        },
         logLevel: {
             type: "string",
             description:
@@ -67,16 +73,9 @@ async function rustWasmLoader(source) {
             "[hash].module.wasm",
         baseFolder: this._compilation.options.context,
         resourcePath: this.resourcePath,
-        target: this.target,
     };
 
     try {
-        if (constants.supportedTargets.indexOf(params.target) === -1) {
-            throw new Error(
-                `patch is not presented for this target (${params.target}). Please, create new Issue or check the documentation.`,
-            );
-        }
-
         const options = merge(
             {
                 web: {
@@ -95,6 +94,15 @@ async function rustWasmLoader(source) {
         schemaUtils.validate(optionsSchema, options, {
             name: "rust-wasmpack-loader",
         });
+
+        // Loader option wins; fall back to webpack's own target.
+        params.target = options.target ?? this.target;
+
+        if (constants.supportedTargets.indexOf(params.target) === -1) {
+            throw new Error(
+                `patch is not presented for this target (${params.target}). Please, create new Issue or check the documentation.`,
+            );
+        }
 
         const { base } = path.parse(path.normalize(params.resourcePath));
 
@@ -119,9 +127,11 @@ async function rustWasmLoader(source) {
             },
         );
 
-        // Find publicPath
+        // Resolve publicPath only for the web path that actually fetches the
+        // emitted asset at runtime; every other delivery slices it off, so it
+        // stays empty and we avoid dereferencing compilation internals.
         const publicPath =
-            params.target === "web"
+            params.target === "web" && options.web.asyncLoading
                 ? (() => {
                       const webpackPublicPath = this._compilation.getAssetPath(
                           this._compilation.outputOptions.publicPath,

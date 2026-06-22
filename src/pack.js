@@ -32,6 +32,12 @@ function logLevelSelector(level) {
  * @property {boolean} bundle - bundle the wasm file
  */
 
+/** @typedef {Object} ImportOptions
+ * @property {string} urlExpression - JS expression that resolves to the wasm URL at runtime
+ * @property {"fetch" | "fs"} strategy - how the URL is consumed (fetch for web, fs for node/SSR)
+ * @property {string} [preamble] - source prepended to the module (e.g. a `import url from "./x.wasm?url"` line)
+ */
+
 /** @typedef {Object} Options
  * @property {string} resourcePath - path to the resource
  * @property {string} baseFolder - path to the base folder
@@ -41,7 +47,29 @@ function logLevelSelector(level) {
  * @property {string} logLevel - log level of the build
  * @property {WebOptions} web - web options
  * @property {NodeOptions} node - node options
+ * @property {ImportOptions} [import] - opt-in import-based wasm delivery (host bundler supplies the URL)
  * */
+
+// Shared default-export body: spreads the named Rust exports over any remaining
+// `wasm` bindings. Identical across every delivery so the module shape matches.
+const exportGenExpr = `{...exportedFunctions, ...Object.entries(wasm).filter(([item]) => Object.keys(exportedFunctions).indexOf(item) === -1).reduce((acc, item) => ({...acc,[item[0]]: item[1]}), {})}`;
+
+// Resolves the explicit wasm-delivery strategy from the loader params. The three
+// legacy values (fetch / inline / fsread) preserve the original target+option
+// branching exactly; `import` is opt-in and only chosen when `params.import` is set.
+function selectDelivery(params) {
+    if (params.import) {
+        return "import";
+    }
+    if (params.target === "web") {
+        return params.web.asyncLoading ? "fetch" : "inline";
+    }
+    return params.node.bundle ? "inline" : "fsread";
+}
+
+// Deliveries that emit the .wasm as a standalone asset (the host reads it at
+// runtime). inline/import keep everything in the JS, so they emit nothing.
+const assetEmittingDeliveries = new Set(["fetch", "fsread"]);
 
 /**
  * pack function
@@ -55,6 +83,10 @@ module.exports = async function pack(params, emitFile) {
 
     // Set wasm build folder
     const wasmBuildSource = path.join(params.buildFolder, "pkg");
+
+    // Pick the explicit delivery strategy up front so the emit decision and the
+    // post-processing branch read from one source of truth.
+    const delivery = selectDelivery(params);
 
     // Find the nearest Cargo.toml file
     const cargoData = findNearestCargoBy(constants)(
@@ -95,10 +127,7 @@ module.exports = async function pack(params, emitFile) {
     });
 
     // Add generated .wasm binary to webpack files
-    if (
-        (params.target === "web" && params.web.asyncLoading) ||
-        (params.target === "node" && !params.node.bundle)
-    ) {
+    if (assetEmittingDeliveries.has(delivery)) {
         emitFile(
             params.wasmName,
             fs.readFileSync(path.join(wasmBuildSource, params.wasmName)),
@@ -197,6 +226,63 @@ module.exports = async function pack(params, emitFile) {
                 }`,
             ].join("\n")}`;
         },
+
+        // Import-based delivery: the host bundler (Rollup/Vite/esbuild) resolves the
+        // .wasm as an asset and hands us its URL. We strip the wasm-pack bootstrap
+        // like the other modes and init from `params.import.urlExpression`.
+        import: (generatedJs) => {
+            const { urlExpression, strategy, preamble } = params.import;
+            const lines = generatedJs.replaceAll("_bg.wasm", "").split("\n");
+            const exportedFunctions = `const exportedFunctions = {${lines
+                .filter(
+                    (item) => !!item.match(/export function .+ {$/g)?.length,
+                )
+                .map((item) => item.split("function")[1].split("(")[0])
+                .map((item) => `${item}:${item}`)
+                .join(",")}};`;
+            // `fetch` reuses wasm-bindgen's own loader by feeding the URL into the
+            // existing `import.meta.url` input slot, then awaiting init() -> Promise
+            // default export (same shape as the web async path). `fs` strips the
+            // bootstrap and inits synchronously from the URL read off disk.
+            const body =
+                strategy === "fetch"
+                    ? (() => {
+                          const badImportIndex = lines.findIndex(
+                              (item) =>
+                                  !!item.match(/import.meta.url/g)?.length,
+                          );
+                          lines[badImportIndex] =
+                              `       input = ${urlExpression}`;
+                          return [
+                              ...lines.slice(
+                                  0,
+                                  lines.findIndex(
+                                      (item) =>
+                                          !!item.match(/export { initSync }/g)
+                                              ?.length,
+                                  ),
+                              ),
+                              exportedFunctions,
+                              `export default new Promise(async (resolve, reject)=> { try{await init(); resolve(${exportGenExpr})}catch(e){reject(e)}})`,
+                          ];
+                      })()
+                    : [
+                          ...lines.slice(
+                              0,
+                              lines.findIndex(
+                                  (item) =>
+                                      !!item.match(
+                                          /async function __wbg_init\(module_or_path\) {/g,
+                                      )?.length,
+                              ),
+                          ),
+                          `const __wbg_init = {}`,
+                          `initSync({module:require('fs').readFileSync(${urlExpression})});`,
+                          exportedFunctions,
+                          `export default ${exportGenExpr}`,
+                      ];
+            return `${[...(preamble ? [preamble] : []), ...body].join("\n")}`;
+        },
     };
 
     // read generated .js file
@@ -210,5 +296,7 @@ module.exports = async function pack(params, emitFile) {
         },
     );
 
-    return patch[params.target](generatedJs);
+    return delivery === "import"
+        ? patch.import(generatedJs)
+        : patch[params.target](generatedJs);
 };
