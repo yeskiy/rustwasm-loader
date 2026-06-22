@@ -8,6 +8,7 @@ const { merge } = require("lodash");
 const pack = require("./pack");
 const bun = require("./bun");
 const esbuild = require("./esbuild");
+const rollup = require("./rollup");
 
 const optionsSchema = {
     type: "object",
@@ -172,4 +173,5 @@ async function rustWasmLoader(source) {
 
 rustWasmLoader.bun = bun;
 rustWasmLoader.esbuild = esbuild;
+rustWasmLoader.rollup = rollup;
 module.exports = rustWasmLoader;

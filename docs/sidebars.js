@@ -22,6 +22,7 @@ const sidebars = {
                 "docs/examples/node-bun",
                 "docs/examples/esbuild",
                 "docs/examples/rspack",
+                "docs/examples/rollup",
             ],
         },
         {

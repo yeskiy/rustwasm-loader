@@ -12,13 +12,13 @@ const pack = require("./pack");
  */
 
 /**
- * Shared onLoad routine for esbuild-compatible plugins (Bun and esbuild).
+ * Shared build core for non-Webpack integrations (Bun, esbuild, Rollup).
  * Reads the .rs source, builds it through wasm-pack into a per-source temp dir,
  * and returns the generated JS with the wasm inlined as bytes.
  * @param {SharedLoadParams} params
- * @returns {Promise<{ contents: string, loader: "js" }>}
+ * @returns {Promise<string>} the generated JavaScript module source
  */
-module.exports = async function sharedLoad(params) {
+async function buildRsModule(params) {
     const baseFolder = params.baseFolder || process.cwd();
     const source = fs.readFileSync(params.resourcePath, "utf8");
     const { base } = path.parse(path.normalize(params.resourcePath));
@@ -32,7 +32,7 @@ module.exports = async function sharedLoad(params) {
         fs.mkdirSync(buildFolder, { recursive: true });
     }
 
-    const contents = await pack(
+    return pack(
         {
             resourcePath: params.resourcePath,
             baseFolder,
@@ -54,9 +54,20 @@ module.exports = async function sharedLoad(params) {
             //  ignore
         },
     );
+}
 
+/**
+ * Shared onLoad routine for esbuild-compatible plugins (Bun and esbuild).
+ * Wraps {@link buildRsModule} in the `{ contents, loader }` shape esbuild expects.
+ * @param {SharedLoadParams} params
+ * @returns {Promise<{ contents: string, loader: "js" }>}
+ */
+async function sharedLoad(params) {
     return {
-        contents,
+        contents: await buildRsModule(params),
         loader: "js",
     };
-};
+}
+
+module.exports = sharedLoad;
+module.exports.buildRsModule = buildRsModule;
