@@ -120,9 +120,8 @@ async function rustWasmLoader(source) {
 
         // Find publicPath
         const publicPath =
-            params.target !== "web"
-                ? ""
-                : (() => {
+            params.target === "web"
+                ? (() => {
                       const webpackPublicPath = this._compilation.getAssetPath(
                           this._compilation.outputOptions.publicPath,
                           { hash: this._compilation.hash || "" },
@@ -145,7 +144,8 @@ async function rustWasmLoader(source) {
                                 )
                                 .split(path.sep)
                                 .join("/");
-                  })();
+                  })()
+                : "";
 
         const content = await pack(
             {
