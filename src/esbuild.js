@@ -14,7 +14,11 @@ const optionsSchema = {
     additionalProperties: false,
 };
 
-module.exports = function bun(config) {
+// esbuild's `platform: "node"` builds for Node.js; "browser", "neutral", and
+// the default (undefined) all target a browser-like environment.
+const targetForPlatform = (platform) => (platform === "node" ? "node" : "web");
+
+module.exports = function esbuild(config) {
     const options = merge(
         {
             logLevel: "info",
@@ -27,14 +31,14 @@ module.exports = function bun(config) {
     });
 
     return {
-        target: "node",
         name: "rust-wasmpack-loader",
-        async setup(build) {
+        setup(build) {
             build.onLoad({ filter: /\.rs$/ }, async (args) =>
                 sharedLoad({
                     resourcePath: args.path,
-                    baseFolder: process.cwd(),
-                    target: "node",
+                    baseFolder:
+                        build.initialOptions.absWorkingDir || process.cwd(),
+                    target: targetForPlatform(build.initialOptions.platform),
                     logLevel: options.logLevel,
                 }),
             );

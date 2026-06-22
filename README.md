@@ -15,6 +15,7 @@ rust-wasmpack-loader is a native WASM loader for `.rs` (Rust) resources that wor
 
 - [**Webpack**](https://webpack.js.org/) `^5.0.0` (Both `web` and `node` (`node-async`) targets)
 - [**Bun**](https://bun.sh/) runtime (node target only)
+- [**esbuild**](https://esbuild.github.io/) plugin (`node` and `web` targets, inline WASM)
 
 ## Key Features
 
@@ -27,6 +28,8 @@ rust-wasmpack-loader is a native WASM loader for `.rs` (Rust) resources that wor
 🌐 **Multi-Target Webpack Support** — Works with `web` and `node` applications
 
 ⚡ **Bun Compatible** — Full support for Bun runtime (node target only for now)
+
+📦 **esbuild Plugin** — First-class esbuild plugin for `node` and `web` builds
 
 ## Why Use rust-wasmpack-loader?
 
@@ -78,6 +81,8 @@ better understanding of how the loader works with different setups:
 - **[Node.js Webpack](https://github.com/yeskiy/rustwasm-loader/tree/main/example/node-webpack)** - Server-side
   applications
 - **[Bun Node.js](https://github.com/yeskiy/rustwasm-loader/tree/main/example/node-bun)** - High-performance Bun runtime
+- **[esbuild](https://github.com/yeskiy/rustwasm-loader/tree/main/example/esbuild)** - Fast bundling for Node.js or the
+  browser
 
 ## Contributing
 
