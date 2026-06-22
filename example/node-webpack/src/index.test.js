@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
 import rsLib from "./lib.rs";
 import fibonacci from "./fibonacci";
 
