@@ -34,6 +34,7 @@ graph LR
 - **Rspack** support through the same Webpack-compatible loader
 - **Bun runtime** compatibility for modern JavaScript environments
 - **esbuild plugin** for fast bundling on Node.js or the browser
+- **Rollup plugin** for Rollup-based build pipelines
 
 ## Use Cases
 
@@ -54,12 +55,12 @@ graph LR
 
 ## Supported Targets
 
-| Target       | Webpack           | Rspack            | Bun | esbuild |
-|--------------|-------------------|-------------------|-----|---------|
-| `web`        | ✅                 | ✅                 | ❌   | ✅       |
-| `node`       | ✅                 | ✅                 | ✅   | ✅       |
-| `node-async` | ✅                 | ✅                 | ✅   | ❌       |
-| `electron`   | ⚠️ *(not tested)* | ⚠️ *(not tested)* | ❌   | ❌       |
+| Target       | Webpack           | Rspack            | Bun | esbuild | Rollup |
+|--------------|-------------------|-------------------|-----|---------|--------|
+| `web`        | ✅                 | ✅                 | ❌   | ✅       | ✅      |
+| `node`       | ✅                 | ✅                 | ✅   | ✅       | ✅      |
+| `node-async` | ✅                 | ✅                 | ✅   | ❌       | ❌      |
+| `electron`   | ⚠️ *(not tested)* | ⚠️ *(not tested)* | ❌   | ❌       | ❌      |
 
 Rspack reuses the Webpack loader context, so the loader works with it through the same configuration.
 
@@ -81,7 +82,7 @@ Rspack reuses the Webpack loader context, so the loader works with it through th
 | **Hot reload support**        | ✅                    | ❌                | ✅                           | ✅                | ⚠️          | ✅            | ❌                |
 | **Bun runtime support**       | ✅                    | 🤚               | ❌                           | ❌                | ❌           | 🤚           | 🤚               |
 | **Webpack integration**       | ✅                    | ❌                | ✅                           | ❌                | ❌           | ❌            | ⚠️               |
-| **Vite/Rollup integration**   | ❌                    | ❌                | ❌                           | ✅                | ✅           | ❌            | ⚠️               |
+| **Vite/Rollup integration**   | ✅                    | ❌                | ❌                           | ✅                | ✅           | ❌            | ⚠️               |
 | **esbuild integration**       | ✅                    | ❌                | ❌                           | ❌                | ❌           | ✅            | ⚠️               |
 | **TypeScript bindings**       | ✅                    | ✅                | ✅                           | ✅                | ✅           | ✅            | ❌                |
 | **Zero configuration**        | ✅                    | ❌                | ❌                           | ❌                | ❌           | ❌            | ❌                |
@@ -99,7 +100,7 @@ Rspack reuses the Webpack loader context, so the loader works with it through th
 - Offering **native Bun runtime support** (unique in the ecosystem)
 - Providing **automatic Cargo.toml discovery** up the directory tree
 - Requiring **zero configuration** for basic usage
-- Supporting **Webpack, Rspack, Bun, and esbuild** from a single package
+- Supporting **Webpack, Rspack, Bun, esbuild, and Rollup** from a single package
 
 **Alternative approaches:**
 - **Manual wasm-pack**: Requires separate build steps and manual integration

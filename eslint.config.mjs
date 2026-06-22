@@ -115,7 +115,7 @@ export default defineConfig([
     // --- Example build scripts and configs (resolve deps only after the example is installed) ---
     {
         name: "project/example-build-scripts",
-        files: ["example/**/build.mjs", "example/**/*.config.js"],
+        files: ["example/**/build.mjs", "example/**/*.config.{js,mjs}"],
         rules: {
             "import-x/no-unresolved": "off",
             "import-x/no-extraneous-dependencies": "off",
