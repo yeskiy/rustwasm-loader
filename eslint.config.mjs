@@ -14,6 +14,8 @@ export default defineConfig([
         "**/pkg/**",
         "**/build/**",
         "**/target/**",
+        "**/.next/**",
+        "**/out/**",
         ".docusaurus/**",
     ]),
 

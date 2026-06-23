@@ -24,6 +24,7 @@ const sidebars = {
                 "docs/examples/rspack",
                 "docs/examples/rollup",
                 "docs/examples/vite",
+                "docs/examples/next",
             ],
         },
         {
