@@ -112,11 +112,18 @@ async function rustWasmLoader(source) {
 
         const { base } = path.parse(path.normalize(params.resourcePath));
 
-        // Create build folder and name with md5 of a source
+        // Per-source, per-target temp build dir. Keying on the target as well as
+        // the source hash keeps concurrent builds of the same `.rs` for different
+        // environments (Next runs the server and client passes in parallel) in
+        // separate directories, so their wasm-pack runs never collide.
         const tmp = os.tmpdir();
+        const sourceHash = crypto
+            .createHash("sha256")
+            .update(source)
+            .digest("hex");
         const buildFolder = path.join(
             tmp,
-            `${base}.${crypto.createHash("md5").update(source).digest("hex")}`,
+            `${base}.${sourceHash}.${params.target}`,
         );
 
         // create required folders for build
@@ -141,10 +148,7 @@ async function rustWasmLoader(source) {
                           { content: source },
                       );
                   } catch {
-                      return `${crypto
-                          .createHash("md5")
-                          .update(source)
-                          .digest("hex")}.module.wasm`;
+                      return `${sourceHash}.module.wasm`;
                   }
               })();
 
