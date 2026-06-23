@@ -1,11 +1,11 @@
 # Quick Start
 
-Get up and running with rust-wasmpack-loader in just a few minutes! This guide will walk you through creating your first Rust-WebAssembly project with **Webpack** in `web` target and **rust-wasmpack-loader**.
+This guide builds your first Rust-WebAssembly project with Webpack on the `web` target and rust-wasmpack-loader. It takes a few minutes.
 :::tip
-For other examples, check out our [Examples Section](../examples).
+For other setups, see the [Examples Section](../examples).
 :::
 
-## Step 1: Create a New Project
+## Step 1: Create a new project
 
 ```bash
 mkdir my-rust-wasm-app
@@ -13,7 +13,7 @@ cd my-rust-wasm-app
 npm init -y
 ```
 
-## Step 2: Install Dependencies
+## Step 2: Install dependencies
 
 ```bash
 # Install rust-wasmpack-loader
@@ -46,7 +46,7 @@ features = [
 ]
 ```
 
-## Step 4: Write Your First Rust Function
+## Step 4: Write your first Rust function
 
 Create a `src/lib.rs` file:
 
@@ -128,7 +128,7 @@ module.exports = {
 };
 ```
 
-## Step 6: Create JavaScript Entry Point
+## Step 6: Create the JavaScript entry point
 
 Create a `src/index.js` file:
 
@@ -156,7 +156,7 @@ document.body.innerHTML = `
 `;
 ```
 
-## Step 7: Create HTML File
+## Step 7: Create the HTML file
 
 Create a `dist/index.html` file:
 
@@ -174,7 +174,7 @@ Create a `dist/index.html` file:
 </html>
 ```
 
-## Step 8: Add Build Scripts
+## Step 8: Add build scripts
 
 Update your `package.json`:
 
@@ -190,7 +190,7 @@ Update your `package.json`:
 }
 ```
 
-## Step 9: Build and Run
+## Step 9: Build and run
 
 ```bash
 # Build the project
@@ -200,25 +200,25 @@ npm run build
 npm start
 ```
 
-Open your browser and navigate to `http://localhost:9000`. You should see:
+Open your browser at `http://localhost:9000`. You should see:
 
 - Fibonacci(10) = 55
 - 5 + 3 = 8
 - A greeting message in the console
 
-## What Just Happened?
+## What just happened
 
-1. **Rust Code**: You wrote Rust functions and exported them with `#[wasm_bindgen]`
-2. **Compilation**: rust-wasmpack-loader automatically compiled your Rust code to WebAssembly
-3. **Integration**: The loader generated JavaScript bindings for your Rust functions
-4. **Import**: You imported the `.rs` file directly in JavaScript
-5. **Execution**: Your Rust functions ran in the browser!
+1. Rust code: you wrote Rust functions and exported them with `#[wasm_bindgen]`
+2. Compilation: rust-wasmpack-loader compiled your Rust to WebAssembly
+3. Integration: the loader generated JavaScript bindings for your Rust functions
+4. Import: you imported the `.rs` file directly in JavaScript
+5. Execution: your Rust functions ran in the browser
 
-## Next Steps
+## Next steps
 
-### Advanced Configuration
+### Advanced configuration
 
-Customize the loader behavior:
+Customize the loader's behavior:
 
 ```javascript title="webpack.config.js"
 // In your webpack.config.js rules array
@@ -242,6 +242,6 @@ const rule = {
 
 ---
 
-:::tip Congratulations! 🎉
-You've successfully created your first Rust-WebAssembly application! The combination of Rust's performance and JavaScript's flexibility opens up endless possibilities.
+:::tip
+That is your first Rust-WebAssembly application. From here, explore the API options and the other build-tool examples.
 :::

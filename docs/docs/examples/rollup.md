@@ -2,19 +2,18 @@
 sidebar_position: 6
 ---
 
-# Rollup Example
+# Rollup example
 
-This example demonstrates how to use rust-wasmpack-loader with [Rollup](https://rollupjs.org/). The loader ships a
-first-class Rollup plugin, so you can import `.rs` files directly from your bundle.
+This example shows how to use rust-wasmpack-loader with [Rollup](https://rollupjs.org/). The loader ships a Rollup
+plugin, so you import `.rs` files directly from your bundle.
 
-The plugin inlines the compiled WebAssembly as bytes into the generated JavaScript, so no extra asset handling is needed.
+The plugin inlines the compiled WebAssembly as bytes into the generated JavaScript, so there is no extra asset to handle.
 Rollup has no platform concept of its own, so you choose the build strategy through the plugin's `target` option: `web`
 (the default) or `node`. This example targets Node.js.
 
-Because [Vite](https://vite.dev/) plugins are a superset of Rollup plugins, the same plugin works inside a Vite
-config as well.
+Because [Vite](https://vite.dev/) plugins are a superset of Rollup plugins, the same plugin works inside a Vite config.
 
-## Project Structure
+## Project structure
 
 ```
 rollup-example/
@@ -28,9 +27,9 @@ rollup-example/
 └── package.json              # Dependencies and scripts
 ```
 
-## Setup Instructions
+## Setup
 
-### 1. Initialize Project
+### 1. Initialize the project
 
 ```bash
 mkdir my-rollup-wasm-app
@@ -38,7 +37,7 @@ cd my-rollup-wasm-app
 npm init -y
 ```
 
-### 2. Install Dependencies
+### 2. Install dependencies
 
 ```bash
 npm install --save-dev rust-wasmpack-loader rollup
@@ -59,7 +58,7 @@ crate-type = ["cdylib"]
 wasm-bindgen = "0.2.95"
 ```
 
-### 4. Create Rust Code
+### 4. Create the Rust code
 
 ```rust title="src/lib.rs"
 use wasm_bindgen::prelude::*;
@@ -79,7 +78,9 @@ pub fn greet(name: &str) -> String {
 }
 ```
 
-### 5. Create the Entry Point
+### 5. Create the entry point
+
+Import the `.rs` file like any other module and call its exports.
 
 ```javascript title="src/index.js"
 import wasmModule from "./lib.rs";
@@ -88,7 +89,7 @@ console.log(wasmModule.greet("Rollup Developer"));
 console.log(`fibonacci(10) = ${wasmModule.fibonacci(10)}`);
 ```
 
-### 6. Create the Rollup Config
+### 6. Create the Rollup config
 
 ```javascript title="rollup.config.mjs"
 import rustWasmLoader from "rust-wasmpack-loader";
@@ -104,10 +105,10 @@ export default {
 };
 ```
 
-For browser output, set `target: "web"` (the default) - the plugin will build the web strategy and inline the
+For browser output, set `target: "web"` (the default). The plugin then builds the web strategy and inlines the
 WebAssembly into the bundle.
 
-### 7. Update Package.json
+### 7. Update package.json
 
 ```json title="package.json"
 {
@@ -121,7 +122,7 @@ WebAssembly into the bundle.
 }
 ```
 
-## Running the Example
+## Running the example
 
 ```bash
 # Build the bundle
@@ -131,7 +132,7 @@ npm run build
 npm start
 ```
 
-## Plugin Options
+## Plugin options
 
 The Rollup plugin accepts a `target` (since Rollup has no platform of its own) plus the shared `logLevel` option:
 
@@ -142,7 +143,7 @@ rustWasmLoader.rollup({
 });
 ```
 
-## Using It with Vite
+## Using it with Vite
 
 Vite builds on Rollup, so this plugin works inside a Vite config. For Vite,
 prefer the dedicated `rustWasmLoader.vite` plugin: it picks the `node` strategy
@@ -162,6 +163,6 @@ export default defineConfig({
 ---
 
 :::tip Inline delivery
-The Rollup plugin currently inlines the `.wasm` bytes into the generated JavaScript. This keeps configuration to zero -
-there is no separate asset to copy or serve. Separate-asset delivery may arrive as a later enhancement.
+The Rollup plugin currently inlines the `.wasm` bytes into the generated JavaScript, so there is no separate asset to
+copy or serve and no extra configuration. Separate-asset delivery may arrive as a later enhancement.
 :::

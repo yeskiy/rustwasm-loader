@@ -2,10 +2,10 @@
 sidebar_position: 8
 ---
 
-# Next.js Example
+# Next.js example
 
 This example shows how to use rust-wasmpack-loader with [Next.js](https://nextjs.org/) (App Router). The loader ships a
-`withRustWasm` helper that wraps your `next.config`, wiring the loader in so you can import `.rs` files from both Server
+`withRustWasm` helper that wraps your `next.config` and wires the loader in, so you import `.rs` files from both Server
 and Client Components. The helper picks the `node` strategy for the server and the `web` strategy for the client, and
 inlines the WebAssembly bytes in both cases. The wrapped config works under both bundlers: webpack (`next build
 --webpack`) and Turbopack (`next build`, the Next.js 16 default). See [Turbopack](#turbopack) below for what differs.
@@ -70,7 +70,7 @@ inlined bytes. On the webpack pass the helper rejects an Edge `.rs` import with 
 [above](#edge-runtime-limitation)). Turbopack has no per-rule signal for the Edge environment, so there is no equivalent
 guard there; keep `.rs` imports out of Edge routes by adding `export const runtime = "nodejs"` to the route segment.
 
-## Project Structure
+## Project structure
 
 ```
 next-example/
@@ -87,16 +87,16 @@ next-example/
 └── package.json            # Dependencies and scripts
 ```
 
-## Setup Instructions
+## Setup
 
-### 1. Initialize Project
+### 1. Initialize the project
 
 ```bash
 npx create-next-app@latest my-next-wasm-app
 cd my-next-wasm-app
 ```
 
-### 2. Install Dependencies
+### 2. Install dependencies
 
 ```bash
 npm install --save-dev rust-wasmpack-loader
@@ -117,7 +117,7 @@ crate-type = ["cdylib"]
 wasm-bindgen = "0.2.95"
 ```
 
-### 4. Create Rust Code
+### 4. Create the Rust code
 
 ```rust title="lib.rs"
 use wasm_bindgen::prelude::*;
@@ -137,7 +137,7 @@ pub fn cap(s: &str) -> String {
 }
 ```
 
-### 5. Wrap the Next Config
+### 5. Wrap the Next config
 
 ```javascript title="next.config.mjs"
 import rustWasmLoader from "rust-wasmpack-loader";
@@ -172,7 +172,7 @@ export default function Result() {
 }
 ```
 
-### 8. Update Package.json
+### 8. Update package.json
 
 The default scripts build under Turbopack. To build with webpack instead, add `--webpack` to `dev` and `build`.
 
@@ -188,14 +188,14 @@ The default scripts build under Turbopack. To build with webpack instead, add `-
 }
 ```
 
-## Running the Example
+## Running the example
 
 ```bash
 # Build under Turbopack (the Next.js 16 default). Add --webpack to use webpack.
 npm run build
 ```
 
-## Helper Options
+## Helper options
 
 ```javascript
 rustWasmLoader.next(nextConfig, {

@@ -2,16 +2,16 @@
 sidebar_position: 4
 ---
 
-# esbuild Example
+# esbuild example
 
-This example demonstrates how to use rust-wasmpack-loader with [esbuild](https://esbuild.github.io/). esbuild is an
-extremely fast bundler, and the loader ships a first-class plugin so you can import `.rs` files directly from your build.
+This example shows how to use rust-wasmpack-loader with [esbuild](https://esbuild.github.io/). The loader ships an
+esbuild plugin, so you import `.rs` files directly from your build.
 
-The plugin inlines the compiled WebAssembly as bytes into the generated JavaScript, so no extra asset handling is needed.
+The plugin inlines the compiled WebAssembly as bytes into the generated JavaScript, so there is no extra asset to handle.
 It picks the build strategy from esbuild's `platform` option: `node` builds for Node.js, while `browser`, `neutral`, and
 the default target a browser-like environment.
 
-## Project Structure
+## Project structure
 
 ```
 esbuild-example/
@@ -24,9 +24,9 @@ esbuild-example/
 └── package.json         # Dependencies and scripts
 ```
 
-## Setup Instructions
+## Setup
 
-### 1. Initialize Project
+### 1. Initialize the project
 
 ```bash
 mkdir my-esbuild-wasm-app
@@ -34,7 +34,7 @@ cd my-esbuild-wasm-app
 npm init -y
 ```
 
-### 2. Install Dependencies
+### 2. Install dependencies
 
 ```bash
 npm install --save-dev rust-wasmpack-loader esbuild
@@ -55,7 +55,7 @@ crate-type = ["cdylib"]
 wasm-bindgen = "0.2.95"
 ```
 
-### 4. Create Rust Code
+### 4. Create the Rust code
 
 ```rust title="src/lib.rs"
 use wasm_bindgen::prelude::*;
@@ -75,7 +75,9 @@ pub fn greet(name: &str) -> String {
 }
 ```
 
-### 5. Create the Entry Point
+### 5. Create the entry point
+
+Import the `.rs` file like any other module and call its exports.
 
 ```javascript title="src/index.js"
 import wasmModule from "./lib.rs";
@@ -84,7 +86,7 @@ console.log(wasmModule.greet("esbuild Developer"));
 console.log(`fibonacci(10) = ${wasmModule.fibonacci(10)}`);
 ```
 
-### 6. Create the Build Script
+### 6. Create the build script
 
 ```javascript title="build.mjs"
 import * as esbuild from "esbuild";
@@ -101,10 +103,10 @@ await esbuild.build({
 });
 ```
 
-For browser output, set `platform: "browser"` (or leave it unset) - the plugin will build the web strategy and inline the
-WebAssembly into the bundle.
+For browser output, set `platform: "browser"` (or leave it unset). The plugin then builds the web strategy and inlines
+the WebAssembly into the bundle.
 
-### 7. Update Package.json
+### 7. Update package.json
 
 ```json title="package.json"
 {
@@ -118,7 +120,7 @@ WebAssembly into the bundle.
 }
 ```
 
-## Running the Example
+## Running the example
 
 ```bash
 # Build the bundle
@@ -128,7 +130,7 @@ npm run build
 npm start
 ```
 
-## Plugin Options
+## Plugin options
 
 The esbuild plugin accepts the same `logLevel` option as the other targets:
 
@@ -141,6 +143,6 @@ rustWasmLoader.esbuild({
 ---
 
 :::tip Inline delivery
-The esbuild plugin currently inlines the `.wasm` bytes into the generated JavaScript. This keeps configuration to zero -
-there is no separate asset to copy or serve. Separate-asset delivery may arrive as a later enhancement.
+The esbuild plugin currently inlines the `.wasm` bytes into the generated JavaScript, so there is no separate asset to
+copy or serve and no extra configuration. Separate-asset delivery may arrive as a later enhancement.
 :::

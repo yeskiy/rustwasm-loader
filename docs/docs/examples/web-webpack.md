@@ -1,9 +1,9 @@
-# Web Webpack Example
+# Web Webpack example
 
-This example demonstrates how to use rust-wasmpack-loader in a browser application with Webpack. It is perfect for
-client-side applications that need high-performance Rust code running in the browser.
+This example shows how to use rust-wasmpack-loader in a browser application with Webpack. Use it when you want Rust code
+running client-side as WebAssembly.
 
-## Project Structure
+## Project structure
 
 ```
 web-webpack-example/
@@ -18,9 +18,9 @@ web-webpack-example/
 └── index.html          # HTML template
 ```
 
-## Setup Instructions
+## Setup
 
-### 1. Initialize Project
+### 1. Initialize the project
 
 ```bash
 mkdir my-web-wasm-app
@@ -28,7 +28,7 @@ cd my-web-wasm-app
 npm init -y
 ```
 
-### 2. Install Dependencies
+### 2. Install dependencies
 
 ```bash
 # Install rust-wasmpack-loader and webpack
@@ -124,7 +124,7 @@ module.exports = {
 };
 ```
 
-### 5. Create Rust Code
+### 5. Create the Rust code
 
 ```rust title="src/lib.rs"
 use wasm_bindgen::prelude::*;
@@ -182,7 +182,9 @@ pub fn main() {
 }
 ```
 
-### 6. Create JavaScript Entry
+### 6. Create the JavaScript entry
+
+Import the `.rs` file like any other module and call its exports.
 
 ```javascript title="src/index.js"
 // Import the Rust module
@@ -230,7 +232,7 @@ console.log("Original image data:", Array.from(imageData));
 console.log("Processed image data:", Array.from(processedData));
 ```
 
-### 7. Create HTML Template
+### 7. Create the HTML template
 
 ```html title="src/index.html"
 <!DOCTYPE html>
@@ -266,7 +268,7 @@ console.log("Processed image data:", Array.from(processedData));
 </html>
 ```
 
-### 8. Update Package.json
+### 8. Update package.json
 
 ```json title="package.json"
 {
@@ -280,9 +282,9 @@ console.log("Processed image data:", Array.from(processedData));
 }
 ```
 
-## Running the Example
+## Running the example
 
-### Development Mode
+### Development
 
 ```bash
 # Start the development server
@@ -292,9 +294,9 @@ npm start
 npm run dev
 ```
 
-The application will be available at `http://localhost:9000` with hot reload enabled.
+The app runs at `http://localhost:9000` with hot reload enabled.
 
-### Production Build
+### Production build
 
 ```bash
 # Build for production
@@ -304,11 +306,11 @@ npm run build
 npx serve dist
 ```
 
-## Advanced Configuration
+## Advanced configuration
 
-### Async Loading
+### Async loading
 
-For better performance, enable async WASM loading:
+To fetch the wasm as a separate asset instead of inlining it, enable async loading:
 
 ```javascript title="webpack.config.js"
 module.exports = {
@@ -332,7 +334,7 @@ module.exports = {
 };
 ```
 
-### TypeScript Integration
+### TypeScript integration
 
 Create a `tsconfig.json`:
 
@@ -359,22 +361,20 @@ Create a `tsconfig.json`:
 
 ## Troubleshooting
 
-### Common Issues
+### The WASM module does not load
 
-**WASM module not loading:**
+- Check the browser console for errors.
+- Make sure `experiments.asyncWebAssembly` is enabled. See [Can I use WebAssembly](https://caniuse.com/wasm) for browser support.
+- Confirm the Rust build succeeded.
 
-- Check the browser console for errors
-- Ensure `experiments.asyncWebAssembly` is enabled (check [**can I use WebAssembly**](https://caniuse.com/wasm) for browser support)
-- Verify Rust compilation succeeded
+### The bundle is large
 
-**Large bundle size:**
-
-- Enable production mode optimizations
-- Use `asyncLoading: true`
-- Optimize Rust dependencies
+- Build in production mode.
+- Set `asyncLoading: true` so the wasm loads as a separate asset.
+- Trim your Rust dependencies.
 
 ---
 
-:::tip Performance Boost 🚀
-WebAssembly can provide 10-100x performance improvements for computationally intensive tasks compared to JavaScript!
+:::tip Performance
+For computationally intensive tasks, WebAssembly can run 10-100x faster than equivalent JavaScript.
 :::

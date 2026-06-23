@@ -1,18 +1,17 @@
 # Contributing
 
-Thanks for considering contributing to rustwasm-loader!
+Thanks for contributing to rustwasm-loader.
 
 ## Opening issues
 
-If you find a bug, please feel free to [open an issue](https://github.com/yeskiy/rustwasm-loader/issues).
-
-If you're taking the time to mention a problem, even a seemingly minor one, it is greatly appreciated, and a totally valid contribution to this project. Thank you!
+Found a bug? [Open an issue](https://github.com/yeskiy/rustwasm-loader/issues). Reporting a problem, even a small one, is
+a real contribution and is appreciated.
 
 ## Fixing bugs
 
-We love pull requests. Here’s a quick guide:
+Pull requests are welcome. Here is the workflow:
 
-1. [Fork this repository](https://github.com/yeskiy/rustwasm-loader/fork) and then clone it locally:
+1. [Fork this repository](https://github.com/yeskiy/rustwasm-loader/fork), then clone it locally:
 
   ```bash
   git clone https://github.com/yeskiy/rustwasm-loader
@@ -23,7 +22,8 @@ We love pull requests. Here’s a quick guide:
   ```bash
   git checkout -b fix-for-that-thing
   ```
-3. Commit a failing test for the bug:
+
+3. Commit a failing test that demonstrates the bug:
 
   ```bash
   git commit -am "Adds a failing test to demonstrate that thing"
@@ -35,17 +35,15 @@ We love pull requests. Here’s a quick guide:
   git commit -am "Adds a fix for that thing!"
   ```
 
-5. If everything looks good, push to your fork:
+5. Push to your fork:
 
   ```bash
   git push origin fix-for-that-thing
   ```
 
-7. [Submit a pull request.](https://help.github.com/articles/creating-a-pull-request)
-
-8. Enjoy being the wonderful person you are
-
+6. [Open a pull request.](https://help.github.com/articles/creating-a-pull-request)
 
 ## Adding new features
 
-Thinking of adding a new feature? Cool! [Open an issue](https://github.com/yeskiy/rustwasm-loader/issues) and let’s design it together.
+Planning a new feature? [Open an issue](https://github.com/yeskiy/rustwasm-loader/issues) first so we can design it
+together.

@@ -1,13 +1,9 @@
-# API Reference
+# API reference
 
-Complete reference for rust-wasmpack-loader configuration options, methods, and settings across different build tools.
+This page documents the configuration options for rust-wasmpack-loader across the supported build tools, with their
+types, defaults, and usage. The available options depend on your target environment and build tool.
 
-## Overview
-
-rust-wasmpack-loader provides different configuration options depending on your target environment and build tool. This
-section documents all available options, their types, default values, and usage examples.
-
-## Configuration Structure
+## Configuration structure
 
 ```typescript
 interface LoaderOptions {
@@ -26,7 +22,7 @@ interface LoaderOptions {
 }
 ```
 
-## Quick Reference
+## Quick reference
 
 | Option                 | Type       | Default        | Description                 |
 |------------------------|------------|----------------|-----------------------------|
@@ -37,11 +33,11 @@ interface LoaderOptions {
 | `node.bundle`          | `boolean`  | `false`        | Bundle WASM in JS file      |
 | `logLevel`             | `string`   | `"info"`       | Logging verbosity           |
 
-## Target Environments
+## Target environments
 
-### Web Target (Browser)
+### Web target (browser)
 
-Used for browser applications with Webpack:
+For browser applications with Webpack:
 
 ```javascript title="webpack.config.js"
 module.exports = {
@@ -67,9 +63,9 @@ module.exports = {
 };
 ```
 
-### Node Target (Server)
+### Node target (server)
 
-Used for Node.js applications with Webpack:
+For Node.js applications with Webpack:
 
 ```javascript title="webpack.config.js"
 module.exports = {
@@ -93,9 +89,9 @@ module.exports = {
 };
 ```
 
-### Bun Target
+### Bun target
 
-Used with Bun runtime:
+For the Bun runtime:
 
 ```toml title="bunfig.toml"
 preload = ["./node_modules/rust-wasmpack-loader/bun/preload.js"]
@@ -110,11 +106,11 @@ plugin(loader.bun({
 }));
 ```
 
-## Configuration Options by Build Tool
+## Configuration options by build tool
 
-### Webpack Options
+### Webpack options
 
-#### Web Target Options
+#### Web target options
 
 | Option                 | Type       | Default | Description                                       |
 |------------------------|------------|---------|---------------------------------------------------|
@@ -122,26 +118,26 @@ plugin(loader.bun({
 | `web.publicPath`       | `boolean`  | `true`  | Use webpack's public path for WASM files          |
 | `web.wasmPathModifier` | `string[]` | `["/"]` | Modify WASM request path if wrong publicPath used |
 
-#### Node Target Options
+#### Node target options
 
 | Option        | Type      | Default | Description                                          |
 |---------------|-----------|---------|------------------------------------------------------|
 | `node.bundle` | `boolean` | `false` | Bundle WASM file in JS file (no separate .wasm file) |
 
-#### Global Options
+#### Global options
 
 | Option     | Type                                                  | Default          | Description                    |
 |------------|-------------------------------------------------------|------------------|--------------------------------|
 | `target`   | `"web" \| "node"`                                     | webpack `target` | Override the build target      |
 | `logLevel` | `"verbose" \| "info" \| "warn" \| "error" \| "quiet"` | `"info"`         | Control logging verbosity      |
 
-### Bun Options
+### Bun options
 
 | Option     | Type                                                  | Default  | Description               |
 |------------|-------------------------------------------------------|----------|---------------------------|
 | `logLevel` | `"verbose" \| "info" \| "warn" \| "error" \| "quiet"` | `"info"` | Control logging verbosity |
 
-## Detailed Option Reference
+## Detailed option reference
 
 ### `target`
 
@@ -149,10 +145,9 @@ plugin(loader.bun({
 **Default:** webpack's `target`  
 **Target:** Webpack
 
-Overrides the build target the loader derives from webpack's own `target`. Set it
-when webpack's target does not map cleanly to `web` or `node`, or when a single
-config compiles `.rs` files for a different environment than the rest of the build.
-When omitted, the loader uses webpack's `target` as before.
+Overrides the build target the loader derives from webpack's own `target`. Set it when webpack's target does not map
+cleanly to `web` or `node`, or when a single config compiles `.rs` files for a different environment than the rest of the
+build. When omitted, the loader uses webpack's `target`.
 
 ```javascript
 {
@@ -188,10 +183,8 @@ Controls how WebAssembly modules are loaded in the browser.
 }
 ```
 
-**When to use:**
-
-- `false`: Faster initial execution, larger bundle size
-- `true`: Smaller initial bundle, slightly slower first load
+Set `false` for faster initial execution at the cost of a larger bundle. Set `true` for a smaller initial bundle and a
+slightly slower first load.
 
 ### `web.publicPath`
 
@@ -265,10 +258,8 @@ Whether to bundle the WASM file inside the JavaScript bundle.
 }
 ```
 
-**When to use:**
-
-- `false`: Smaller JS bundle, separate WASM file
-- `true`: Single file deployment, larger JS bundle
+Set `false` for a smaller JS bundle with a separate WASM file. Set `true` to deploy a single file at the cost of a larger
+JS bundle.
 
 ### `logLevel`
 
@@ -296,9 +287,9 @@ Controls the verbosity of loader output.
 }
 ```
 
-### Custom Type Declarations
+### Custom type declarations
 
-You can also create custom type declarations:
+You can declare the module type yourself to get typed exports:
 
 ```typescript title="src/types.d.ts"
 declare module "*.rs" {
