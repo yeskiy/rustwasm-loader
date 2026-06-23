@@ -41,6 +41,39 @@ const rsRule = (isServer, nextRuntime, logLevel) =>
               ],
           };
 
+// Turbopack runs webpack loaders through `turbopack.rules`, mapping an extension
+// to loaders plus `as: "*.js"`. Its `condition` picks the loader per environment:
+// `browser` is the client bundle, `{ not: "browser" }` is the server. Turbopack's
+// loader API omits emitFile/_compilation/this.target, so only the inlined-bytes
+// delivery works; the loader reads `target` from these options instead. Edge is
+// not modeled here: Turbopack has no `nextRuntime` signal in a rule condition, and
+// the inlined-bytes delivery cannot instantiate wasm on Edge anyway.
+const turbopackLoader = (target, webOrNode, logLevel) => ({
+    loader: require.resolve("./index"),
+    options: {
+        target,
+        ...webOrNode,
+        logLevel,
+    },
+});
+
+const turbopackRsRules = (logLevel) => [
+    {
+        condition: { not: "browser" },
+        loaders: [
+            turbopackLoader("node", { node: { bundle: true } }, logLevel),
+        ],
+        as: "*.js",
+    },
+    {
+        condition: "browser",
+        loaders: [
+            turbopackLoader("web", { web: { asyncLoading: false } }, logLevel),
+        ],
+        as: "*.js",
+    },
+];
+
 // Next sets `webassemblyModuleFilename` to a nested, token-laden path
 // (`static/wasm/[modulehash].wasm`). The loader feeds that value to wasm-pack as
 // the scratch output name, where the nested dir does not exist and `[modulehash]`
@@ -70,8 +103,19 @@ const withRsRule = (config, isServer, nextRuntime, logLevel) => ({
  * Wraps a Next.js config so `.rs` imports compile to inline-wasm JavaScript: the
  * `node` strategy for the server (SSR/prerender) and the `web` strategy for the
  * client, both with the bytes inlined. The same `.rs` works from a Server
- * Component and a Client Component. Edge routes are rejected with a clear error
- * because Edge cannot instantiate wasm from inlined bytes.
+ * Component and a Client Component.
+ *
+ * The returned config carries both a `webpack` function and a `turbopack.rules`
+ * block, so it builds the same way under either bundler (`next build` defaults to
+ * Turbopack in Next 16; `next build --webpack` opts back to webpack). Setting both
+ * keys is supported: Next only rejects a `webpack` config under Turbopack when no
+ * `turbopack` config is present.
+ *
+ * Only the inlined-bytes delivery is wired. Turbopack's loader API omits
+ * `emitFile`/`_compilation`, so the asset-emitting modes (`web.asyncLoading`,
+ * `node.bundle: false`) cannot run under it. Edge routes are unsupported under
+ * both bundlers because the Edge runtime cannot instantiate wasm from inlined
+ * bytes; the webpack pass rejects an Edge `.rs` import with a clear error.
  *
  * Loaders resolve through `require.resolve` against this package, so the helper
  * wires up the right files regardless of the consumer's module resolution.
@@ -88,6 +132,13 @@ function withRustWasm(nextConfig = {}, pluginOptions = {}) {
 
     return {
         ...nextConfig,
+        turbopack: {
+            ...nextConfig.turbopack,
+            rules: {
+                ...nextConfig.turbopack?.rules,
+                "*.rs": turbopackRsRules(options.logLevel),
+            },
+        },
         webpack(config, webpackOptions) {
             const patched = withRsRule(
                 config,

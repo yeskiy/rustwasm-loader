@@ -66,10 +66,12 @@ graph LR
 
 Rspack reuses the Webpack loader context, so the loader works with it through the same configuration.
 
-Next.js uses the Webpack loader under the hood through the `withRustWasm` helper: the server pass builds `node`, the
-client pass builds `web`, and both inline the wasm bytes. The Edge runtime is rejected with a clear build-time error
-(Edge cannot instantiate wasm from inlined bytes). Next.js 16 defaults to Turbopack, so opt out with `next build
---webpack`.
+Next.js uses the loader through the `withRustWasm` helper: the server build runs `node`, the client build runs `web`, and
+both inline the wasm bytes. The helper wires the loader into both bundlers, so the wrapped config builds under Turbopack
+(`next build`, the Next.js 16 default) and webpack (`next build --webpack`) alike. Only the inlined-bytes path runs under
+Turbopack; the asset-emitting modes need `emitFile`, which Turbopack does not expose. The Edge runtime is unsupported on
+both (Edge cannot instantiate wasm from inlined bytes); on the webpack pass an Edge `.rs` import is rejected with a clear
+build-time error.
 
 ## Comparison with Alternatives
 
