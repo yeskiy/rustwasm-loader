@@ -2,12 +2,12 @@
 sidebar_position: 3
 ---
 
-# Node.js Webpack Example
+# Node.js Webpack example
 
-This example demonstrates how to use rust-wasmpack-loader in a Node.js application with Webpack. Perfect for server-side
-applications, CLI tools, and backend services that need high-performance Rust code.
+This example shows how to use rust-wasmpack-loader in a Node.js application with Webpack. Use it for server-side
+applications, CLI tools, and backend services that call into Rust as WebAssembly.
 
-## Project Structure
+## Project structure
 
 ```
 node-webpack-example/
@@ -23,9 +23,9 @@ node-webpack-example/
 └── test.webpack.config.js # Test configuration
 ```
 
-## Setup Instructions
+## Setup
 
-### 1. Initialize Project
+### 1. Initialize the project
 
 ```bash
 mkdir my-node-wasm-app
@@ -33,7 +33,7 @@ cd my-node-wasm-app
 npm init -y
 ```
 
-### 2. Install Dependencies
+### 2. Install dependencies
 
 ```bash
 # Install rust-wasmpack-loader and webpack
@@ -162,7 +162,7 @@ module.exports = {
 };
 ```
 
-### 5. Create Test Configuration
+### 5. Create the test configuration
 
 ```javascript title="test.webpack.config.js"
 const path = require("path");
@@ -227,7 +227,7 @@ module.exports = {
 };
 ```
 
-### 6. Create Rust Code
+### 6. Create the Rust code
 
 ```rust title="src/lib.rs"
 use wasm_bindgen::prelude::*;
@@ -307,7 +307,9 @@ pub fn process_numbers(numbers: &[f64]) -> Vec<f64> {
 }
 ```
 
-### 7. Create Node.js Entry Point
+### 7. Create the Node.js entry point
+
+Import the `.rs` file like any other module and call its exports.
 
 ```javascript title="src/index.js"
 import module from "./lib.rs";
@@ -381,7 +383,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 }
 ```
 
-### 8. Create Test File
+### 8. Create the test file
 
 ```javascript title="tests/wasm.test.js"
 import wasmModule from "../src/lib.rs";
@@ -442,7 +444,7 @@ describe("Rust WebAssembly Module", () => {
 });
 ```
 
-### 9. Update Package.json
+### 9. Update package.json
 
 ```json title="package.json"
 {
@@ -457,18 +459,18 @@ describe("Rust WebAssembly Module", () => {
 }
 ```
 
-## Running the Example
+## Running the example
 
-### Development Mode
+### Development
 
 ```bash
 # Start development with hot reload
 npm start
 
-# The application will rebuild automatically when files change
+# The build re-runs automatically when files change
 ```
 
-### Production Build
+### Production build
 
 ```bash
 # Build for production
@@ -478,7 +480,7 @@ npm run build
 node dist/bundle.js
 ```
 
-### Running Tests
+### Tests
 
 ```bash
 # Run all tests
@@ -490,6 +492,6 @@ npm run test -- --watch
 
 ---
 
-:::tip Server Performance 🚀
-Node.js + Rust WebAssembly can provide significant performance improvements for CPU-intensive server operations!
+:::tip Server performance
+For CPU-intensive server work, calling into Rust as WebAssembly can be considerably faster than the same logic in JavaScript.
 :::

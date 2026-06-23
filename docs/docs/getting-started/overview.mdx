@@ -2,17 +2,17 @@
 
 ## What is rust-wasmpack-loader?
 
-**rust-wasmpack-loader** is a native WebAssembly (WASM) loader that allows you to seamlessly integrate Rust code into your JavaScript and TypeScript projects by just importing `.rs` files inside other code.
+rust-wasmpack-loader is a WebAssembly loader that lets you import `.rs` files directly in JavaScript and TypeScript. You import a Rust file the same way you import any module, and the loader compiles it to WebAssembly behind the scenes.
 
-## How It Works
+## How it works
 
-The loader automatically:
+When you import a `.rs` file, the loader:
 
-1. **Detects** `.rs` files in your project
-2. **Finds** the corresponding `Cargo.toml` configuration
-3. **Compiles** Rust code to WebAssembly using `wasm-pack`
-4. **Generates** JavaScript bindings with `wasm-bindgen`
-5. **Integrates** the compiled WASM module into your bundle
+1. Detects the `.rs` file in your project
+2. Finds the nearest `Cargo.toml`
+3. Compiles the Rust code to WebAssembly with `wasm-pack`
+4. Generates JavaScript bindings with `wasm-bindgen`
+5. Wires the compiled module into your bundle
 
 ## Architecture
 
@@ -26,36 +26,39 @@ graph LR
     E --> F
 ```
 
-## Key Benefits
-- **Direct imports** - Use `.rs` files like any other import module
-- **Hot reload support** during development
-- **TypeScript integration** with generated type definitions
-- **Webpack 5+** support with explicit targets (web, node)
-- **Rspack** support through the same Webpack-compatible loader
-- **Bun runtime** compatibility for modern JavaScript environments
-- **esbuild plugin** for fast bundling on Node.js or the browser
-- **Rollup plugin** for Rollup-based build pipelines
-- **Vite plugin** with automatic SSR (`node`) and client (`web`) output from a single `.rs` import
-- **Next.js helper** (`withRustWasm`) so one `.rs` works from Server and Client Components (App Router)
+## Key benefits
 
-## Use Cases
+- Import `.rs` files like any other module, with no separate build step to wire up
+- Hot reload during development
+- TypeScript integration through generated type definitions
+- Webpack 5+ with explicit targets (web, node)
+- Rspack through the same Webpack-compatible loader
+- Bun runtime support
+- esbuild plugin for bundling on Node.js or the browser
+- Rollup plugin for Rollup-based pipelines
+- Vite plugin that produces SSR (`node`) and client (`web`) output from a single `.rs` import
+- Next.js helper (`withRustWasm`) so one `.rs` file works from Server and Client Components (App Router)
 
-### Ideal For:
-- **Mathematical computations** (cryptography, image processing, algorithms)
-- **Huge data processing** (parsing, transformation, validation)
-- **Game engines** and graphics programming
-- **Performance-critical libraries**
-- **Legacy C/C++ code migration** to the web
+## Use cases
 
-### Examples:
+The loader fits work where Rust earns its keep:
+
+- Mathematical computation (cryptography, image processing, algorithms)
+- Large-scale data processing (parsing, transformation, validation)
+- Game engines and graphics programming
+- Performance-critical libraries
+- Migrating existing C/C++ code to the web
+
+Concrete examples:
+
 - Image filters and manipulation
-- Cryptocurrency mining/validation *(please, don't do this at least inside browsers)*
-- Scientific simulations
-- Audio/video processing
+- Cryptocurrency mining or validation *(please don't do this in a browser)*
+- Scientific simulation
+- Audio and video processing
 - Machine learning inference
 - Compression algorithms
 
-## Supported Targets
+## Supported targets
 
 | Target       | Webpack           | Rspack            | Bun | esbuild | Rollup | Vite | Next.js |
 |--------------|-------------------|-------------------|-----|---------|--------|------|---------|
@@ -73,16 +76,17 @@ Turbopack; the asset-emitting modes need `emitFile`, which Turbopack does not ex
 both (Edge cannot instantiate wasm from inlined bytes); on the webpack pass an Edge `.rs` import is rejected with a clear
 build-time error.
 
-## Comparison with Alternatives
+## Comparison with alternatives
 
-### Legend:
-- ✅ **Full support** - Feature works out of the box
-- ⚠️ **Partial support** - Feature works with additional configuration
-- 🤚 **manual setup** - Feature requires manual steps to enable
-- ❌ **No support** - Feature is not available
-- 🟢 **Good** - Excellent experience
-- 🟡 **Medium** - Acceptable with some effort
-- 🔴 **Poor** - Significant challenges
+Legend:
+
+- ✅ Full support - works out of the box
+- ⚠️ Partial support - works with extra configuration
+- 🤚 Manual setup - needs manual steps to enable
+- ❌ No support - not available
+- 🟢 Good - smooth experience
+- 🟡 Medium - workable with some effort
+- 🔴 Poor - significant friction
 
 | Feature                       | rust-wasmpack-loader | Manual wasm-pack | @wasm-tool/wasm-pack-plugin | vite-plugin-wasm | Rollup WASM | esbuild WASM | Raw WASM imports |
 |-------------------------------|----------------------|------------------|-----------------------------|------------------|-------------|--------------|------------------|
@@ -102,19 +106,19 @@ build-time error.
 | **Learning curve**            | 🟢 Easy              | 🔴 Hard          | 🟡 Medium                   | 🟡 Medium        | 🟡 Medium   | 🟡 Medium    | 🔴 Hard          |
 | **Maintenance status**        | 🟢 Active            | 🟢 Active        | 🟡 Limited                  | 🟢 Active        | 🟢 Active   | 🟢 Active    | N/A              |
 
-### Key Differentiators:
+What sets rust-wasmpack-loader apart:
 
-**rust-wasmpack-loader** stands out by:
-- Being the only loader to support **direct `.rs` file imports** without build configuration
-- Offering **native Bun runtime support** (unique in the ecosystem)
-- Providing **automatic Cargo.toml discovery** up the directory tree
-- Requiring **zero configuration** for basic usage
-- Supporting **Webpack, Rspack, Bun, esbuild, Rollup, Vite, and Next.js** from a single package
-- Being the only one to compile the same `.rs` import to **SSR (`node`) and client (`web`) output in Vite** automatically
+- The only loader with direct `.rs` file imports and no build configuration
+- Native Bun runtime support, which no other option in this list provides
+- Automatic `Cargo.toml` discovery up the directory tree
+- Zero configuration for basic usage
+- One package covering Webpack, Rspack, Bun, esbuild, Rollup, Vite, and Next.js
+- The only one that compiles the same `.rs` import to SSR (`node`) and client (`web`) output in Vite automatically
 
-**Alternative approaches:**
-- **Manual wasm-pack**: Requires separate build steps and manual integration
-- **@wasm-tool/wasm-pack-plugin**: More mature, Webpack-only, less automated and requires explicit configuration
-- **vite-plugin-wasm**: Vite-specific, different ecosystem
-- **Rollup/esbuild WASM**: Require pre-compiled WASM files
-- **Raw WASM imports**: No build automation, manual TypeScript bindings
+How the alternatives compare:
+
+- Manual wasm-pack: separate build steps and manual integration
+- @wasm-tool/wasm-pack-plugin: more mature but Webpack-only, less automated, and needs explicit configuration
+- vite-plugin-wasm: Vite-specific, a different ecosystem
+- Rollup and esbuild WASM: expect pre-compiled WASM files
+- Raw WASM imports: no build automation, and you write the TypeScript bindings yourself

@@ -1,9 +1,9 @@
-# Bun Node.js Example
+# Bun Node.js example
 
-This example demonstrates how to use rust-wasmpack-loader with Bun runtime. Bun provides ultra-fast JavaScript execution
-and simplified configuration, making it perfect for high-performance applications.
+This example shows how to use rust-wasmpack-loader with the Bun runtime. Bun loads `.rs` files through a preload plugin,
+so the setup stays small.
 
-## Project Structure
+## Project structure
 
 ```
 node-bun-example/
@@ -18,11 +18,9 @@ node-bun-example/
 └── README.md            # Project documentation
 ```
 
-## Setup Instructions
+## Setup
 
 ### 1. Install Bun
-
-First, install Bun runtime:
 
 ```bash
 # macOS/Linux
@@ -35,7 +33,7 @@ powershell -c "irm bun.sh/install.ps1 | iex"
 bun --version
 ```
 
-### 2. Initialize Project
+### 2. Initialize the project
 
 ```bash
 mkdir my-bun-wasm-app
@@ -43,7 +41,7 @@ cd my-bun-wasm-app
 bun init -y
 ```
 
-### 3. Install Dependencies
+### 3. Install dependencies
 
 ```bash
 # Install rust-wasmpack-loader
@@ -93,6 +91,8 @@ panic = "abort"
 
 ### 5. Configure Bun
 
+Register the preload plugin so Bun can resolve `.rs` imports.
+
 ```toml title="bunfig.toml"
 # Basic configuration
 preload = ["./node_modules/rust-wasmpack-loader/bun/preload.js"]
@@ -109,7 +109,7 @@ preload = ["./node_modules/rust-wasmpack-loader/bun/preload.js"]
 # bun = true
 ```
 
-### 6. Create Rust Code
+### 6. Create the Rust code
 
 ```rust title="src/lib.rs"
 use wasm_bindgen::prelude::*;
@@ -224,7 +224,9 @@ pub fn is_palindrome(text: &str) -> bool {
 }
 ```
 
-### 7. Create Bun Entry Point
+### 7. Create the Bun entry point
+
+Import the `.rs` file like any other module and call its exports.
 
 ```javascript title="src/index.js"
 import wasmModule from "./lib.rs";
@@ -306,7 +308,7 @@ if (import.meta.main) {
 }
 ```
 
-### 8. Create Test File
+### 8. Create the test file
 
 ```javascript title="tests/wasm.test.js"
 import { test, expect } from "bun:test";
@@ -413,7 +415,7 @@ test("should multiply array correctly", () => {
 });
 ```
 
-### 9. Update Package.json
+### 9. Update package.json
 
 ```json title="package.json"
 {
@@ -430,9 +432,9 @@ test("should multiply array correctly", () => {
 }
 ```
 
-## Running the Example
+## Running the example
 
-### Development Mode
+### Development
 
 ```bash
 # Run the application
@@ -445,7 +447,7 @@ bun dev
 bun --inspect src/index.js
 ```
 
-### Testing
+### Tests
 
 ```bash
 # Run all tests
@@ -461,7 +463,7 @@ bun test tests/wasm.test.js
 bun test --coverage
 ```
 
-### Production Build
+### Production build
 
 ```bash
 # Build for production
@@ -471,11 +473,11 @@ bun build
 bun dist/index.js
 ```
 
-## Advanced Configuration
+## Advanced configuration
 
-### Custom Loader Configuration
+### Custom loader configuration
 
-Create a custom initialization file:
+To pass options to the plugin, register it from your own preload file instead of pointing `bunfig.toml` at the shipped one:
 
 ```javascript title="bun-init.js"
 import { plugin } from "bun";
@@ -486,7 +488,8 @@ plugin(loader.bun({
     // Add custom options here
 }));
 ```
-And add it to your `bunfig.toml`:
+
+Then point `bunfig.toml` at it:
 
 ```toml title="bunfig.toml"
 preload = [
@@ -496,7 +499,6 @@ preload = [
 
 ---
 
-:::tip Bun Performance 🚀
-Bun can be 2-10x faster than Node.js for many workloads, and combined with Rust WebAssembly, provides exceptional
-performance!
+:::tip Bun performance
+Bun can be 2-10x faster than Node.js for many workloads. Pairing it with Rust WebAssembly keeps that speed for compute-heavy code.
 :::

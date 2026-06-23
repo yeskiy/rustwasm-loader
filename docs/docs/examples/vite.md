@@ -2,11 +2,11 @@
 sidebar_position: 7
 ---
 
-# Vite Example
+# Vite example
 
-This example demonstrates how to use rust-wasmpack-loader with [Vite](https://vite.dev/). The loader ships a
-first-class Vite plugin, so you can import `.rs` files directly and the plugin compiles each one to the strategy that
-matches where it runs: the `node` strategy for the server (SSR) and the `web` strategy for the client, automatically.
+This example shows how to use rust-wasmpack-loader with [Vite](https://vite.dev/). The loader ships a Vite plugin, so you
+import `.rs` files directly and the plugin compiles each one to the strategy that matches where it runs: the `node`
+strategy for the server (SSR) and the `web` strategy for the client, automatically.
 
 Because [Vite](https://vite.dev/) plugins are a superset of [Rollup](https://rollupjs.org/) plugins, the
 [Rollup plugin](./rollup) also works inside Vite with a single fixed `target`. The dedicated Vite plugin shown here adds
@@ -29,7 +29,7 @@ Everywhere else it inlines the bytes, which is always correct and needs no asset
 Server vs client is detected per module: the plugin reads `this.environment.config.consumer` on Vite 6+ and falls back
 to the `options.ssr` flag on Vite 5.
 
-## Project Structure
+## Project structure
 
 ```
 vite-example/
@@ -45,9 +45,9 @@ vite-example/
 └── package.json             # Dependencies and scripts
 ```
 
-## Setup Instructions
+## Setup
 
-### 1. Initialize Project
+### 1. Initialize the project
 
 ```bash
 mkdir my-vite-wasm-app
@@ -55,7 +55,7 @@ cd my-vite-wasm-app
 npm init -y
 ```
 
-### 2. Install Dependencies
+### 2. Install dependencies
 
 ```bash
 npm install --save-dev rust-wasmpack-loader vite
@@ -76,7 +76,7 @@ crate-type = ["cdylib"]
 wasm-bindgen = "0.2.95"
 ```
 
-### 4. Create Rust Code
+### 4. Create the Rust code
 
 ```rust title="src/lib.rs"
 use wasm_bindgen::prelude::*;
@@ -96,7 +96,7 @@ pub fn greet(name: &str) -> String {
 }
 ```
 
-### 5. Create the Entries
+### 5. Create the entries
 
 The same `.rs` import works in both entries; the plugin decides the strategy.
 
@@ -119,7 +119,7 @@ wasmModule.then((rs) => {
 });
 ```
 
-### 6. Create the Vite Config
+### 6. Create the Vite config
 
 ```javascript title="vite.config.mjs"
 import { defineConfig } from "vite";
@@ -135,7 +135,7 @@ export default defineConfig({
 });
 ```
 
-### 7. Update Package.json
+### 7. Update package.json
 
 ```json title="package.json"
 {
@@ -149,7 +149,7 @@ export default defineConfig({
 }
 ```
 
-## Running the Example
+## Running the example
 
 ```bash
 # Client production build (emits a separate .wasm asset)
@@ -159,7 +159,7 @@ npm run build
 npm run build:ssr
 ```
 
-## Plugin Options
+## Plugin options
 
 ```javascript
 rustWasmLoader.vite({

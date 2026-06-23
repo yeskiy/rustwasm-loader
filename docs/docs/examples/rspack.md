@@ -2,15 +2,15 @@
 sidebar_position: 5
 ---
 
-# Rspack Example
+# Rspack example
 
-This example demonstrates how to use rust-wasmpack-loader with [Rspack](https://rspack.rs/). Rspack is a fast Rust-based
-bundler that mirrors the Webpack API, so the same loader you use with Webpack works here without any changes.
+This example shows how to use rust-wasmpack-loader with [Rspack](https://rspack.rs/). Rspack mirrors the Webpack API, so
+the same loader you use with Webpack works here unchanged.
 
 Because Rspack reuses the Webpack loader context, you configure the `.rs` rule exactly as you would for Webpack. This
 example targets Node.js and inlines the compiled WebAssembly into the bundle via the `node.bundle` option.
 
-## Project Structure
+## Project structure
 
 ```
 rspack-example/
@@ -25,9 +25,9 @@ rspack-example/
 └── test.rspack.config.js     # Test configuration
 ```
 
-## Setup Instructions
+## Setup
 
-### 1. Initialize Project
+### 1. Initialize the project
 
 ```bash
 mkdir my-rspack-wasm-app
@@ -35,7 +35,7 @@ cd my-rspack-wasm-app
 npm init -y
 ```
 
-### 2. Install Dependencies
+### 2. Install dependencies
 
 ```bash
 npm install --save-dev rust-wasmpack-loader @rspack/core @rspack/cli webpack-node-externals
@@ -56,7 +56,7 @@ crate-type = ["cdylib"]
 wasm-bindgen = "0.2.95"
 ```
 
-### 4. Create Rust Code
+### 4. Create the Rust code
 
 ```rust title="src/lib.rs"
 use wasm_bindgen::prelude::*;
@@ -85,7 +85,9 @@ pub fn cap(s: &str) -> String {
 }
 ```
 
-### 5. Create the Entry Point
+### 5. Create the entry point
+
+Import the `.rs` file like any other module and call its exports.
 
 ```javascript title="src/index.js"
 import rsLib from "./lib.rs";
@@ -147,7 +149,7 @@ With `node.bundle` set to `true`, the WebAssembly bytes are inlined into the gen
 `webassembly/async` rule never has to handle a separate `.wasm` asset. That is why `asyncWebAssembly` is disabled and
 `syncWebAssembly` is enabled here.
 
-### 7. Update Package.json
+### 7. Update package.json
 
 ```json title="package.json"
 {
@@ -161,7 +163,7 @@ With `node.bundle` set to `true`, the WebAssembly bytes are inlined into the gen
 }
 ```
 
-## Running the Example
+## Running the example
 
 ```bash
 # Build the bundle
@@ -173,7 +175,7 @@ node dist/bundle.js
 
 ## Testing
 
-The test entry reuses the build config and swaps the entry point, then runs the bundled output through Node's built-in
+The test config reuses the build config and swaps the entry point, then runs the bundled output through Node's built-in
 test runner.
 
 ```javascript title="src/index.test.js"

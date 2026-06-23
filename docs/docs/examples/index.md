@@ -1,24 +1,20 @@
-# Examples Overview
+# Examples overview
 
-This section provides comprehensive examples for using rust-wasmpack-loader with different build tools and targets. Each
-example includes complete setup instructions, configuration files, and working code samples.
+Each example here is a complete project: the setup steps, the config files, and working Rust and JavaScript you can run. Pick the one that matches your build tool.
 
-## Available Examples
+## Web applications
 
-### 🌐 Web Applications
+- [Web Webpack](./web-webpack) - browser applications using Webpack.
 
-- **[Web Webpack](./examples/web-webpack)** - Browser applications using Webpack
+## Backend and CLI applications
 
-### 🚀 Backend/CLI Applications
+- [Node.js Webpack](./node-webpack) - server-side applications using Webpack.
+- [Bun](./node-bun) - the Bun runtime, wired through a preload plugin.
+- [esbuild](./esbuild) - fast bundling for Node.js or the browser using the esbuild plugin.
+- [Rspack](./rspack) - Rust-based bundling with the Webpack-compatible loader, unchanged.
+- [Rollup](./rollup) - bundling for Node.js or the browser using the Rollup plugin.
+- [Vite](./vite) - SSR and client builds using the Vite plugin (the `node` strategy for the server, `web` for the client).
 
-- **[Node.js Webpack](./examples/node-webpack)** - Server-side applications using Webpack
-- **[⚡Bun](./examples/node-bun)** - High-performance applications using Bun runtime
-- **[esbuild](./examples/esbuild)** - Fast bundling for Node.js or the browser using esbuild
-- **[Rspack](./examples/rspack)** - Fast Rust-based bundling with the Webpack-compatible loader
-- **[Rollup](./examples/rollup)** - Bundling for Node.js or the browser using the Rollup plugin
-- **[Vite](./examples/vite)** - SSR and client builds with the Vite plugin (node strategy for the server, web for the client)
+## Full-stack frameworks
 
-### 🧩 Full-Stack Frameworks
-
-- **[Next.js](./examples/next)** - App Router with the `withRustWasm` helper; the same `.rs` works from Server and Client Components (node strategy for the server, web for the client), under both Turbopack and webpack
-
+- [Next.js](./next) - App Router with the `withRustWasm` helper. The same `.rs` works from Server and Client Components (the `node` strategy for the server, `web` for the client), under both Turbopack and webpack.

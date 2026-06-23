@@ -3,16 +3,17 @@ import TabItem from '@theme/TabItem';
 
 # Installation
 
-This guide will walk you through installing rust-wasmpack-loader.
+This guide walks you through installing rust-wasmpack-loader.
 
 ## Prerequisites
 
 :::tip
-Need help with prerequisites? Check our [Prerequisites Guide](./prerequisites) for detailed installation instructions.
+For toolchain setup, see the [Prerequisites Guide](./prerequisites).
 :::
 
-## Package Installation
-### Version Compatibility
+## Version compatibility
+
+Pick the loader version that matches your toolchain.
 
 | rust-wasmpack-loader | Webpack-node | Webpack-web | Bun   | Node.js   | Rust     |
 |----------------------|--------------|-------------|-------|-----------|----------|
@@ -22,10 +23,9 @@ Need help with prerequisites? Check our [Prerequisites Guide](./prerequisites) f
 | 1.x.x                | ^5.0.0       | ❌           | ❌     | >=16.0.0  | >=1.30.0 |
 | 0.x.x                | ⚠️           | ❌           | ❌     | >=14.0.0  | >=1.30.0 |
 
+## Install the package
 
-### Install as Dependency
-
-For production use, install rust-wasmpack-loader as a regular dependency:
+Install rust-wasmpack-loader with your package manager. Drop the dev flag if you need it as a regular dependency.
 
 <Tabs groupId="package-managers" queryString="current-pm">
     <TabItem value="npm" label="npm" default>
@@ -51,16 +51,16 @@ For production use, install rust-wasmpack-loader as a regular dependency:
     </TabItem>
 </Tabs>
 
-## Next Steps
+## Next steps
 
-Now that you have rust-wasmpack-loader installed:
+With the loader installed, here is where to go next:
 
-- 🚀 [Quick Start](./quick-start) - Create your first Rust-WASM project
-- 🛠️ [Examples](../examples/web-webpack) - Explore working examples
-- 📚 [API Reference](../api) - Learn about available options and configurations
+- [Quick Start](./quick-start) - create your first Rust-WASM project
+- [Examples](../examples/web-webpack) - working examples for each build tool
+- [API Reference](../api) - available options and configuration
 
 ---
 
 :::info
-**Need help?** Join our community discussions or report issues on [GitHub](https://github.com/yeskiy/rustwasm-loader).
+Questions or bugs? Open an issue on [GitHub](https://github.com/yeskiy/rustwasm-loader).
 :::

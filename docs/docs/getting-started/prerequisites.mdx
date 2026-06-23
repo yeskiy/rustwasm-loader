@@ -3,21 +3,21 @@ import TabItem from '@theme/TabItem';
 
 # Prerequisites
 
-Before you can use rust-wasmpack-loader, you need to set up your development environment with the required tools and dependencies.
+Before you use rust-wasmpack-loader, set up your environment with the tools below.
 
-## System Requirements
+## System requirements
 
-### Operating Systems
-- **Windows** 10/11 (x64)
-- **macOS** 10.15+ (Intel/Apple Silicon)
-- **Linux** (Ubuntu 18.04+, CentOS 7+, or equivalent)
+### Operating systems
+- Windows 10/11 (x64)
+- macOS 10.15+ (Intel or Apple Silicon)
+- Linux (Ubuntu 18.04+, CentOS 7+, or equivalent)
 
-### Hardware Requirements
-- **RAM**: 4GB minimum, 8GB recommended
-- **Storage**: 2GB free space for tools and dependencies
-- **CPU**: Any modern x64 or ARM64 processor
+### Hardware
+- RAM: 4GB minimum, 8GB recommended
+- Storage: 2GB free for tools and dependencies
+- CPU: any modern x64 or ARM64 processor
 
-### Version Compatibility
+### Version compatibility
 
 | Tool    | Minimum Version | Recommended   |
 |---------|-----------------|---------------|
@@ -25,14 +25,14 @@ Before you can use rust-wasmpack-loader, you need to set up your development env
 | Rust    | 1.88.0          | latest stable |
 | npm     | 10.0.0          | Latest        |
 
-## Required Software
+## Required software
 
 ### 1. Node.js
 
-rust-wasmpack-loader requires Node.js version 22.22.2 or higher.
+rust-wasmpack-loader requires Node.js 22.22.2 or higher.
 
 :::tip Best Practice
-We recommend using [Volta](https://volta.sh/) for managing Node.js versions. Volta helps ensure consistent Node.js environments across development and CI/CD systems.
+Use [Volta](https://volta.sh/) to manage Node.js versions. It keeps the Node.js version consistent across development and CI.
 :::
 
 #### Installation
@@ -100,7 +100,7 @@ We recommend using [Volta](https://volta.sh/) for managing Node.js versions. Vol
     </TabItem>
 </Tabs>
 
-#### Verify Installation
+#### Verify installation
 
 ```bash
 node --version  # Should show v22.22.2 or higher
@@ -112,7 +112,7 @@ volta list  # Should show the installed Node.js version
 
 ### 2. Rust
 
-Rust is required to compile your `.rs` files to WebAssembly. Building `.rs` sources uses wasm-pack 0.15, which requires Rust 1.88.0 or higher.
+Rust compiles your `.rs` files to WebAssembly. The build uses wasm-pack 0.15, which requires Rust 1.88.0 or higher.
 
 #### Installation
 
@@ -145,7 +145,7 @@ Rust is required to compile your `.rs` files to WebAssembly. Building `.rs` sour
     </TabItem>
 </Tabs>
 
-#### Verify Installation
+#### Verify installation
 
 ```bash
 rustc --version    # Should show 1.88.0 or higher
@@ -153,6 +153,6 @@ cargo --version    # Should show 1.88.0 or higher
 ```
 ---
 
-:::tip Environment Ready! ✅
-Your development environment is now configured for Rust-WebAssembly development with rust-wasmpack-loader!
+:::tip
+Your environment is ready for Rust-WebAssembly development with rust-wasmpack-loader.
 :::
