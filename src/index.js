@@ -104,7 +104,7 @@ async function rustWasmLoader(source) {
         // Loader option wins; fall back to webpack's own target.
         params.target = options.target ?? this.target;
 
-        if (constants.supportedTargets.indexOf(params.target) === -1) {
+        if (!constants.supportedTargets.includes(params.target)) {
             throw new Error(
                 `patch is not presented for this target (${params.target}). Please, create new Issue or check the documentation.`,
             );

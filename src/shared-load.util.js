@@ -24,12 +24,12 @@ const inlineWebOptions = {
 
 const inlineNodeOptions = { bundle: true };
 
-// Per-source temp build dir, content-addressed by the .rs md5 so rebuilds are
-// cache-friendly. Mirrors the scheme the Webpack loader computes inline.
+// Per-source temp build dir, content-addressed by the source hash so rebuilds
+// are cache-friendly. Mirrors the scheme the Webpack loader computes inline.
 function resolveBuildContext(resourcePath) {
     const source = fs.readFileSync(resourcePath, "utf8");
     const { base } = path.parse(path.normalize(resourcePath));
-    const hash = crypto.createHash("md5").update(source).digest("hex");
+    const hash = crypto.createHash("sha256").update(source).digest("hex");
     const buildFolder = path.join(os.tmpdir(), `${base}.${hash}`);
     if (!fs.existsSync(buildFolder)) {
         fs.mkdirSync(buildFolder, { recursive: true });

@@ -1,6 +1,6 @@
-const path = require("path");
+const path = require("node:path");
 const jsonToToml = require("json2toml");
-const fs = require("fs");
+const fs = require("node:fs");
 const { parse: tomlToJson } = require("toml");
 
 module.exports = function findNearestCargoBy(constants) {
@@ -41,23 +41,23 @@ module.exports = function findNearestCargoBy(constants) {
                                         parsedFileEntry.root,
                                         parsedFileEntry.dir
                                             .split(path.sep)
-                                            .filter(Boolean)[0],
+                                            .find(Boolean),
                                     ) ===
                                     path.join(
                                         parsedBuildFolder.root,
                                         parsedBuildFolder.dir
                                             .split(path.sep)
-                                            .filter(Boolean)[0],
+                                            .find(Boolean),
                                     )
                                 ) {
-                                    const fileEntryDirs = fileEntry.split(
-                                        path.sep,
+                                    const fileEntryDirs = new Set(
+                                        fileEntry.split(path.sep),
                                     );
                                     if (
                                         buildFolder
                                             .split(path.sep)
                                             .some((dir) =>
-                                                fileEntryDirs.includes(dir),
+                                                fileEntryDirs.has(dir),
                                             )
                                     ) {
                                         return path
