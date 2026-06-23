@@ -68,12 +68,16 @@ async function rustWasmLoader(source) {
     // this loader is async
     const callback = this.async();
 
-    // Get all required params from webpack
+    // Webpack/Rspack expose `_compilation`; Turbopack's core loader API does not.
+    // When it is present the values below are byte-identical to before; when it is
+    // absent we fall back to plain loader-context fields so the inline path still runs.
+    const compilation = this._compilation;
     const params = {
         fileNameStruct:
-            this._compilation.outputOptions.webassemblyModuleFilename ||
+            compilation?.outputOptions?.webassemblyModuleFilename ||
             "[hash].module.wasm",
-        baseFolder: this._compilation.options.context,
+        baseFolder:
+            compilation?.options?.context || this.rootContext || process.cwd(),
         resourcePath: this.resourcePath,
     };
 
@@ -120,14 +124,29 @@ async function rustWasmLoader(source) {
             fs.mkdirSync(buildFolder, { recursive: true });
         }
 
-        // Create name of wasm file
-        const wasmName = loaderUtils.interpolateName(
-            this,
-            params.fileNameStruct,
-            {
-                content: source,
-            },
-        );
+        // Create name of wasm file. Webpack/Rspack feed it through
+        // `interpolateName`; under Turbopack (no compilation) the loader context
+        // is thinner, so if interpolation cannot run we derive a content-hashed
+        // name directly. The name is internal scratch for the inline path and
+        // never surfaces, so the exact shape does not matter.
+        const wasmName = compilation
+            ? loaderUtils.interpolateName(this, params.fileNameStruct, {
+                  content: source,
+              })
+            : (() => {
+                  try {
+                      return loaderUtils.interpolateName(
+                          this,
+                          params.fileNameStruct,
+                          { content: source },
+                      );
+                  } catch {
+                      return `${crypto
+                          .createHash("md5")
+                          .update(source)
+                          .digest("hex")}.module.wasm`;
+                  }
+              })();
 
         // Resolve publicPath only for the web path that actually fetches the
         // emitted asset at runtime; every other delivery slices it off, so it

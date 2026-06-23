@@ -5,9 +5,10 @@ sidebar_position: 8
 # Next.js Example
 
 This example shows how to use rust-wasmpack-loader with [Next.js](https://nextjs.org/) (App Router). The loader ships a
-`withRustWasm` helper that wraps your `next.config`, wiring the loader into Next's webpack passes so you can import `.rs`
-files from both Server and Client Components. The helper picks the `node` strategy for the server and the `web` strategy
-for the client, and inlines the WebAssembly bytes in both cases.
+`withRustWasm` helper that wraps your `next.config`, wiring the loader in so you can import `.rs` files from both Server
+and Client Components. The helper picks the `node` strategy for the server and the `web` strategy for the client, and
+inlines the WebAssembly bytes in both cases. The wrapped config works under both bundlers: webpack (`next build
+--webpack`) and Turbopack (`next build`, the Next.js 16 default). See [Turbopack](#turbopack) below for what differs.
 
 ## How delivery is decided
 
@@ -37,9 +38,37 @@ Real Edge `.wasm` support (`import "./x.wasm?module"`) is a planned enhancement.
 
 ## Turbopack
 
-Next.js 16 defaults to Turbopack, and `next build` fails when a custom webpack config is present. Since this helper wires
-the loader through webpack, opt out of Turbopack with the `--webpack` flag (`next build --webpack`, `next dev --webpack`).
-Turbopack support is tracked separately.
+Next.js 16 defaults to Turbopack, and `withRustWasm` supports it for the inlined-bytes path. The helper registers the
+loader under both `turbopack.rules` and the `webpack` function, so the same wrapped config builds either way: `next build`
+runs under Turbopack, `next build --webpack` opts back to webpack. Setting both keys is fine; Next.js only rejects a
+`webpack` config under Turbopack when no `turbopack` config is present, and the helper always sets one.
+
+Turbopack picks the loader by its rule `condition`: `browser` is the client bundle (`web` strategy) and `{ not: "browser" }`
+is the server bundle (`node` strategy). Both inline the bytes, so the same `.rs` resolves synchronously in Server and
+Client Components, exactly as on webpack.
+
+### What is supported under Turbopack
+
+Only the inlined-bytes delivery, which is what this helper uses. That is the full feature set the helper offers on Next,
+so a Turbopack build behaves the same as a webpack one for `.rs` imports.
+
+### What is blocked under Turbopack
+
+Turbopack implements only a core subset of the webpack loader API. It does not expose `this.emitFile` or
+`this._compilation`, so any delivery that emits the `.wasm` as a separate asset cannot run under it:
+
+- **`web.asyncLoading: true`** (fetch the `.wasm` at runtime) - needs `emitFile`. Blocked. The helper does not enable it.
+- **`node.bundle: false`** (read the `.wasm` from disk at runtime) - emits a separate file. Blocked. The helper does not enable it.
+
+Neither limitation affects this helper, because it only ever uses the inlined path. If you need an asset-emitting mode on
+Next, build with `--webpack` (where `emitFile` is available) and configure the loader directly.
+
+### Edge runtime
+
+Edge is unsupported under both bundlers, for the same reason: the Edge runtime cannot instantiate WebAssembly from
+inlined bytes. On the webpack pass the helper rejects an Edge `.rs` import with a clear build-time error (see
+[above](#edge-runtime-limitation)). Turbopack has no per-rule signal for the Edge environment, so there is no equivalent
+guard there; keep `.rs` imports out of Edge routes by adding `export const runtime = "nodejs"` to the route segment.
 
 ## Project Structure
 
@@ -145,12 +174,14 @@ export default function Result() {
 
 ### 8. Update Package.json
 
+The default scripts build under Turbopack. To build with webpack instead, add `--webpack` to `dev` and `build`.
+
 ```json title="package.json"
 {
     ...,
     "scripts": {
-        "dev": "next dev --webpack",
-        "build": "next build --webpack",
+        "dev": "next dev",
+        "build": "next build",
         "start": "next start"
     },
     ...
@@ -160,7 +191,7 @@ export default function Result() {
 ## Running the Example
 
 ```bash
-# Build (opts out of Turbopack so the webpack loader runs)
+# Build under Turbopack (the Next.js 16 default). Add --webpack to use webpack.
 npm run build
 ```
 
@@ -174,9 +205,10 @@ rustWasmLoader.next(nextConfig, {
 
 ---
 
-:::tip One `.rs`, both component kinds
-The same `import rsLib from "../lib.rs"` works from a Server Component and a Client Component. Next builds it with the
-`node` strategy for the server and `web` for the client, with the bytes inlined either way, so there is nothing to await.
+:::tip One `.rs`, both component kinds, both bundlers
+The same `import rsLib from "../lib.rs"` works from a Server Component and a Client Component, and the same wrapped config
+builds under Turbopack and webpack. Next builds it with the `node` strategy for the server and `web` for the client, with
+the bytes inlined either way, so there is nothing to await.
 :::
 
 :::warning Edge runtime
