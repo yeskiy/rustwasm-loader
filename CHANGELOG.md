@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [4.0.0](https://github.com/yeskiy/rustwasm-loader/compare/v3.4.0...v4.0.0) (2026-06-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* **deps:** building Rust sources now requires Rust >= 1.88 (wasm-pack 0.15).
+* **deps:** drops support for Node 18 and 20; the minimum is now Node 22.22.2.
+
+* **deps:** bump toml, json2toml, which, and ncu to latest majors ([bf785f9](https://github.com/yeskiy/rustwasm-loader/commit/bf785f9d2ce05b406e771b73ede46d41a07ed02f))
+* **deps:** upgrade wasm-pack to 0.15 and raise the rust floor ([81c3232](https://github.com/yeskiy/rustwasm-loader/commit/81c3232406171e9b34c1184d951c0eeb8171e858))
+
+
+### Features
+
+* **engine:** add option-driven target and import-based wasm delivery ([995a8cd](https://github.com/yeskiy/rustwasm-loader/commit/995a8cd36698a2629f2f77e6d0b4e1cceb953f65))
+* **esbuild:** add a first-class esbuild plugin ([60d6529](https://github.com/yeskiy/rustwasm-loader/commit/60d6529806a3f9b95b4a011075bd3772933afd17))
+* **next:** add Next.js support via a withRustWasm config helper ([a72cc58](https://github.com/yeskiy/rustwasm-loader/commit/a72cc58c531b164b2753a1e49479430765eaa815))
+* **next:** support Turbopack via turbopack.rules ([44bca77](https://github.com/yeskiy/rustwasm-loader/commit/44bca77f7bb68702d24cef3fdbd6f03d0acfed9f))
+* **rollup:** add a Rollup plugin ([26977ec](https://github.com/yeskiy/rustwasm-loader/commit/26977ec494c75912ab6818bd1f9e61847709e68b))
+* **rspack:** support Rspack via the webpack loader ([ee38991](https://github.com/yeskiy/rustwasm-loader/commit/ee38991c3f6241a43d2ce37a4a6c009e66845c63))
+* **vite:** add a Vite plugin with automatic SSR and client output ([82a1759](https://github.com/yeskiy/rustwasm-loader/commit/82a17593808f3b59ebac24bf540fa3192ff5cf17))
+
+
+### Bug Fixes
+
+* clear the SonarCloud quality gate on main ([51f9b92](https://github.com/yeskiy/rustwasm-loader/commit/51f9b927b0b942a0317ca9dc2cda7b98d5d3d58e))
+* **loader:** isolate concurrent same-source builds per target ([d5396f7](https://github.com/yeskiy/rustwasm-loader/commit/d5396f7ab63e04fcf7ad34a56cdaeae8604c4f4c))
+* **rspack:** compute publicPath only for the web target ([d0b400c](https://github.com/yeskiy/rustwasm-loader/commit/d0b400cfadb751fe9d8d5e4d45ce52e0103757c4))
+* **vite:** emit a working client build via __wbg_init ([b2aa0e1](https://github.com/yeskiy/rustwasm-loader/commit/b2aa0e1d465b1b829d8e2933e1f0386551becfe6))
+
 ## [3.4.0](https://github.com/yeskiy/rustwasm-loader/compare/v3.3.2...v3.4.0) (2026-06-22)
 
 ## [3.3.2](https://github.com/yeskiy/rustwasm-loader/compare/v3.3.1...v3.3.2) (2025-12-14)
