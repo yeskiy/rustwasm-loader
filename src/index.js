@@ -10,6 +10,7 @@ const bun = require("./bun");
 const esbuild = require("./esbuild");
 const rollup = require("./rollup");
 const vite = require("./vite");
+const next = require("./next");
 
 const optionsSchema = {
     type: "object",
@@ -186,4 +187,5 @@ rustWasmLoader.bun = bun;
 rustWasmLoader.esbuild = esbuild;
 rustWasmLoader.rollup = rollup;
 rustWasmLoader.vite = vite;
+rustWasmLoader.next = next;
 module.exports = rustWasmLoader;
