@@ -7,6 +7,9 @@
         "build": "next build --webpack",
         "test": "node --test src/index.test.js"
     },
+    "dependencies": {
+        "prop-types": "^15.8.1"
+    },
     "devDependencies": {
         "next": "^16.0.0",
         "react": "^19.0.0",

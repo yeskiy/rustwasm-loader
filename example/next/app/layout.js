@@ -1,3 +1,5 @@
+import PropTypes from "prop-types";
+
 export const metadata = {
     title: "rust-wasmpack-loader Next.js example",
 };
@@ -9,3 +11,7 @@ export default function RootLayout({ children }) {
         </html>
     );
 }
+
+RootLayout.propTypes = {
+    children: PropTypes.node,
+};
