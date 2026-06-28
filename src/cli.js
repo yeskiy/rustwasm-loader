@@ -33,30 +33,31 @@ async function collectFiles(patterns) {
     return [...matches];
 }
 
+async function regenerate(file) {
+    try {
+        await generateTypes(file);
+        console.log(`${PREFIX}: regenerated ${path.basename(file)}`);
+    } catch (error) {
+        console.error(`${PREFIX}: ${error.message}`);
+    }
+}
+
+// Debounced fs.watch handler for one file: coalesces rapid saves into a single
+// regeneration. Returned as a standalone handler so the watch wiring stays flat.
+const scheduleRegen = (file, timers) => () => {
+    clearTimeout(timers.get(file));
+    timers.set(
+        file,
+        setTimeout(() => regenerate(file), WATCH_DEBOUNCE_MS),
+    );
+};
+
 function watchFiles(files) {
     console.log(
         `${PREFIX}: watching ${files.length} file${pluralize(files.length)} for changes`,
     );
     const timers = new Map();
-    files.forEach((file) =>
-        fs.watch(file, () => {
-            clearTimeout(timers.get(file));
-            timers.set(
-                file,
-                setTimeout(() => {
-                    generateTypes(file)
-                        .then(() =>
-                            console.log(
-                                `${PREFIX}: regenerated ${path.basename(file)}`,
-                            ),
-                        )
-                        .catch((error) =>
-                            console.error(`${PREFIX}: ${error.message}`),
-                        );
-                }, WATCH_DEBOUNCE_MS),
-            );
-        }),
-    );
+    files.forEach((file) => fs.watch(file, scheduleRegen(file, timers)));
 }
 
 async function genTypes(args) {
@@ -84,9 +85,8 @@ module.exports = async function main(argv) {
     const [command, ...rest] = argv;
     const handler = COMMANDS[command];
     if (!handler) {
-        console.error(
-            `${PREFIX}: unknown command ${command ? `"${command}"` : "(none)"}`,
-        );
+        const label = command ? `"${command}"` : "(none)";
+        console.error(`${PREFIX}: unknown command ${label}`);
         console.error(`usage: ${PREFIX} gen-types [globs...] [--watch]`);
         process.exitCode = 1;
         return;
