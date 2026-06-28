@@ -49,6 +49,7 @@ export default defineConfig([
         files: [
             "src/**/*.js",
             "bin/**/*.js",
+            "tsserver.js",
             "*.cjs",
             "docs/**/*.js",
             "example/**/*.config.js",
