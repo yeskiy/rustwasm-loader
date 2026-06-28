@@ -17,7 +17,7 @@ Each example here is a complete project: the setup steps, the config files, and 
 
 ## Full-stack frameworks
 
-- [Next.js](./next) - App Router with the `withRustWasm` helper. The same `.rs` works from Server and Client Components (the `node` strategy for the server, `web` for the client), under both Turbopack and webpack.
+- [Next.js](./next) - App Router with the `withRustWasm` helper. The same `.rs` works from Server Components, Client Components, and Edge routes (the `node` strategy for the server, `web` for the client, and a pre-compiled module on Edge), under both Turbopack and webpack.
 
 ## Desktop applications
 

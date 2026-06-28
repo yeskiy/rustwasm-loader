@@ -13,83 +13,82 @@ const optionsSchema = {
     additionalProperties: false,
 };
 
+const rsLoaderRule = (options) => ({
+    test: /\.rs$/,
+    exclude: /node_modules/,
+    use: [{ loader: require.resolve("./index"), options }],
+});
+
 // Next.js runs the webpack pass once per environment (browser client, Node
 // server, Edge server). `isServer` is the backend/frontend signal and
-// `nextRuntime` distinguishes the Node server pass from the Edge one. The Edge
-// pass cannot run inlined-byte wasm, so its `.rs` files go through a guard loader
-// that throws a clear error if (and only if) one is imported.
+// `nextRuntime` distinguishes the Node server pass from the Edge one. The Node
+// and browser passes inline the wasm bytes; the Edge pass cannot instantiate wasm
+// from bytes, so it takes the `module` delivery (target `web`, since Edge is a
+// web-like runtime), shipping a pre-compiled WebAssembly.Module via a `?module`
+// import that Next's internal Edge wasm loader injects.
 const rsRule = (isServer, nextRuntime, logLevel) =>
-    nextRuntime === "edge"
-        ? {
-              test: /\.rs$/,
-              exclude: /node_modules/,
-              use: [{ loader: require.resolve("./next-edge-guard") }],
-          }
-        : {
-              test: /\.rs$/,
-              exclude: /node_modules/,
-              use: [
-                  {
-                      loader: require.resolve("./index"),
-                      options: {
-                          target: isServer ? "node" : "web",
-                          node: { bundle: true },
-                          web: { asyncLoading: false },
-                          logLevel,
-                      },
-                  },
-              ],
-          };
+    rsLoaderRule(
+        nextRuntime === "edge"
+            ? { target: "web", import: { strategy: "module" }, logLevel }
+            : {
+                  target: isServer ? "node" : "web",
+                  node: { bundle: true },
+                  web: { asyncLoading: false },
+                  logLevel,
+              },
+    );
 
 // Turbopack runs webpack loaders through `turbopack.rules`, mapping an extension
 // to loaders plus `as: "*.js"`. Its `condition` picks the loader per environment:
-// `browser` is the client bundle, `{ not: "browser" }` is the server. Turbopack's
-// loader API omits emitFile/_compilation/this.target, so only the inlined-bytes
-// delivery works; the loader reads `target` from these options instead. Edge is
-// not modeled here: Turbopack has no `nextRuntime` signal in a rule condition, and
-// the inlined-bytes delivery cannot instantiate wasm on Edge anyway.
-const turbopackLoader = (target, webOrNode, logLevel) => ({
+// `edge-light` is the Edge bundle, `browser` is the client, `{ not: "browser" }`
+// is the Node server. Turbopack's loader API omits emitFile/_compilation/
+// this.target, so the loader reads `target` from these options; the inlined-bytes
+// and `module` deliveries both fit that thinner context. Edge needs the `module`
+// delivery (it cannot instantiate wasm from bytes), and its rule is listed first
+// so it wins over the broader `{ not: "browser" }` condition that also matches Edge.
+const turbopackLoader = (target, extraOptions, logLevel) => ({
     loader: require.resolve("./index"),
     options: {
         target,
-        ...webOrNode,
+        ...extraOptions,
         logLevel,
     },
 });
 
+const turbopackRule = (condition, target, extraOptions, logLevel) => ({
+    condition,
+    loaders: [turbopackLoader(target, extraOptions, logLevel)],
+    as: "*.js",
+});
+
 const turbopackRsRules = (logLevel) => [
-    {
-        condition: { not: "browser" },
-        loaders: [
-            turbopackLoader("node", { node: { bundle: true } }, logLevel),
-        ],
-        as: "*.js",
-    },
-    {
-        condition: "browser",
-        loaders: [
-            turbopackLoader("web", { web: { asyncLoading: false } }, logLevel),
-        ],
-        as: "*.js",
-    },
+    turbopackRule(
+        "edge-light",
+        "web",
+        { import: { strategy: "module" } },
+        logLevel,
+    ),
+    turbopackRule("browser", "web", { web: { asyncLoading: false } }, logLevel),
+    turbopackRule(
+        { not: "browser" },
+        "node",
+        { node: { bundle: true } },
+        logLevel,
+    ),
 ];
 
 // Next sets `webassemblyModuleFilename` to a nested, token-laden path
 // (`static/wasm/[modulehash].wasm`). The loader feeds that value to wasm-pack as
 // the scratch output name, where the nested dir does not exist and `[modulehash]`
-// is not a known token, so the build fails. The bytes are inlined and the name
-// never surfaces, so a flat name is safe. The Edge pass never reaches the loader,
-// so it is left untouched.
+// is not a known token, so the build fails. The name never surfaces (the bytes are
+// inlined, and the Edge `module` delivery imports from its own cache path), so a
+// flat name is safe on every pass, Edge included.
 const withRsRule = (config, isServer, nextRuntime, logLevel) => ({
     ...config,
-    ...(nextRuntime === "edge"
-        ? {}
-        : {
-              output: {
-                  ...config.output,
-                  webassemblyModuleFilename: "[hash].module.wasm",
-              },
-          }),
+    output: {
+        ...config.output,
+        webassemblyModuleFilename: "[hash].module.wasm",
+    },
     module: {
         ...config.module,
         rules: [
@@ -111,11 +110,12 @@ const withRsRule = (config, isServer, nextRuntime, logLevel) => ({
  * keys is supported: Next only rejects a `webpack` config under Turbopack when no
  * `turbopack` config is present.
  *
- * Only the inlined-bytes delivery is wired. Turbopack's loader API omits
- * `emitFile`/`_compilation`, so the asset-emitting modes (`web.asyncLoading`,
- * `node.bundle: false`) cannot run under it. Edge routes are unsupported under
- * both bundlers because the Edge runtime cannot instantiate wasm from inlined
- * bytes; the webpack pass rejects an Edge `.rs` import with a clear error.
+ * Edge routes work too: the Edge pass takes the `module` delivery, shipping a
+ * pre-compiled WebAssembly.Module via a `?module` import (the only form the Edge
+ * runtime can instantiate). The Node and browser passes still inline the bytes,
+ * so the asset-emitting modes (`web.asyncLoading`, `node.bundle: false`) stay out
+ * of the Next path and the helper never needs `emitFile`/`_compilation`, which
+ * Turbopack's loader API omits.
  *
  * Loaders resolve through `require.resolve` against this package, so the helper
  * wires up the right files regardless of the consumer's module resolution.
