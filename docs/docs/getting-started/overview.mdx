@@ -65,9 +65,14 @@ Concrete examples:
 | `web`        | ✅                 | ✅                 | ❌   | ✅       | ✅      | ✅    | ✅       |
 | `node`       | ✅                 | ✅                 | ✅   | ✅       | ✅      | ✅    | ✅       |
 | `node-async` | ✅                 | ✅                 | ✅   | ❌       | ❌      | ❌    | ❌       |
-| `electron`   | ⚠️ *(not tested)* | ⚠️ *(not tested)* | ❌   | ❌       | ❌      | ❌    | ❌       |
+| `electron`   | ✅                 | ✅                 | ❌   | ❌       | ❌      | ❌    | ❌       |
 
 Rspack reuses the Webpack loader context, so the loader works with it through the same configuration.
+
+Electron's webpack targets map onto the same two strategies: `electron-main` and `electron-preload` use the `node`
+strategy, `electron-renderer` uses `web`, and both inline the wasm bytes. webpack normalizes versioned targets such as
+`electron20-main` down to these names before the loader sees them, and Rspack resolves them the same way, so the loader
+works under both. See the [Electron example](../examples/electron) for the two-config setup.
 
 Next.js uses the loader through the `withRustWasm` helper: the server build runs `node`, the client build runs `web`, and
 both inline the wasm bytes. The helper wires the loader into both bundlers, so the wrapped config builds under Turbopack

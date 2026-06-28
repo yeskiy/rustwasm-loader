@@ -18,3 +18,7 @@ Each example here is a complete project: the setup steps, the config files, and 
 ## Full-stack frameworks
 
 - [Next.js](./next) - App Router with the `withRustWasm` helper. The same `.rs` works from Server and Client Components (the `node` strategy for the server, `web` for the client), under both Turbopack and webpack.
+
+## Desktop applications
+
+- [Electron](./electron) - main and renderer processes with Webpack (`electron-main` uses the `node` strategy, `electron-renderer` uses `web`), with the wasm bytes inlined into both.

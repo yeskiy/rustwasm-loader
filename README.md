@@ -21,6 +21,8 @@ compilation and the glue code.
   production builds)
 - [Next.js](https://nextjs.org/) App Router through the `withRustWasm` helper (one `.rs` works from Server and Client
   Components; the `node` strategy on the server, `web` on the client, bytes inlined)
+- [Electron](https://www.electronjs.org/) apps with Webpack (`electron-main`/`electron-preload` use the `node` strategy,
+  `electron-renderer` uses `web`, bytes inlined)
 
 ## What it does
 
@@ -79,6 +81,8 @@ works across different setups:
 - [Vite](https://github.com/yeskiy/rustwasm-loader/tree/main/example/vite) - SSR and client builds with the Vite plugin
 - [Next.js](https://github.com/yeskiy/rustwasm-loader/tree/main/example/next) - App Router with Server and Client
   Components using the `withRustWasm` helper
+- [Electron](https://github.com/yeskiy/rustwasm-loader/tree/main/example/electron) - main and renderer processes with
+  Webpack
 
 ## Contributing
 

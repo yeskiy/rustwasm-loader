@@ -9,13 +9,17 @@ on:
 jobs:
     test:
         runs-on: ${{ matrix.os }}
+        env:
+            # The electron example builds and tests without launching Electron, so
+            # it never needs the platform binary - skip that download.
+            ELECTRON_SKIP_BINARY_DOWNLOAD: 1
         strategy:
             fail-fast: false
             matrix:
                 os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest ]
                 node: [ 22, 24 ]
                 rust: [ "1.88.0", "1.93.0" ]
-                test: [ example/node-bun, example/node-webpack, example/esbuild, example/rspack, example/rollup, example/vite, example/next, example/next-turbopack ]
+                test: [ example/node-bun, example/node-webpack, example/esbuild, example/rspack, example/rollup, example/vite, example/next, example/next-turbopack, example/electron ]
         steps:
             -   uses: actions/checkout@v5
             -   uses: actions/setup-node@v5

@@ -77,7 +77,7 @@ const assetEmittingDeliveries = new Set(["fetch", "fsread"]);
  * emitFile - function to emit file
  * */
 
-module.exports = async function pack(params, emitFile) {
+async function doPack(params, emitFile) {
     // Get  dir from resources
     const { dir } = path.parse(path.normalize(params.resourcePath));
 
@@ -299,4 +299,21 @@ module.exports = async function pack(params, emitFile) {
     return delivery === "import"
         ? patch.import(generatedJs)
         : patch[params.target](generatedJs);
+}
+
+// wasm-pack shells out to cargo, so running several builds at once contends on
+// the shared cargo cache. A cold cache (CI) makes this fail outright when a
+// parallel webpack MultiCompiler builds the same `.rs` for two targets at once.
+// Serialize the builds; the per-source temp dirs already isolate their output.
+let buildQueue = Promise.resolve();
+module.exports = function pack(params, emitFile) {
+    const run = buildQueue.then(
+        () => doPack(params, emitFile),
+        () => doPack(params, emitFile),
+    );
+    buildQueue = run.then(
+        () => undefined,
+        () => undefined,
+    );
+    return run;
 };

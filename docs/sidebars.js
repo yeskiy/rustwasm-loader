@@ -25,6 +25,7 @@ const sidebars = {
                 "docs/examples/rollup",
                 "docs/examples/vite",
                 "docs/examples/next",
+                "docs/examples/electron",
             ],
         },
         {
