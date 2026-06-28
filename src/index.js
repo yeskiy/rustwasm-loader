@@ -124,15 +124,16 @@ async function buildModuleDelivery(basePackParams, sourceHash) {
         .relative(path.dirname(basePackParams.resourcePath), cachePath)
         .split(path.sep)
         .join("/");
+    const wasmSpecifier = relativeWasm.startsWith(".")
+        ? `${relativeWasm}?module`
+        : `./${relativeWasm}?module`;
     return pack(
         {
             ...basePackParams,
             import: {
                 strategy: "module",
                 urlExpression: moduleBinding,
-                preamble: `import ${moduleBinding} from ${JSON.stringify(
-                    `${relativeWasm.startsWith(".") ? relativeWasm : `./${relativeWasm}`}?module`,
-                )};`,
+                preamble: `import ${moduleBinding} from ${JSON.stringify(wasmSpecifier)};`,
             },
         },
         noopEmit,
