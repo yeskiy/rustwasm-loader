@@ -10,7 +10,7 @@ const pack = require("./pack");
  * @property {string} logLevel - log level passed to wasm-pack
  * @property {string} [baseFolder] - project root used to resolve Cargo.toml (defaults to cwd)
  * @property {"inline" | "import"} [delivery] - how the wasm reaches the consumer (defaults to "inline")
- * @property {"fetch" | "fs"} [strategy] - import-delivery consumption mode (required when delivery is "import")
+ * @property {"fetch" | "fs" | "module"} [strategy] - import-delivery consumption mode (required when delivery is "import")
  * @property {(bytes: Buffer, wasmName: string) => string} [emitWasm] - emits the wasm as a host asset and returns the JS expression that resolves to its URL (import delivery only)
  * @property {string} [preamble] - source prepended to the generated module (import delivery only)
  */

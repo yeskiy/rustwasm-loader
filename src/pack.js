@@ -33,8 +33,8 @@ function logLevelSelector(level) {
  */
 
 /** @typedef {Object} ImportOptions
- * @property {string} urlExpression - JS expression that resolves to the wasm URL at runtime
- * @property {"fetch" | "fs"} strategy - how the URL is consumed (fetch for web, fs for node/SSR)
+ * @property {string} urlExpression - JS expression the chosen strategy consumes: the runtime wasm URL for `fetch`/`fs`, or a pre-compiled `WebAssembly.Module` binding for `module`
+ * @property {"fetch" | "fs" | "module"} strategy - how the wasm is consumed (fetch for web, fs for node/SSR, module for an already-compiled module on Edge)
  * @property {string} [preamble] - source prepended to the module (e.g. a `import url from "./x.wasm?url"` line)
  */
 
@@ -227,9 +227,10 @@ async function doPack(params, emitFile) {
             ].join("\n")}`;
         },
 
-        // Import-based delivery: the host bundler (Rollup/Vite/esbuild) resolves the
-        // .wasm as an asset and hands us its URL. We strip the wasm-pack bootstrap
-        // like the other modes and init from `params.import.urlExpression`.
+        // Import-based delivery: the host bundler resolves the .wasm itself and
+        // hands us either its URL (fetch/fs) or an already-compiled module
+        // (module). We strip the wasm-pack bootstrap like the other modes and
+        // init from `params.import.urlExpression`.
         import: (generatedJs) => {
             const { urlExpression, strategy, preamble } = params.import;
             const lines = generatedJs.replaceAll("_bg.wasm", "").split("\n");
@@ -242,8 +243,9 @@ async function doPack(params, emitFile) {
                 .join(",")}};`;
             // `fetch` reuses wasm-bindgen's own loader: it swaps the default
             // `import.meta.url` URL for the host asset URL, then awaits __wbg_init()
-            // so the wasm is fetched at runtime (Promise default export). `fs` strips
-            // the bootstrap and inits synchronously from the URL read off disk.
+            // so the wasm is fetched at runtime (Promise default export). The sync
+            // strategies strip the bootstrap and init in place from the kept glue
+            // helpers (__wbg_get_imports / __wbg_init_memory / __wbg_finalize_init).
             const body =
                 strategy === "fetch"
                     ? (() => {
@@ -266,21 +268,43 @@ async function doPack(params, emitFile) {
                               `export default new Promise(async (resolve, reject)=> { try{await __wbg_init(); resolve(${exportGenExpr})}catch(e){reject(e)}})`,
                           ];
                       })()
-                    : [
-                          ...lines.slice(
-                              0,
-                              lines.findIndex(
-                                  (item) =>
-                                      !!item.match(
-                                          /async function __wbg_init\(module_or_path\) {/g,
-                                      )?.length,
+                    : (() => {
+                          // `fs` reads the URL off disk into bytes and lets initSync
+                          // compile them (node only). `module` is handed an
+                          // already-compiled WebAssembly.Module and instantiates it
+                          // directly: initSync guards on `module instanceof
+                          // WebAssembly.Module`, which is false for a module the Next
+                          // Edge sandbox compiled in the host realm, so it would fall
+                          // back to a byte compile the Edge runtime forbids.
+                          // `new WebAssembly.Instance(module, imports)` accepts the
+                          // cross-realm module and never compiles bytes.
+                          const initBlock =
+                              strategy === "module"
+                                  ? [
+                                        `const __wbg_init = {}`,
+                                        `const __wbg_imports = __wbg_get_imports();`,
+                                        `__wbg_init_memory(__wbg_imports);`,
+                                        `__wbg_finalize_init(new WebAssembly.Instance(${urlExpression}, __wbg_imports), ${urlExpression});`,
+                                    ]
+                                  : [
+                                        `const __wbg_init = {}`,
+                                        `initSync({module:require('fs').readFileSync(${urlExpression})});`,
+                                    ];
+                          return [
+                              ...lines.slice(
+                                  0,
+                                  lines.findIndex(
+                                      (item) =>
+                                          !!item.match(
+                                              /async function __wbg_init\(module_or_path\) {/g,
+                                          )?.length,
+                                  ),
                               ),
-                          ),
-                          `const __wbg_init = {}`,
-                          `initSync({module:require('fs').readFileSync(${urlExpression})});`,
-                          exportedFunctions,
-                          `export default ${exportGenExpr}`,
-                      ];
+                              ...initBlock,
+                              exportedFunctions,
+                              `export default ${exportGenExpr}`,
+                          ];
+                      })();
             return `${[...(preamble ? [preamble] : []), ...body].join("\n")}`;
         },
     };

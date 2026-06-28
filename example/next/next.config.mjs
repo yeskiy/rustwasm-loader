@@ -1,6 +1,7 @@
 import rustWasmLoader from "rust-wasmpack-loader";
 
-// `output: "export"` statically prerenders to `out/`, so `next build` runs the
-// Server Component (and its wasm) at build time. The helper wires the loader into
-// every webpack pass: node strategy for the server, web for the client.
-export default rustWasmLoader.next({ output: "export" });
+// The helper wires the loader into every webpack/Turbopack pass: the node
+// strategy for the server, web for the client, and the `module` delivery for the
+// Edge runtime. The `/` page is a Server Component that runs its wasm at build
+// time (static prerender); `/api/edge` exercises the same `.rs` on Edge.
+export default rustWasmLoader.next({});

@@ -37,7 +37,7 @@ graph LR
 - esbuild plugin for bundling on Node.js or the browser
 - Rollup plugin for Rollup-based pipelines
 - Vite plugin that produces SSR (`node`) and client (`web`) output from a single `.rs` import
-- Next.js helper (`withRustWasm`) so one `.rs` file works from Server and Client Components (App Router)
+- Next.js helper (`withRustWasm`) so one `.rs` file works from Server Components, Client Components, and Edge routes (App Router)
 
 ## Use cases
 
@@ -75,11 +75,11 @@ strategy, `electron-renderer` uses `web`, and both inline the wasm bytes. webpac
 works under both. See the [Electron example](../examples/electron) for the two-config setup.
 
 Next.js uses the loader through the `withRustWasm` helper: the server build runs `node`, the client build runs `web`, and
-both inline the wasm bytes. The helper wires the loader into both bundlers, so the wrapped config builds under Turbopack
-(`next build`, the Next.js 16 default) and webpack (`next build --webpack`) alike. Only the inlined-bytes path runs under
-Turbopack; the asset-emitting modes need `emitFile`, which Turbopack does not expose. The Edge runtime is unsupported on
-both (Edge cannot instantiate wasm from inlined bytes); on the webpack pass an Edge `.rs` import is rejected with a clear
-build-time error.
+both inline the wasm bytes. Edge routes work too, through a separate `module` delivery that ships the wasm as a
+pre-compiled `WebAssembly.Module` (the one form the Edge runtime can instantiate). The helper wires all of this into both
+bundlers, so the wrapped config builds under Turbopack (`next build`, the Next.js 16 default) and webpack (`next build
+--webpack`) alike. The asset-emitting modes (`web.asyncLoading`, `node.bundle: false`) still need `emitFile`, which
+Turbopack does not expose, so the helper leaves them out of the Next path.
 
 ## Comparison with alternatives
 

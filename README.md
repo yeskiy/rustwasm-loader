@@ -19,8 +19,9 @@ compilation and the glue code.
 - [Rollup](https://rollupjs.org/) plugin (`node` and `web` targets, WASM inlined)
 - [Vite](https://vite.dev/) plugin (SSR uses the `node` strategy, the client uses `web`, with an emitted `.wasm` asset on
   production builds)
-- [Next.js](https://nextjs.org/) App Router through the `withRustWasm` helper (one `.rs` works from Server and Client
-  Components; the `node` strategy on the server, `web` on the client, bytes inlined)
+- [Next.js](https://nextjs.org/) App Router through the `withRustWasm` helper (one `.rs` works from Server Components,
+  Client Components, and Edge routes; `node` on the server and `web` on the client with bytes inlined, and a pre-compiled
+  module on Edge)
 - [Electron](https://www.electronjs.org/) apps with Webpack (`electron-main`/`electron-preload` use the `node` strategy,
   `electron-renderer` uses `web`, bytes inlined)
 
