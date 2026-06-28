@@ -1,0 +1,17 @@
+{
+    "engines": {
+        "node": ">=22.22.2"
+    },
+    "scripts": {
+        "build": "webpack --config webpack.config.js",
+        "start": "webpack --config webpack.config.js && electron dist/main.js",
+        "test": "node --test src/index.test.js"
+    },
+    "devDependencies": {
+        "electron": "^37.0.0",
+        "html-webpack-plugin": "^5.6.7",
+        "rust-wasmpack-loader": "file:../..",
+        "webpack": "^5.108.1",
+        "webpack-cli": "^7.1.0"
+    }
+}

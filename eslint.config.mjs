@@ -126,4 +126,22 @@ export default defineConfig([
             "import-x/no-extraneous-dependencies": "off",
         },
     },
+
+    // --- Electron example app sources (renderer runs in a browser; main pulls in the electron dev dep) ---
+    {
+        name: "project/example-electron-app",
+        files: [
+            "example/electron/src/main.js",
+            "example/electron/src/renderer.js",
+        ],
+        languageOptions: {
+            globals: {
+                ...globals.browser,
+            },
+        },
+        rules: {
+            "import-x/no-unresolved": "off",
+            "import-x/no-extraneous-dependencies": "off",
+        },
+    },
 ]);

@@ -62,6 +62,11 @@ const optionsSchema = {
 
 const constants = Object.seal({
     supportedTargets: ["web", "node"],
+    electronTargets: {
+        "electron-main": "node",
+        "electron-preload": "node",
+        "electron-renderer": "web",
+    },
 });
 
 async function rustWasmLoader(source) {
@@ -103,6 +108,13 @@ async function rustWasmLoader(source) {
 
         // Loader option wins; fall back to webpack's own target.
         params.target = options.target ?? this.target;
+
+        // Electron's webpack targets map onto the two strategies we already have:
+        // the main and preload processes are Node, the renderer is a browser. Both
+        // build with inlined bytes. webpack normalizes versioned targets (e.g.
+        // `electron20-main`) down to these three strings before the loader sees them.
+        params.target =
+            constants.electronTargets[params.target] ?? params.target;
 
         if (!constants.supportedTargets.includes(params.target)) {
             throw new Error(
