@@ -9,7 +9,7 @@
         "test": "node build.mjs && node --test dist/index.test.js"
     },
     "devDependencies": {
-        "esbuild": "^0.25.0",
+        "esbuild": "^0.28.1",
         "rust-wasmpack-loader": "file:../.."
     }
 }

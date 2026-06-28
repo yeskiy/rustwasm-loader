@@ -25,7 +25,6 @@ module.exports = {
                     loader: "babel-loader",
                     options: {
                         presets: ["@babel/preset-env"],
-                        plugins: ["@babel/plugin-syntax-async-generators"],
                     },
                 },
             },
@@ -38,7 +37,6 @@ module.exports = {
                         loader: "babel-loader",
                         options: {
                             presets: ["@babel/preset-env"],
-                            plugins: ["@babel/plugin-syntax-async-generators"],
                         },
                     },
                     {

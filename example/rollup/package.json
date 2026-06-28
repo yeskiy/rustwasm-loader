@@ -9,7 +9,7 @@
         "test": "rollup -c rollup.config.mjs && node --test dist/index.test.js"
     },
     "devDependencies": {
-        "rollup": "^4.0.0",
+        "rollup": "^4.62.2",
         "rust-wasmpack-loader": "file:../.."
     }
 }
