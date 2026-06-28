@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [4.1.0](https://github.com/yeskiy/rustwasm-loader/compare/v4.0.0...v4.1.0) (2026-06-28)
+
+
+### Features
+
+* **electron:** support Electron targets and add an example ([73398d1](https://github.com/yeskiy/rustwasm-loader/commit/73398d1bbf1128e86b11718b345c3ce760d1eb9b))
+
+
+### Bug Fixes
+
+* **loader:** serialize wasm-pack builds to avoid cargo cache contention ([52df4fc](https://github.com/yeskiy/rustwasm-loader/commit/52df4fc6b45df4aaff3462d1966dcb1f5ca90dac))
+
 ## [4.0.0](https://github.com/yeskiy/rustwasm-loader/compare/v3.4.0...v4.0.0) (2026-06-23)
 
 
