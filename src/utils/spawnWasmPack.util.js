@@ -7,6 +7,7 @@ module.exports = function spawnWasmPack({
     outName,
     isDebug,
     cwd,
+    typescript = false,
     args = [],
     extraArgs = [],
 }) {
@@ -20,6 +21,7 @@ module.exports = function spawnWasmPack({
         "--out-name",
         outName,
         ...(isDebug ? ["--dev"] : []),
+        ...(typescript ? [] : ["--no-typescript"]),
         ...extraArgs,
     ];
 

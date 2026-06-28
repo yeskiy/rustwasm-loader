@@ -1,0 +1,5 @@
+{
+    "extends": "./tsconfig.json",
+    "files": ["node_modules/rust-wasmpack-loader/types/rs.d.ts"],
+    "include": ["src/typecheck-reject.ts"]
+}

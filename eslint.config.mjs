@@ -47,6 +47,7 @@ export default defineConfig([
         name: "project/commonjs-sources",
         files: [
             "src/**/*.js",
+            "bin/**/*.js",
             "*.cjs",
             "docs/**/*.js",
             "example/**/*.config.js",
@@ -105,6 +106,17 @@ export default defineConfig([
         rules: {
             "import-x/no-unresolved": "off",
             "import-x/no-extraneous-dependencies": "off",
+        },
+    },
+
+    // --- Example node:test suites (.mjs; load the built bundle dynamically) ---
+    {
+        name: "project/example-node-tests",
+        files: ["example/**/*.test.mjs"],
+        rules: {
+            "import-x/no-unresolved": "off",
+            "import-x/no-extraneous-dependencies": "off",
+            "import-x/no-dynamic-require": "off",
         },
     },
 
