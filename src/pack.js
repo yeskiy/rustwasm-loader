@@ -2,6 +2,7 @@ const path = require("node:path");
 const fs = require("node:fs");
 const findNearestCargoBy = require("./utils/findNearestCargo.util");
 const spawnWasmPack = require("./utils/spawnWasmPack.util");
+const writeSidecar = require("./utils/writeSidecar.util");
 
 const constants = Object.seal({
     toArrayBuffer: `function toArrayBuffer(buffer) {\n    const ab = new ArrayBuffer(buffer.length);\n    const view = new Uint8Array(ab);\n    for (var i = 0; i < buffer.length; ++i) {\n        view[i] = buffer[i];\n    }\n    return ab;\n}`,
@@ -48,6 +49,7 @@ function logLevelSelector(level) {
  * @property {WebOptions} web - web options
  * @property {NodeOptions} node - node options
  * @property {ImportOptions} [import] - opt-in import-based wasm delivery (host bundler supplies the URL)
+ * @property {boolean} [emitTypes] - also write the `<name>.d.rs.ts` sidecar from this build (keeps wasm-bindgen typings instead of `--no-typescript`)
  * */
 
 // Shared default-export body: spreads the named Rust exports over any remaining
@@ -121,6 +123,9 @@ async function doPack(params, emitFile) {
         cwd: params.buildFolder,
         outDir: wasmBuildSource,
         outName: params.wasmName,
+        // Keep wasm-bindgen's `.d.ts` only when the sidecar is requested; otherwise
+        // the build drops it.
+        typescript: !!params.emitTypes,
         args: [...logLevelSelector(params.logLevel)],
         // use `web` target because the generated file of this target modifies easily
         extraArgs: ["--target", "web"],
@@ -319,6 +324,23 @@ async function doPack(params, emitFile) {
             encoding: "utf8",
         },
     );
+
+    // Typings reuse this build: wasm-bindgen also emitted `<name>.d.ts` (the
+    // companion to the glue `.js` above) when `emitTypes` is set, so transform it
+    // into the sidecar next to the source. The glue returned below is identical
+    // whether or not this runs.
+    if (params.emitTypes) {
+        writeSidecar(
+            params.resourcePath,
+            fs.readFileSync(
+                path.join(
+                    wasmBuildSource,
+                    `${params.wasmName.replace(".wasm", "")}.d.ts`,
+                ),
+                "utf8",
+            ),
+        );
+    }
 
     return delivery === "import"
         ? patch.import(generatedJs)

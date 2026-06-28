@@ -10,6 +10,11 @@ const optionsSchema = {
             description:
                 "Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)",
         },
+        types: {
+            type: "boolean",
+            description:
+                "Also write the `<name>.d.rs.ts` sidecar next to each `.rs` source during the build (off by default)",
+        },
     },
     additionalProperties: false,
 };
@@ -40,6 +45,7 @@ module.exports = function esbuild(config) {
                         build.initialOptions.absWorkingDir || process.cwd(),
                     target: targetForPlatform(build.initialOptions.platform),
                     logLevel: options.logLevel,
+                    emitTypes: options.types === true,
                 }),
             );
         },

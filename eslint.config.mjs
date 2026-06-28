@@ -17,6 +17,7 @@ export default defineConfig([
         "**/.next/**",
         "**/out/**",
         ".docusaurus/**",
+        "**/*.d.rs.ts",
     ]),
 
     { name: "js/config", ...js.configs.recommended },

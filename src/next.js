@@ -9,6 +9,11 @@ const optionsSchema = {
             description:
                 "Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)",
         },
+        types: {
+            type: "boolean",
+            description:
+                "Also write the `<name>.d.rs.ts` sidecar next to each `.rs` source during the build (off by default)",
+        },
     },
     additionalProperties: false,
 };
@@ -26,15 +31,15 @@ const rsLoaderRule = (options) => ({
 // from bytes, so it takes the `module` delivery (target `web`, since Edge is a
 // web-like runtime), shipping a pre-compiled WebAssembly.Module via a `?module`
 // import that Next's internal Edge wasm loader injects.
-const rsRule = (isServer, nextRuntime, logLevel) =>
+const rsRule = (isServer, nextRuntime, shared) =>
     rsLoaderRule(
         nextRuntime === "edge"
-            ? { target: "web", import: { strategy: "module" }, logLevel }
+            ? { target: "web", import: { strategy: "module" }, ...shared }
             : {
                   target: isServer ? "node" : "web",
                   node: { bundle: true },
                   web: { asyncLoading: false },
-                  logLevel,
+                  ...shared,
               },
     );
 
@@ -46,34 +51,34 @@ const rsRule = (isServer, nextRuntime, logLevel) =>
 // and `module` deliveries both fit that thinner context. Edge needs the `module`
 // delivery (it cannot instantiate wasm from bytes), and its rule is listed first
 // so it wins over the broader `{ not: "browser" }` condition that also matches Edge.
-const turbopackLoader = (target, extraOptions, logLevel) => ({
+const turbopackLoader = (target, extraOptions, shared) => ({
     loader: require.resolve("./index"),
     options: {
         target,
         ...extraOptions,
-        logLevel,
+        ...shared,
     },
 });
 
-const turbopackRule = (condition, target, extraOptions, logLevel) => ({
+const turbopackRule = (condition, target, extraOptions, shared) => ({
     condition,
-    loaders: [turbopackLoader(target, extraOptions, logLevel)],
+    loaders: [turbopackLoader(target, extraOptions, shared)],
     as: "*.js",
 });
 
-const turbopackRsRules = (logLevel) => [
+const turbopackRsRules = (shared) => [
     turbopackRule(
         "edge-light",
         "web",
         { import: { strategy: "module" } },
-        logLevel,
+        shared,
     ),
-    turbopackRule("browser", "web", { web: { asyncLoading: false } }, logLevel),
+    turbopackRule("browser", "web", { web: { asyncLoading: false } }, shared),
     turbopackRule(
         { not: "browser" },
         "node",
         { node: { bundle: true } },
-        logLevel,
+        shared,
     ),
 ];
 
@@ -83,7 +88,7 @@ const turbopackRsRules = (logLevel) => [
 // is not a known token, so the build fails. The name never surfaces (the bytes are
 // inlined, and the Edge `module` delivery imports from its own cache path), so a
 // flat name is safe on every pass, Edge included.
-const withRsRule = (config, isServer, nextRuntime, logLevel) => ({
+const withRsRule = (config, isServer, nextRuntime, shared) => ({
     ...config,
     output: {
         ...config.output,
@@ -93,7 +98,7 @@ const withRsRule = (config, isServer, nextRuntime, logLevel) => ({
         ...config.module,
         rules: [
             ...(config.module?.rules ?? []),
-            rsRule(isServer, nextRuntime, logLevel),
+            rsRule(isServer, nextRuntime, shared),
         ],
     },
 });
@@ -120,7 +125,7 @@ const withRsRule = (config, isServer, nextRuntime, logLevel) => ({
  * Loaders resolve through `require.resolve` against this package, so the helper
  * wires up the right files regardless of the consumer's module resolution.
  * @param {import("next").NextConfig} [nextConfig] - the Next.js config to extend
- * @param {{ logLevel?: string }} [pluginOptions]
+ * @param {{ logLevel?: string, types?: boolean }} [pluginOptions]
  * @returns {import("next").NextConfig}
  */
 function withRustWasm(nextConfig = {}, pluginOptions = {}) {
@@ -130,13 +135,19 @@ function withRustWasm(nextConfig = {}, pluginOptions = {}) {
         name: "rust-wasmpack-loader",
     });
 
+    // Cross-cutting loader options every pass shares; spread onto each rule.
+    const shared = {
+        logLevel: options.logLevel,
+        types: options.types === true,
+    };
+
     return {
         ...nextConfig,
         turbopack: {
             ...nextConfig.turbopack,
             rules: {
                 ...nextConfig.turbopack?.rules,
-                "*.rs": turbopackRsRules(options.logLevel),
+                "*.rs": turbopackRsRules(shared),
             },
         },
         webpack(config, webpackOptions) {
@@ -144,7 +155,7 @@ function withRustWasm(nextConfig = {}, pluginOptions = {}) {
                 config,
                 webpackOptions.isServer,
                 webpackOptions.nextRuntime,
-                options.logLevel,
+                shared,
             );
 
             return typeof nextConfig.webpack === "function"

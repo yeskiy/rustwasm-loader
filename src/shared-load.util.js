@@ -13,6 +13,7 @@ const pack = require("./pack");
  * @property {"fetch" | "fs" | "module"} [strategy] - import-delivery consumption mode (required when delivery is "import")
  * @property {(bytes: Buffer, wasmName: string) => string} [emitWasm] - emits the wasm as a host asset and returns the JS expression that resolves to its URL (import delivery only)
  * @property {string} [preamble] - source prepended to the generated module (import delivery only)
+ * @property {boolean} [emitTypes] - also write the `<name>.d.rs.ts` sidecar from this build (defaults to false)
  */
 
 const inlineWebOptions = {
@@ -66,6 +67,7 @@ async function buildRsModule(params) {
         buildFolder,
         wasmName,
         logLevel: params.logLevel,
+        emitTypes: params.emitTypes === true,
         web: inlineWebOptions,
         node: inlineNodeOptions,
     };
