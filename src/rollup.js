@@ -16,6 +16,11 @@ const optionsSchema = {
             description:
                 "Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)",
         },
+        types: {
+            type: "boolean",
+            description:
+                "Also write the `<name>.d.rs.ts` sidecar next to each `.rs` source during the build (off by default)",
+        },
     },
     additionalProperties: false,
 };
@@ -28,7 +33,7 @@ const isRustModule = (id) => id.split("?")[0].split("#")[0].endsWith(".rs");
  * Builds a Rollup plugin that compiles `.rs` modules to inline-wasm JavaScript.
  * Exposed as a factory so adjacent integrations (such as Vite, whose plugins are
  * a superset of Rollup's) can wrap the returned object and add their own hooks.
- * @param {{ target?: "web" | "node", logLevel?: string }} [config]
+ * @param {{ target?: "web" | "node", logLevel?: string, types?: boolean }} [config]
  * @param {Partial<import("rollup").Plugin>} [overrides] - extra plugin fields merged on top
  * @returns {import("rollup").Plugin}
  */
@@ -48,6 +53,7 @@ function createRustWasmRollupPlugin(config, overrides) {
                       baseFolder: process.cwd(),
                       target: options.target,
                       logLevel: options.logLevel,
+                      emitTypes: options.types === true,
                   })
                 : null;
         },

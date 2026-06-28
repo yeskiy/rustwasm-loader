@@ -4,7 +4,7 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const findNearestCargoBy = require("./findNearestCargo.util");
 const spawnWasmPack = require("./spawnWasmPack.util");
-const dtsToSidecar = require("./dtsTransform.util");
+const writeSidecar = require("./writeSidecar.util");
 
 const constants = Object.freeze({
     CARGO_TOML: "Cargo.toml",
@@ -37,13 +37,6 @@ function typedBuildFolder(resourcePath) {
         fs.mkdirSync(buildFolder, { recursive: true });
     }
     return buildFolder;
-}
-
-// `math.rs` -> `math.d.rs.ts`, the name TS resolves to under
-// `allowArbitraryExtensions`, overriding the ambient `*.rs` floor for this file.
-function sidecarPathFor(resourcePath) {
-    const { dir, name } = path.parse(resourcePath);
-    return path.join(dir, `${name}.d.rs.ts`);
 }
 
 /**
@@ -90,16 +83,11 @@ module.exports = async function generateTypes(resourcePath, options = {}) {
         extraArgs: ["--target", "web"],
     });
 
-    const sidecarPath = sidecarPathFor(resourcePath);
-    fs.writeFileSync(
-        sidecarPath,
-        dtsToSidecar(
-            fs.readFileSync(
-                path.join(outDir, `${constants.OUT_NAME}.d.ts`),
-                "utf8",
-            ),
+    return writeSidecar(
+        resourcePath,
+        fs.readFileSync(
+            path.join(outDir, `${constants.OUT_NAME}.d.ts`),
+            "utf8",
         ),
-        { encoding: "utf8" },
     );
-    return sidecarPath;
 };

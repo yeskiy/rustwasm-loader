@@ -16,6 +16,11 @@ const optionsSchema = {
             description:
                 "Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)",
         },
+        types: {
+            type: "boolean",
+            description:
+                "Also write the `<name>.d.rs.ts` sidecar next to each `.rs` source during the build (off by default)",
+        },
     },
     additionalProperties: false,
 };
@@ -50,7 +55,7 @@ const resolveIsSSR = (ctx, loadOptions) =>
  * runtime via Rollup's file-url reference). Dev, every SSR build, and bundled
  * SSR targets (`webworker`/edge) inline the wasm bytes, which is always correct
  * and sidesteps dev-server asset plumbing.
- * @param {{ ssrNoExternal?: string[], logLevel?: string }} [config]
+ * @param {{ ssrNoExternal?: string[], logLevel?: string, types?: boolean }} [config]
  * @returns {import("vite").Plugin}
  */
 function vite(config) {
@@ -99,6 +104,7 @@ function vite(config) {
                 baseFolder: process.cwd(),
                 target,
                 logLevel: options.logLevel,
+                emitTypes: options.types === true,
             };
 
             return shouldEmit

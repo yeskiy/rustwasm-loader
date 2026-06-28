@@ -96,3 +96,21 @@ test("precise types, floor fallback, and runtime fidelity", async () => {
     assert.equal(built.fib10, 55);
     assert.equal(built.capped, "Hello");
 });
+
+test("the webpack build writes the sidecar when `types: true`", async () => {
+    // Independent of the `gen-types` CLI pretest: the loader emits the sidecar
+    // during a normal build, reusing the build it already runs.
+    fs.rmSync(SIDECAR, { force: true });
+    assert.equal(fs.existsSync(SIDECAR), false);
+
+    await buildWebpack();
+
+    assert.ok(
+        fs.existsSync(SIDECAR),
+        "the build with types:true must write the sidecar",
+    );
+    assert.match(
+        fs.readFileSync(SIDECAR, "utf8"),
+        /fibonacci\(n: number\): number;/,
+    );
+});

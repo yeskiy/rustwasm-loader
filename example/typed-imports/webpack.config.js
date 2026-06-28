@@ -43,6 +43,7 @@ module.exports = {
                         target: "node",
                         node: { bundle: true },
                         logLevel: "error",
+                        types: true,
                     },
                 },
             },

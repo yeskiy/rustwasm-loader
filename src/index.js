@@ -56,6 +56,11 @@ const optionsSchema = {
             description:
                 "Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)",
         },
+        types: {
+            type: "boolean",
+            description:
+                "Also write the `<name>.d.rs.ts` sidecar next to each `.rs` source during the build (off by default)",
+        },
         import: {
             description:
                 'Opt-in import-based wasm delivery. `strategy: "module"` ships the wasm as a pre-compiled WebAssembly.Module via a `?module` import, the only form the Next.js Edge runtime can instantiate.',
@@ -280,6 +285,7 @@ async function rustWasmLoader(source) {
             wasmName,
             target: params.target,
             logLevel: options.logLevel,
+            emitTypes: options.types === true,
             web: {
                 ...options.web,
                 publicPath,
