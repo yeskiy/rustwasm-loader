@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [4.2.0](https://github.com/yeskiy/rustwasm-loader/compare/v4.1.0...v4.2.0) (2026-06-28)
+
+
+### Features
+
+* support the Next.js Edge runtime for .rs imports ([9d271e1](https://github.com/yeskiy/rustwasm-loader/commit/9d271e14b3066ea009cc2b91d3cb084f530a9afa))
+
 ## [4.1.0](https://github.com/yeskiy/rustwasm-loader/compare/v4.0.0...v4.1.0) (2026-06-28)
 
 
