@@ -3,6 +3,9 @@
     "version": "4.2.0",
     "description": "wasm Webpack/Bun loader for .rs (Rust) resources. Boost your Webpack-powered projects with native WebAssembly support using the 'rust-wasmpack-loader'. This powerful loader enables seamless integration of Rust resources, unlocking high-performance capabilities for your web applications.",
     "main": "./src/index.js",
+    "bin": {
+        "rust-wasmpack-loader": "bin/rust-wasmpack-loader.js"
+    },
     "scripts": {
         "release": "npx commit-and-tag-version && npm run postrelease",
         "postrelease": "cd ./example/node-webpack && npm i && cd ../../ && cd ./example/web-webpack && npm i && cd ../../ && cd ./example/node-bun && npm i && cd ../../ && cd ./example/esbuild && npm i && cd ../../ && cd ./example/rspack && npm i && cd ../../ && cd ./example/rollup && npm i && cd ../../ && cd ./example/vite && npm i && cd ../../ && cd ./example/next && npm i && cd ../../ && cd ./example/next-turbopack && npm i && cd ../../ && cd ./example/electron && npm i",
@@ -96,6 +99,7 @@
         "lodash": "^4.18.1",
         "schema-utils": "^4.3.3",
         "toml": "^4.1.1",
+        "typescript": "^6.0.3",
         "wasm-pack": "^0.15.0",
         "which": "^7.0.0"
     },
@@ -145,8 +149,7 @@
         "globals": "^17.4.0",
         "npm-check-updates": "^22.2.7",
         "prettier": "^3.8.4",
-        "prism-react-renderer": "^2.4.1",
-        "typescript": "^6.0.3"
+        "prism-react-renderer": "^2.4.1"
     },
     "engines": {
         "node": ">=22.22.2"
@@ -158,6 +161,9 @@
     "files": [
         "bun",
         "src",
+        "!src/**/*.test.js",
+        "types",
+        "bin",
         "LICENSE",
         "README.md"
     ]

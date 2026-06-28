@@ -123,7 +123,7 @@ async function doPack(params, emitFile) {
         outName: params.wasmName,
         args: [...logLevelSelector(params.logLevel)],
         // use `web` target because the generated file of this target modifies easily
-        extraArgs: ["--target", "web", "--no-typescript"],
+        extraArgs: ["--target", "web"],
     });
 
     // Add generated .wasm binary to webpack files

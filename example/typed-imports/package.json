@@ -1,0 +1,18 @@
+{
+    "engines": {
+        "node": ">=22.22.2"
+    },
+    "scripts": {
+        "pretest": "node ../../bin/rust-wasmpack-loader.js gen-types math.rs",
+        "test": "node --test src/types.test.mjs"
+    },
+    "devDependencies": {
+        "@babel/core": "^8.0.1",
+        "@babel/preset-env": "^8.0.2",
+        "@babel/preset-typescript": "^8.0.1",
+        "babel-loader": "^10.1.1",
+        "rust-wasmpack-loader": "file:../..",
+        "typescript": "^6.0.3",
+        "webpack": "^5.108.1"
+    }
+}

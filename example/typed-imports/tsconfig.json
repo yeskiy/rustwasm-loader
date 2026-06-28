@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "noEmit": true,
+        "strict": true,
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "allowArbitraryExtensions": true,
+        "skipLibCheck": true,
+        "target": "es2020",
+        "types": []
+    },
+    "files": ["node_modules/rust-wasmpack-loader/types/rs.d.ts"],
+    "include": ["src/index.ts"]
+}

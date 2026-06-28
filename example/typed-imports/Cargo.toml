@@ -1,0 +1,11 @@
+[package]
+name = "typed-imports-example"
+version = "0.1.0"
+authors = ["Yehor Brodskiy"]
+
+[lib]
+crate-type = ["cdylib"]
+path = "math.rs"
+
+[dependencies]
+wasm-bindgen = "0.2.95"
