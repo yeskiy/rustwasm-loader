@@ -31,6 +31,7 @@ compilation and the glue code.
 - Works with `wasm_bindgen` exports and with plain functions.
 - Finds the nearest `Cargo.toml` by walking up from the `.rs` file, so you do not configure the crate path by hand.
 - Builds for `web` and `node` targets, and across the bundlers listed above.
+- Types `.rs` imports in TypeScript: an ambient floor keeps imports valid, and generated `.d.rs.ts` sidecars (plus an editor Language Service plugin) give the exact `#[wasm_bindgen]` signatures.
 
 You write computation-heavy code in Rust, pull in crates from the Rust ecosystem, and call the result from JavaScript
 without managing a separate compile-and-link pipeline.

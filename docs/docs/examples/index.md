@@ -22,3 +22,7 @@ Each example here is a complete project: the setup steps, the config files, and 
 ## Desktop applications
 
 - [Electron](./electron.md) - main and renderer processes with Webpack (`electron-main` uses the `node` strategy, `electron-renderer` uses `web`), with the wasm bytes inlined into both.
+
+## TypeScript
+
+- [TypeScript types](./typed-imports.md) - type `.rs` imports with the ambient floor, the `gen-types` CLI, the build-time `types` option, and the editor Language Service plugin.
