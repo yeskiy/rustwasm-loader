@@ -32,6 +32,7 @@ interface LoaderOptions {
 | `web.wasmPathModifier` | `string[]` | `["/"]`        | Modify WASM request path    |
 | `node.bundle`          | `boolean`  | `false`        | Bundle WASM in JS file      |
 | `logLevel`             | `string`   | `"info"`       | Logging verbosity           |
+| `types`                | `boolean`  | `false`        | Write `.d.rs.ts` type sidecars on build |
 
 ## Target environments
 
@@ -130,6 +131,9 @@ plugin(loader.bun({
 |------------|-------------------------------------------------------|------------------|--------------------------------|
 | `target`   | `"web" \| "node"`                                     | webpack `target` | Override the build target      |
 | `logLevel` | `"verbose" \| "info" \| "warn" \| "error" \| "quiet"` | `"info"`         | Control logging verbosity      |
+| `types`    | `boolean`                                             | `false`          | Also write the `<name>.d.rs.ts` type sidecar during the build |
+
+`types` is available on every surface (the loader, the Vite/Rollup/esbuild/Bun plugins, and the Next.js helper). It is one of three ways to generate the type sidecars, alongside the `gen-types` CLI and the editor Language Service plugin. See [TypeScript types](../examples/typed-imports.md) for the full setup.
 
 ### Bun options
 

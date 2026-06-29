@@ -26,6 +26,7 @@ const sidebars = {
                 "docs/examples/vite",
                 "docs/examples/next",
                 "docs/examples/electron",
+                "docs/examples/typed-imports",
             ],
         },
         {

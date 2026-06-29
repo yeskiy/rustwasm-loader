@@ -30,7 +30,7 @@ graph LR
 
 - Import `.rs` files like any other module, with no separate build step to wire up
 - Hot reload during development
-- TypeScript integration through generated type definitions
+- Typed `.rs` imports: an ambient floor for valid imports, generated `.d.rs.ts` sidecars for the exact `#[wasm_bindgen]` signatures, and an editor Language Service plugin for live types
 - Webpack 5+ with explicit targets (web, node)
 - Rspack through the same Webpack-compatible loader
 - Bun runtime support
