@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [4.3.0](https://github.com/yeskiy/rustwasm-loader/compare/v4.2.0...v4.3.0) (2026-06-29)
+
+
+### Features
+
+* add a tsserver plugin for live .rs types in the editor ([70e9c5c](https://github.com/yeskiy/rustwasm-loader/commit/70e9c5ce030f0f7fe3e1ef0729602f350496f4df))
+* emit type sidecars during builds via the `types` option ([50e73a8](https://github.com/yeskiy/rustwasm-loader/commit/50e73a80a92e8d3154cbc30d1a5733606cc0a552))
+* generate TypeScript types for .rs imports ([b00bb46](https://github.com/yeskiy/rustwasm-loader/commit/b00bb4628de0975df9dcffafdd2484e04f5c3ec8))
+
 ## [4.2.0](https://github.com/yeskiy/rustwasm-loader/compare/v4.1.0...v4.2.0) (2026-06-28)
 
 
