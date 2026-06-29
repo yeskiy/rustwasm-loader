@@ -100,7 +100,7 @@ function createTypeCache({
         );
     };
 
-    const pending = () => Promise.allSettled([...inflight.values()]);
+    const pending = () => Promise.allSettled(inflight.values());
 
     return { versionOf, snapshotOf, ensureFresh, pending };
 }
