@@ -7,7 +7,8 @@
         "allowArbitraryExtensions": true,
         "skipLibCheck": true,
         "target": "es2020",
-        "types": []
+        "types": [],
+        "plugins": [{ "name": "rust-wasmpack-loader/tsserver" }]
     },
     "files": ["node_modules/rust-wasmpack-loader/types/rs.d.ts"],
     "include": ["src/index.ts"]

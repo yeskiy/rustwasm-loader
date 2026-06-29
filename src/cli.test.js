@@ -100,10 +100,15 @@ test("--watch regenerates the sidecar on source change", { skip }, async () => {
             `watch did not pick up the new export:\n${output()}`,
         );
     } finally {
-        child.kill();
-        await new Promise((resolve) => {
-            child.once("exit", resolve);
-        });
+        child.kill("SIGKILL");
+        await Promise.race([
+            new Promise((resolve) => {
+                child.once("exit", resolve);
+            }),
+            new Promise((resolve) => {
+                setTimeout(resolve, 5000);
+            }),
+        ]);
         // Windows can hold the directory briefly after the child exits.
         await waitFor(() => {
             try {

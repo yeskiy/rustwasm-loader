@@ -40,15 +40,16 @@ function typedBuildFolder(resourcePath) {
 }
 
 /**
- * Builds a `.rs` source with wasm-bindgen typings enabled, transforms the
- * generated `.d.ts` into a sidecar matching the loader's runtime default export,
- * and writes `<name>.d.rs.ts` next to the source. Reuses the loader's
- * Cargo-discovery and wasm-pack pipeline; idempotent across runs.
+ * Builds a `.rs` source with wasm-bindgen typings enabled and returns the raw
+ * wasm-bindgen `.d.ts` source, without writing anything next to the `.rs`.
+ * Reuses the loader's Cargo-discovery and wasm-pack pipeline; idempotent across
+ * runs. The tsserver plugin uses this to type `.rs` imports live without
+ * touching disk; `generateTypes` layers the on-disk sidecar write on top.
  * @param {string} resourcePath absolute path to the `.rs` file
  * @param {{ baseFolder?: string, logLevel?: string }} [options]
- * @returns {Promise<string>} the written sidecar path
+ * @returns {Promise<string>} the wasm-bindgen `.d.ts` source
  */
-module.exports = async function generateTypes(resourcePath, options = {}) {
+async function buildTypedDts(resourcePath, options = {}) {
     const baseFolder = path.normalize(options.baseFolder || process.cwd());
     const fileEntry = path.normalize(resourcePath);
     const { dir } = path.parse(fileEntry);
@@ -83,11 +84,26 @@ module.exports = async function generateTypes(resourcePath, options = {}) {
         extraArgs: ["--target", "web"],
     });
 
+    return fs.readFileSync(
+        path.join(outDir, `${constants.OUT_NAME}.d.ts`),
+        "utf8",
+    );
+}
+
+/**
+ * Builds a `.rs` source with wasm-bindgen typings enabled, transforms the
+ * generated `.d.ts` into a sidecar matching the loader's runtime default export,
+ * and writes `<name>.d.rs.ts` next to the source.
+ * @param {string} resourcePath absolute path to the `.rs` file
+ * @param {{ baseFolder?: string, logLevel?: string }} [options]
+ * @returns {Promise<string>} the written sidecar path
+ */
+async function generateTypes(resourcePath, options = {}) {
     return writeSidecar(
         resourcePath,
-        fs.readFileSync(
-            path.join(outDir, `${constants.OUT_NAME}.d.ts`),
-            "utf8",
-        ),
+        await buildTypedDts(resourcePath, options),
     );
-};
+}
+
+module.exports = generateTypes;
+module.exports.buildTypedDts = buildTypedDts;

@@ -7,6 +7,7 @@
         "rust-wasmpack-loader": "bin/rust-wasmpack-loader.js"
     },
     "scripts": {
+        "test": "node --test --test-concurrency=1 --test-force-exit \"src/**/*.test.js\"",
         "release": "npx commit-and-tag-version && npm run postrelease",
         "postrelease": "cd ./example/node-webpack && npm i && cd ../../ && cd ./example/web-webpack && npm i && cd ../../ && cd ./example/node-bun && npm i && cd ../../ && cd ./example/esbuild && npm i && cd ../../ && cd ./example/rspack && npm i && cd ../../ && cd ./example/rollup && npm i && cd ../../ && cd ./example/vite && npm i && cd ../../ && cd ./example/next && npm i && cd ../../ && cd ./example/next-turbopack && npm i && cd ../../ && cd ./example/electron && npm i",
         "docs:start": "docusaurus start --config ./docs/docusaurus.config.js",
@@ -164,6 +165,7 @@
         "!src/**/*.test.js",
         "types",
         "bin",
+        "tsserver.js",
         "LICENSE",
         "README.md"
     ]
