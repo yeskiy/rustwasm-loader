@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const findNearestCargoBy = require("./utils/findNearestCargo.util");
 const spawnWasmPack = require("./utils/spawnWasmPack.util");
 const writeSidecar = require("./utils/writeSidecar.util");
+const stripGlueFooter = require("./utils/stripGlueFooter.util");
 
 const constants = Object.seal({
     toArrayBuffer: `function toArrayBuffer(buffer) {\n    const ab = new ArrayBuffer(buffer.length);\n    const view = new Uint8Array(ab);\n    for (var i = 0; i < buffer.length; ++i) {\n        view[i] = buffer[i];\n    }\n    return ab;\n}`,
@@ -183,23 +184,32 @@ async function doPack(params, emitFile) {
 
         web: (generatedJs) => {
             const lines = generatedJs.replaceAll("_bg.wasm", "").split("\n");
-            const clearMatch = params.web.asyncLoading
-                ? /export { initSync }/g
-                : /async function __wbg_init\(module_or_path\) {/g;
             const badImportIndex = lines.findIndex(
                 (item) => !!item.match(/import.meta.url/g)?.length,
             );
-            lines[badImportIndex] = `       input = "${path.posix.join(
-                ...params.web.wasmPathModifier,
-                ...(params.web.usePublicPath ? params.web.publicPath : []),
-                params.wasmName,
-            )}"`;
+            lines[badImportIndex] =
+                `        module_or_path = "${path.posix.join(
+                    ...params.web.wasmPathModifier,
+                    ...(params.web.usePublicPath ? params.web.publicPath : []),
+                    params.wasmName,
+                )}";`;
+            // Async loading keeps wasm-bindgen's own `__wbg_init` and only drops the
+            // export footer. The inline mode cuts higher, at the bootstrap itself,
+            // because it feeds the bytes straight to `initSync`.
+            const keptLines = params.web.asyncLoading
+                ? stripGlueFooter(lines)
+                : lines.slice(
+                      0,
+                      lines.findIndex(
+                          (item) =>
+                              !!item.match(
+                                  /async function __wbg_init\(module_or_path\) {/g,
+                              )?.length,
+                      ),
+                  );
             const exportGen = `{...exportedFunctions, ...Object.entries(wasm).filter(([item]) => Object.keys(exportedFunctions).indexOf(item) === -1).reduce((acc, item) => ({...acc,[item[0]]: item[1]}), {})}`;
             return `${[
-                ...lines.slice(
-                    0,
-                    lines.findIndex((item) => !!item.match(clearMatch)?.length),
-                ),
+                ...keptLines,
                 constants.toArrayBuffer,
                 ...(params.web.asyncLoading
                     ? []
@@ -226,7 +236,7 @@ async function doPack(params, emitFile) {
                     .join(",")}};`,
                 `export default ${
                     params.web.asyncLoading
-                        ? `new Promise(async (resolve, reject)=> { try{await init(); resolve(${exportGen})}catch(e){reject(e)}})`
+                        ? `new Promise(async (resolve, reject)=> { try{await __wbg_init(); resolve(${exportGen})}catch(e){reject(e)}})`
                         : exportGen
                 }`,
             ].join("\n")}`;
@@ -261,14 +271,7 @@ async function doPack(params, emitFile) {
                           lines[badImportIndex] =
                               `        module_or_path = ${urlExpression};`;
                           return [
-                              ...lines.slice(
-                                  0,
-                                  lines.findIndex(
-                                      (item) =>
-                                          !!item.match(/export { initSync }/g)
-                                              ?.length,
-                                  ),
-                              ),
+                              ...stripGlueFooter(lines),
                               exportedFunctions,
                               `export default new Promise(async (resolve, reject)=> { try{await __wbg_init(); resolve(${exportGenExpr})}catch(e){reject(e)}})`,
                           ];
