@@ -1,0 +1,55 @@
+name: wasm-bindgen drift
+
+# Every example commits a Cargo.lock, so no pull request build ever meets a new
+# wasm-bindgen. This job drops that pin in the runner workspace only, then builds
+# and tests one example against the newest wasm-bindgen release. A red run here
+# means upstream changed the generated glue, not that a contributor broke a branch.
+
+on:
+    schedule:
+        -   cron: "41 13 * * 2"
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+jobs:
+    vite-newest-wasm-bindgen:
+        name: example/vite against the newest wasm-bindgen
+        runs-on: ubuntu-latest
+        steps:
+            -   uses: actions/checkout@v5
+            -   uses: actions/setup-node@v5
+                with:
+                    node-version: 24
+            -   name: Install Rust
+                run: |
+                    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+                    echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+            -   name: Verify Rust installation
+                run: |
+                    rustup default stable
+                    rustup update stable
+                    rustc --version
+
+            -   name: Install dependencies
+                run: |
+                    npm install
+                    cd example/vite && npm install
+
+            -   name: Refresh wasm-bindgen to the newest release
+                working-directory: example/vite
+                run: |
+                    cargo add wasm-bindgen
+                    echo "Resolved wasm-bindgen:"
+                    grep -A1 '^name = "wasm-bindgen"$' Cargo.lock
+
+            -   name: Build and test example/vite
+                run: npm test
+                working-directory: example/vite
+
+            -   name: Discard the refreshed manifest and lock
+                if: always()
+                run: |
+                    git checkout -- example/vite/Cargo.toml example/vite/Cargo.lock
+                    git diff --exit-code -- example/vite/Cargo.toml example/vite/Cargo.lock
