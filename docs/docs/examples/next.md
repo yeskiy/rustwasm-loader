@@ -34,20 +34,29 @@ project-local cache (`node_modules/.cache/rust-wasmpack-loader/`, always gitigno
 query. Next compiles that import to a `WebAssembly.Module` ahead of time and hands the Edge runtime the ready-made
 module, which instantiates without ever touching raw bytes.
 
-The delivery is wired for you, so a `.rs` import works the same in an Edge route as anywhere else:
+The delivery is wired for you, so a `.rs` import works the same on an Edge route as anywhere else:
 
-```javascript title="app/api/edge/route.js"
-import rsLib from "../../../lib.rs";
+```javascript title="app/edge/page.js"
+import rsLib from "../../lib.rs";
 
 export const runtime = "edge";
 
-export function GET() {
-    return Response.json({ result: rsLib.fibonacci(10) });
+export default function EdgePage() {
+    return <p>{`fibonacci(10) = ${rsLib.fibonacci(10)}`}</p>;
 }
 ```
 
-`rsLib` resolves synchronously, so the Rust exports are callable right in the handler. The same path works in middleware
-and Edge API routes.
+`rsLib` resolves synchronously, so the Rust exports are callable right in the component. The same path works in
+middleware and in Edge route handlers.
+
+:::caution Edge route handlers need Turbopack
+Next.js 16.3.5 cannot build an App Router Edge route handler (an `app/**/route.js` that sets
+`export const runtime = "edge"`) with `next build --webpack`. The build stops at the "Collecting page data" step with
+`ENOENT ... route_client-reference-manifest.js`. This is a Next.js defect. It reproduces on a bare Next.js application
+that does not use this loader, it is still present in `16.4.0-canary.36`, and Next.js 16.2.9 builds the same handler
+correctly. Edge **pages** build under webpack, and Edge route handlers build under Turbopack. Pick one of those two, or
+move the route handler to the `nodejs` runtime.
+:::
 
 ## Turbopack
 
@@ -84,9 +93,8 @@ asset-emitting mode on Next, build with `--webpack` and configure the loader dir
 ```
 next-example/
 ├── app/
-│   ├── api/
-│   │   └── edge/
-│   │       └── route.js    # Edge route importing the same lib.rs
+│   ├── edge/
+│   │   └── page.js         # Edge page importing the same lib.rs
 │   ├── layout.js           # Root layout (App Router)
 │   ├── page.js             # Server Component importing lib.rs
 │   └── Result.js           # Client Component importing the same lib.rs
@@ -185,16 +193,15 @@ export default function Result() {
 
 ### 8. Import from an Edge route
 
-```javascript title="app/api/edge/route.js"
-import rsLib from "../../../lib.rs";
+```javascript title="app/edge/page.js"
+import rsLib from "../../lib.rs";
 
-// Built with the `module` delivery; the wasm is a pre-compiled module the Edge
-// runtime instantiates without compiling bytes.
+// Built with the `module` delivery. The wasm is a pre-compiled module that the
+// Edge runtime instantiates without a byte compile.
 export const runtime = "edge";
 
-export function GET(request) {
-    const n = Number(new URL(request.url).searchParams.get("n") ?? "10");
-    return Response.json({ fibonacci: rsLib.fibonacci(n) });
+export default function EdgePage() {
+    return <p>{`fibonacci(10) = ${rsLib.fibonacci(10)}`}</p>;
 }
 ```
 
