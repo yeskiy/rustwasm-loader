@@ -22,7 +22,7 @@ jobs:
                 os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest ]
                 node: [ 22, 24 ]
                 rust: [ "1.88.0", "1.93.0" ]
-                test: [ ., example/node-bun, example/node-webpack, example/typed-imports, example/esbuild, example/rspack, example/rollup, example/vite, example/next, example/next15, example/next-turbopack, example/electron ]
+                test: [ ., example/node-bun, example/node-webpack, example/web-webpack, example/typed-imports, example/esbuild, example/rspack, example/rollup, example/vite, example/next, example/next15, example/next-turbopack, example/electron ]
         steps:
             -   uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
             -   uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
