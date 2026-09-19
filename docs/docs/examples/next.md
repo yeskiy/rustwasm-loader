@@ -8,8 +8,26 @@ This example shows how to use rust-wasmpack-loader with [Next.js](https://nextjs
 `withRustWasm` helper that wraps your `next.config` and wires the loader in, so you import `.rs` files from Server
 Components, Client Components, and Edge routes alike. The helper picks the strategy per environment: `node` for the
 server and `web` for the client, both with the WebAssembly bytes inlined, and a separate `module` delivery for the Edge
-runtime. The wrapped config works under both bundlers: webpack (`next build --webpack`) and Turbopack (`next build`, the
-Next.js 16 default). See [Turbopack](#turbopack) below for what differs.
+runtime. The wrapped config works under both bundlers, webpack and Turbopack. See
+[Supported Next.js versions](#supported-nextjs-versions) for the command each release takes, and
+[Turbopack](#turbopack) for what differs.
+
+## Supported Next.js versions
+
+The helper supports Next.js 14 and later. Next.js moved its Turbopack settings twice, so the helper reads the version of
+the Next.js you run and writes the settings under the key that release accepts. You do not configure this.
+
+| Next.js | Default bundler | Build with the other bundler | Turbopack settings key |
+|---------|-----------------|------------------------------|------------------------|
+| 14      | webpack         | not available                | `experimental.turbo`   |
+| 15.0 to 15.2 | webpack    | not available                | `experimental.turbo`   |
+| 15.3 to 15.5 | webpack    | `next build --turbopack`     | `turbopack`            |
+| 16      | Turbopack       | `next build --webpack`       | `turbopack`            |
+
+Two limits come from Next.js itself. Next.js 14 and Next.js 15.0 through 15.2 build with webpack only, because
+`next build --turbopack` does not exist before 15.3. On those releases Turbopack runs in `next dev --turbo` alone.
+Next.js 15 also has no `next build --webpack` flag, because webpack is already the default there. The flag arrived in
+Next.js 16 when Turbopack became the default.
 
 ## How delivery is decided
 
@@ -49,27 +67,35 @@ export default function EdgePage() {
 `rsLib` resolves synchronously, so the Rust exports are callable right in the component. The same path works in
 middleware and in Edge route handlers.
 
-:::caution Edge route handlers need Turbopack
+:::caution Next.js 16.3 cannot build an Edge route handler with webpack
 Next.js 16.3.5 cannot build an App Router Edge route handler (an `app/**/route.js` that sets
 `export const runtime = "edge"`) with `next build --webpack`. The build stops at the "Collecting page data" step with
 `ENOENT ... route_client-reference-manifest.js`. This is a Next.js defect. It reproduces on a bare Next.js application
 that does not use this loader, it is still present in `16.4.0-canary.36`, and Next.js 16.2.9 builds the same handler
-correctly. Edge **pages** build under webpack, and Edge route handlers build under Turbopack. Pick one of those two, or
-move the route handler to the `nodejs` runtime.
+correctly. On Next.js 16.3, Edge **pages** build under webpack and Edge route handlers build under Turbopack. Pick one
+of those two, or move the route handler to the `nodejs` runtime.
+
+Next.js 15 does not have this defect. Next.js 15.5.25 builds and serves the same Edge route handler under both webpack
+and Turbopack.
 :::
 
 ## Turbopack
 
-Next.js 16 defaults to Turbopack, and `withRustWasm` supports it. The helper registers the loader under both
-`turbopack.rules` and the `webpack` function, so the same wrapped config builds either way: `next build` runs under
-Turbopack, `next build --webpack` opts back to webpack. Setting both keys is fine; Next.js only rejects a `webpack`
-config under Turbopack when no `turbopack` config is present, and the helper always sets one.
+`withRustWasm` supports Turbopack. The helper registers the loader under both the Turbopack rules and the `webpack`
+function, so the same wrapped config builds either way. Setting both keys is fine. Next.js only rejects a `webpack`
+config under Turbopack when no Turbopack config is present, and the helper always sets one.
 
-Turbopack picks the loader by its rule `condition`: `browser` is the client bundle (`web` strategy, bytes inlined),
-`{ not: "browser" }` is the server bundle (`node` strategy, bytes inlined), and `edge-light` is the Edge bundle (`web`
-strategy, `module` delivery). The Edge rule is listed first so it wins over `{ not: "browser" }`, which also matches the
-Edge environment. The same `.rs` resolves in Server Components, Client Components, and Edge routes, exactly as on
+Turbopack picks the loader per environment: the client bundle takes the `web` strategy with the bytes inlined, the
+server bundle takes the `node` strategy with the bytes inlined, and the Edge bundle takes the `web` strategy with the
+`module` delivery. The same `.rs` resolves in Server Components, Client Components, and Edge routes, exactly as on
 webpack.
+
+Next.js expresses that choice in two different ways, and the helper writes the one the running release reads. Next.js 16
+takes a list of rules, each with its own `condition` (`edge-light`, `browser`, `{ not: "browser" }`), and the Edge rule
+comes first so it wins over `{ not: "browser" }`, which also matches the Edge environment. Next.js 14 and 15 take a map
+keyed by the condition name instead (`edge-light`, `browser`, `default`). The two shapes are exclusive. A Next.js 15
+build that receives the list shape stops with `data did not match any variant of untagged enum RuleConfigItemOrShortcut`,
+and a Next.js 16 build that receives the map shape reports an unrecognized key and then skips the loader.
 
 ### What is supported under Turbopack
 
@@ -207,7 +233,7 @@ export default function EdgePage() {
 
 ### 9. Update package.json
 
-The default scripts build under Turbopack. To build with webpack instead, add `--webpack` to `dev` and `build`.
+The default scripts take the default bundler of your Next.js: Turbopack on Next.js 16, webpack on Next.js 14 and 15.
 
 ```json title="package.json"
 {
@@ -221,10 +247,12 @@ The default scripts build under Turbopack. To build with webpack instead, add `-
 }
 ```
 
+To pick the other bundler, add the flag your Next.js accepts. On Next.js 16 add `--webpack` to `dev` and `build`. On
+Next.js 15.3 and later add `--turbopack`. Next.js 14 and Next.js 15.0 through 15.2 build with webpack only.
+
 ## Running the example
 
 ```bash
-# Build under Turbopack (the Next.js 16 default). Add --webpack to use webpack.
 npm run build
 ```
 

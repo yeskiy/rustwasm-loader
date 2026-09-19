@@ -1,5 +1,9 @@
 const { merge } = require("lodash");
 const schemaUtils = require("schema-utils");
+const {
+    detectNextVersion,
+    turbopackSection,
+} = require("./utils/nextTurbopack.util");
 
 const optionsSchema = {
     type: "object",
@@ -43,45 +47,6 @@ const rsRule = (isServer, nextRuntime, shared) =>
               },
     );
 
-// Turbopack runs webpack loaders through `turbopack.rules`, mapping an extension
-// to loaders plus `as: "*.js"`. Its `condition` picks the loader per environment:
-// `edge-light` is the Edge bundle, `browser` is the client, `{ not: "browser" }`
-// is the Node server. Turbopack's loader API omits emitFile/_compilation/
-// this.target, so the loader reads `target` from these options; the inlined-bytes
-// and `module` deliveries both fit that thinner context. Edge needs the `module`
-// delivery (it cannot instantiate wasm from bytes), and its rule is listed first
-// so it wins over the broader `{ not: "browser" }` condition that also matches Edge.
-const turbopackLoader = (target, extraOptions, shared) => ({
-    loader: require.resolve("./index"),
-    options: {
-        target,
-        ...extraOptions,
-        ...shared,
-    },
-});
-
-const turbopackRule = (condition, target, extraOptions, shared) => ({
-    condition,
-    loaders: [turbopackLoader(target, extraOptions, shared)],
-    as: "*.js",
-});
-
-const turbopackRsRules = (shared) => [
-    turbopackRule(
-        "edge-light",
-        "web",
-        { import: { strategy: "module" } },
-        shared,
-    ),
-    turbopackRule("browser", "web", { web: { asyncLoading: false } }, shared),
-    turbopackRule(
-        { not: "browser" },
-        "node",
-        { node: { bundle: true } },
-        shared,
-    ),
-];
-
 // Next sets `webassemblyModuleFilename` to a nested, token-laden path
 // (`static/wasm/[modulehash].wasm`). The loader feeds that value to wasm-pack as
 // the scratch output name, where the nested dir does not exist and `[modulehash]`
@@ -109,11 +74,15 @@ const withRsRule = (config, isServer, nextRuntime, shared) => ({
  * client, both with the bytes inlined. The same `.rs` works from a Server
  * Component and a Client Component.
  *
- * The returned config carries both a `webpack` function and a `turbopack.rules`
- * block, so it builds the same way under either bundler (`next build` defaults to
- * Turbopack in Next 16; `next build --webpack` opts back to webpack). Setting both
- * keys is supported: Next only rejects a `webpack` config under Turbopack when no
- * `turbopack` config is present.
+ * The returned config carries both a `webpack` function and a Turbopack rule
+ * block, so it builds the same way under either bundler. Next 16 builds with
+ * Turbopack by default and `next build --webpack` opts back to webpack. Next 15
+ * builds with webpack by default and `next build --turbopack` opts in, from 15.3
+ * on. Setting both keys is supported: Next only rejects a `webpack` config under
+ * Turbopack when no Turbopack config is present.
+ *
+ * The Turbopack block goes under whichever key the running Next.js reads, in the
+ * rule shape that release accepts. See `utils/nextTurbopack.util.js`.
  *
  * Edge routes work too: the Edge pass takes the `module` delivery, shipping a
  * pre-compiled WebAssembly.Module via a `?module` import (the only form the Edge
@@ -143,13 +112,12 @@ function withRustWasm(nextConfig = {}, pluginOptions = {}) {
 
     return {
         ...nextConfig,
-        turbopack: {
-            ...nextConfig.turbopack,
-            rules: {
-                ...nextConfig.turbopack?.rules,
-                "*.rs": turbopackRsRules(shared),
-            },
-        },
+        ...turbopackSection(
+            nextConfig,
+            require.resolve("./index"),
+            shared,
+            detectNextVersion(),
+        ),
         webpack(config, webpackOptions) {
             const patched = withRsRule(
                 config,

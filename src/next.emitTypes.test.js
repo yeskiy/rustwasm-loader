@@ -11,11 +11,12 @@ function webpackRuleOptions(isServer, nextRuntime, pluginOptions) {
     return patched.module.rules.at(-1).use[0].options;
 }
 
-// The loader options for each of the three turbopack `*.rs` rules.
+// The loader options for each of the three turbopack `*.rs` rules. Next 16 holds
+// them in a list, Next 14 and 15 in a map keyed by condition, so read both.
 function turbopackRuleOptions(pluginOptions) {
-    return withRustWasm({}, pluginOptions).turbopack.rules["*.rs"].map(
-        (rule) => rule.loaders[0].options,
-    );
+    const config = withRustWasm({}, pluginOptions);
+    const rules = (config.turbopack ?? config.experimental.turbo).rules["*.rs"];
+    return Object.values(rules).map((rule) => rule.loaders[0].options);
 }
 
 test("threads types:true into every webpack pass when set", () => {
