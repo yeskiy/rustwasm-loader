@@ -11,9 +11,9 @@ const rustWasmLoader = require("rust-wasmpack-loader");
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const isWin = process.platform === "win32";
-// `package-lock.json` is gitignored here, so every CI run resolves Next.js
-// afresh. The suite titles carry the version that actually ran, so a failure
-// names the Next.js release it broke on.
+// The suite titles carry the Next.js version that actually ran, so a failure
+// names the release it broke on. The weekly drift job builds this example
+// against the newest releases its ranges allow, which is where it varies.
 const nextVersion = require("next/package.json").version;
 
 // Drives the helper's webpack() for one Next.js pass against a throwaway config

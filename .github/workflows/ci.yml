@@ -49,11 +49,7 @@ jobs:
                     node node_modules/wasm-pack/install.js
                     if [ "$TEST_DIR" != "." ]; then
                         cd "$TEST_DIR"
-                        if [ -f package-lock.json ]; then
-                            npm ci --ignore-scripts
-                        else
-                            npm install --ignore-scripts
-                        fi
+                        npm ci --ignore-scripts
                         if [ -f node_modules/bun/install.js ]; then
                             node node_modules/bun/install.js
                         fi
