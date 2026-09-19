@@ -18,24 +18,26 @@ jobs:
         name: example/vite against the newest wasm-bindgen
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v5
-            -   uses: actions/setup-node@v5
+            -   uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+            -   uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
                 with:
                     node-version: 24
             -   name: Install Rust
-                run: |
-                    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-                    echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+                uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # v1
+                with:
+                    toolchain: stable
+                    targets: wasm32-unknown-unknown
             -   name: Verify Rust installation
-                run: |
-                    rustup default stable
-                    rustup update stable
-                    rustc --version
+                run: rustc --version
 
+            # Lifecycle scripts stay off. wasm-pack is the only dependency that
+            # needs one, and example/vite reads it through the linked loader.
             -   name: Install dependencies
+                shell: bash
                 run: |
-                    npm install
-                    cd example/vite && npm install
+                    npm ci --ignore-scripts
+                    node node_modules/wasm-pack/install.js
+                    cd example/vite && npm install --ignore-scripts
 
             -   name: Refresh wasm-bindgen to the newest release
                 working-directory: example/vite
