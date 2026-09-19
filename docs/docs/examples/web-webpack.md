@@ -334,6 +334,18 @@ module.exports = {
 };
 ```
 
+:::caution The default export becomes a Promise
+`asyncLoading: true` fetches the wasm at runtime, so the default export is a Promise that resolves to the Rust
+exports. Await it before you call anything:
+
+```javascript
+import rsLib from "./lib.rs";
+
+const lib = await rsLib;
+lib.fibonacci(10);
+```
+:::
+
 ### TypeScript integration
 
 Create a `tsconfig.json`:
