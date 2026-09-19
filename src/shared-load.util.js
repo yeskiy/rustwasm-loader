@@ -19,8 +19,7 @@ const withBuildLock = require("./utils/buildLock.util");
 
 const inlineWebOptions = {
     asyncLoading: false,
-    usePublicPath: false,
-    publicPath: [],
+    publicPath: "",
     wasmPathModifier: ["/"],
 };
 

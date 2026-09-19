@@ -258,10 +258,13 @@ async function rustWasmLoader(source) {
               })();
 
         // Resolve publicPath only for the web path that actually fetches the
-        // emitted asset at runtime; every other delivery slices it off, so it
-        // stays empty and we avoid dereferencing compilation internals.
+        // emitted asset at runtime. Every other delivery slices it off, so it
+        // stays empty and we avoid dereferencing compilation internals. The
+        // `web.publicPath` option is the documented opt-out.
         const publicPath =
-            params.target === "web" && options.web.asyncLoading
+            params.target === "web" &&
+            options.web.asyncLoading &&
+            options.web.publicPath
                 ? (() => {
                       const webpackPublicPath = this._compilation.getAssetPath(
                           this._compilation.outputOptions.publicPath,
@@ -274,12 +277,7 @@ async function rustWasmLoader(source) {
                                 .relative(
                                     path.resolve(
                                         this._compilation.options.output.path,
-                                        path.dirname(
-                                            this._compilation.getAssetPath(
-                                                wasmName,
-                                                this.context,
-                                            ),
-                                        ),
+                                        path.dirname(wasmName),
                                     ),
                                     this._compilation.options.output.path,
                                 )

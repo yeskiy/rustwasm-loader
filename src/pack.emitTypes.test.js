@@ -46,8 +46,7 @@ function packParams(dir, emitTypes) {
         logLevel: "error",
         web: {
             asyncLoading: false,
-            usePublicPath: false,
-            publicPath: [],
+            publicPath: "",
             wasmPathModifier: ["/"],
         },
         node: { bundle: true },

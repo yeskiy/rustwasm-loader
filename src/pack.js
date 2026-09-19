@@ -27,7 +27,6 @@ function logLevelSelector(level) {
 
 /** @typedef {Object} WebOptions
  * @property {boolean} asyncLoading - async loading of the wasm file
- * @property {boolean} usePublicPath - use public path
  * @property {string} publicPath - path to the public folder (only for web target)
  * @property {string[]} wasmPathModifier - path to the wasm file
  * */
@@ -192,7 +191,7 @@ async function doPack(params, emitFile) {
             lines[badImportIndex] =
                 `        module_or_path = "${path.posix.join(
                     ...params.web.wasmPathModifier,
-                    ...(params.web.usePublicPath ? params.web.publicPath : []),
+                    ...(params.web.publicPath ? [params.web.publicPath] : []),
                     params.wasmName,
                 )}";`;
             // Async loading keeps wasm-bindgen's own `__wbg_init` and only drops the
