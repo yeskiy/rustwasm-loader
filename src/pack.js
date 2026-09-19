@@ -4,6 +4,7 @@ const findNearestCargoBy = require("./utils/findNearestCargo.util");
 const spawnWasmPack = require("./utils/spawnWasmPack.util");
 const writeSidecar = require("./utils/writeSidecar.util");
 const stripGlueFooter = require("./utils/stripGlueFooter.util");
+const buildGlueImports = require("./utils/buildGlueImports.util");
 const withBuildLock = require("./utils/buildLock.util");
 
 const constants = Object.seal({
@@ -261,7 +262,7 @@ async function doPack(params, emitFile) {
             // `import.meta.url` URL for the host asset URL, then awaits __wbg_init()
             // so the wasm is fetched at runtime (Promise default export). The sync
             // strategies strip the bootstrap and init in place from the kept glue
-            // helpers (__wbg_get_imports / __wbg_init_memory / __wbg_finalize_init).
+            // helpers, which `buildGlueImports` reads off the glue itself.
             const body =
                 strategy === "fetch"
                     ? (() => {
@@ -291,8 +292,7 @@ async function doPack(params, emitFile) {
                               strategy === "module"
                                   ? [
                                         `const __wbg_init = {}`,
-                                        `const __wbg_imports = __wbg_get_imports();`,
-                                        `__wbg_init_memory(__wbg_imports);`,
+                                        ...buildGlueImports(lines),
                                         `__wbg_finalize_init(new WebAssembly.Instance(${urlExpression}, __wbg_imports), ${urlExpression});`,
                                     ]
                                   : [
