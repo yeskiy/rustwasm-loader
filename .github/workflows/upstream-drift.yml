@@ -1,9 +1,11 @@
-name: wasm-bindgen drift
+name: Upstream drift
 
-# Every example commits a Cargo.lock, so no pull request build ever meets a new
-# wasm-bindgen. This job drops that pin in the runner workspace only, then builds
-# and tests one example against the newest wasm-bindgen release. A red run here
-# means upstream changed the generated glue, not that a contributor broke a branch.
+# Every example pins its dependencies twice. A committed Cargo.lock holds the
+# Rust crates, and a committed package-lock.json holds the npm packages. For
+# this reason no pull request build meets a new upstream release. Each job
+# below drops one of those two pins in the runner workspace only, then builds
+# and tests. A red run here means that an upstream release changed, not that a
+# contributor broke a branch. No job commits anything.
 
 on:
     schedule:
@@ -37,7 +39,7 @@ jobs:
                 run: |
                     npm ci --ignore-scripts
                     node node_modules/wasm-pack/install.js
-                    cd example/vite && npm install --ignore-scripts
+                    cd example/vite && npm ci --ignore-scripts
 
             -   name: Refresh wasm-bindgen to the newest release
                 working-directory: example/vite
@@ -55,3 +57,68 @@ jobs:
                 run: |
                     git checkout -- example/vite/Cargo.toml example/vite/Cargo.lock
                     git diff --exit-code -- example/vite/Cargo.toml example/vite/Cargo.lock
+
+    examples-newest-npm-dependencies:
+        name: example/${{ matrix.example }} against the newest npm dependencies
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                # example/next and example/next-turbopack float on
+                # "next": "^16.2.9". That range reached Next.js 16.3.5 and broke
+                # the build. The two examples read the loader through different
+                # surfaces: the webpack hook and turbopack.rules. example/vite
+                # floats on "vite": "^8.1.0" and carries the rolldown and
+                # lightningcss native bindings. example/next15 pins Next.js to
+                # one exact version, so it cannot drift, and the other examples
+                # sit on bundlers that have not broken the loader.
+                example: [ next, next-turbopack, vite ]
+        steps:
+            -   uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+            -   uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+                with:
+                    node-version: 24
+            -   name: Install Rust
+                uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # v1
+                with:
+                    toolchain: stable
+                    targets: wasm32-unknown-unknown
+            -   name: Verify Rust installation
+                run: rustc --version
+
+            # Lifecycle scripts stay off. wasm-pack is the only dependency that
+            # needs one, and every example reads it through the linked loader.
+            -   name: Install the loader
+                run: |
+                    npm ci --ignore-scripts
+                    node node_modules/wasm-pack/install.js
+
+            # npm update moves every dependency to the newest version that its
+            # range in package.json allows. The --package-lock-only flag keeps
+            # that change inside the lock file, so the install below still reads
+            # a lock.
+            -   name: Refresh the lock to the newest npm releases
+                working-directory: example/${{ matrix.example }}
+                run: |
+                    npm update --package-lock-only --ignore-scripts
+                    echo "Resolved direct dependencies:"
+                    npm ls --package-lock-only --depth 0
+
+            -   name: Install the refreshed dependencies
+                run: npm ci --ignore-scripts
+                working-directory: example/${{ matrix.example }}
+
+            -   name: Build and test example/${{ matrix.example }}
+                run: npm test
+                working-directory: example/${{ matrix.example }}
+
+            -   name: Discard the refreshed lock
+                if: always()
+                shell: bash
+                env:
+                    EXAMPLE_DIR: example/${{ matrix.example }}
+                run: |
+                    git checkout -- "$EXAMPLE_DIR/package-lock.json"
+                    changed=$(git status --porcelain)
+                    echo "$changed"
+                    test -z "$changed"
