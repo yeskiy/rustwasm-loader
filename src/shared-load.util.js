@@ -3,6 +3,7 @@ const path = require("node:path");
 const os = require("node:os");
 const crypto = require("node:crypto");
 const pack = require("./pack");
+const withBuildLock = require("./utils/buildLock.util");
 
 /** @typedef {Object} SharedLoadParams
  * @property {string} resourcePath - absolute path to the .rs file being loaded
@@ -80,20 +81,26 @@ async function buildRsModule(params) {
     // after the bytes do. Build once so the wasm lands in the pkg dir, emit those
     // bytes to get the URL expression, then let pack regenerate the glue around
     // `params.import`. The second pass is a wasm-pack cache hit on the same
-    // content-addressed dir, so no Rust recompilation happens.
-    await pack(basePackParams, noopEmit);
-    const wasmBytes = fs.readFileSync(path.join(buildFolder, "pkg", wasmName));
-    return pack(
-        {
-            ...basePackParams,
-            import: {
-                urlExpression: params.emitWasm(wasmBytes, wasmName),
-                strategy: params.strategy,
-                preamble: params.preamble,
+    // content-addressed dir, so no Rust recompilation happens. The lock spans
+    // both passes and the read between them. No other process can rewrite the
+    // pkg dir while the bytes are read out of it.
+    return withBuildLock(buildFolder, async () => {
+        await pack(basePackParams, noopEmit);
+        const wasmBytes = fs.readFileSync(
+            path.join(buildFolder, "pkg", wasmName),
+        );
+        return pack(
+            {
+                ...basePackParams,
+                import: {
+                    urlExpression: params.emitWasm(wasmBytes, wasmName),
+                    strategy: params.strategy,
+                    preamble: params.preamble,
+                },
             },
-        },
-        noopEmit,
-    );
+            noopEmit,
+        );
+    });
 }
 
 /**

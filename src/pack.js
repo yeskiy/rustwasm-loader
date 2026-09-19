@@ -4,6 +4,7 @@ const findNearestCargoBy = require("./utils/findNearestCargo.util");
 const spawnWasmPack = require("./utils/spawnWasmPack.util");
 const writeSidecar = require("./utils/writeSidecar.util");
 const stripGlueFooter = require("./utils/stripGlueFooter.util");
+const withBuildLock = require("./utils/buildLock.util");
 
 const constants = Object.seal({
     toArrayBuffer: `function toArrayBuffer(buffer) {\n    const ab = new ArrayBuffer(buffer.length);\n    const view = new Uint8Array(ab);\n    for (var i = 0; i < buffer.length; ++i) {\n        view[i] = buffer[i];\n    }\n    return ab;\n}`,
@@ -353,13 +354,15 @@ async function doPack(params, emitFile) {
 // wasm-pack shells out to cargo, so running several builds at once contends on
 // the shared cargo cache. A cold cache (CI) makes this fail outright when a
 // parallel webpack MultiCompiler builds the same `.rs` for two targets at once.
-// Serialize the builds; the per-source temp dirs already isolate their output.
+// Serialize the builds. The per-source temp dirs already isolate their output.
+// Turbopack runs its loader passes in a pool of Node worker processes. A project
+// can also run two build commands at once. This queue reaches neither case, so
+// the build folder is locked across processes as well.
 let buildQueue = Promise.resolve();
 module.exports = function pack(params, emitFile) {
-    const run = buildQueue.then(
-        () => doPack(params, emitFile),
-        () => doPack(params, emitFile),
-    );
+    const guarded = () =>
+        withBuildLock(params.buildFolder, () => doPack(params, emitFile));
+    const run = buildQueue.then(guarded, guarded);
     buildQueue = run.then(
         () => undefined,
         () => undefined,

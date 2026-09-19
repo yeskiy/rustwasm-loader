@@ -5,6 +5,7 @@ const crypto = require("node:crypto");
 const findNearestCargoBy = require("./findNearestCargo.util");
 const spawnWasmPack = require("./spawnWasmPack.util");
 const writeSidecar = require("./writeSidecar.util");
+const withBuildLock = require("./buildLock.util");
 
 const constants = Object.freeze({
     CARGO_TOML: "Cargo.toml",
@@ -56,38 +57,40 @@ async function buildTypedDts(resourcePath, options = {}) {
     const buildFolder = typedBuildFolder(resourcePath);
     const outDir = path.join(buildFolder, "pkg");
 
-    const cargoData = findNearestCargoBy(constants)(
-        dir,
-        baseFolder,
-        fileEntry,
-        buildFolder,
-    );
-    fs.writeFileSync(
-        path.join(buildFolder, constants.CARGO_TOML),
-        cargoData[constants.CARGO_TOML],
-        { encoding: "utf8" },
-    );
-    if (cargoData[constants.CARGO_LOCK]) {
+    return withBuildLock(buildFolder, async () => {
+        const cargoData = findNearestCargoBy(constants)(
+            dir,
+            baseFolder,
+            fileEntry,
+            buildFolder,
+        );
         fs.writeFileSync(
-            path.join(buildFolder, constants.CARGO_LOCK),
-            cargoData[constants.CARGO_LOCK],
+            path.join(buildFolder, constants.CARGO_TOML),
+            cargoData[constants.CARGO_TOML],
             { encoding: "utf8" },
         );
-    }
+        if (cargoData[constants.CARGO_LOCK]) {
+            fs.writeFileSync(
+                path.join(buildFolder, constants.CARGO_LOCK),
+                cargoData[constants.CARGO_LOCK],
+                { encoding: "utf8" },
+            );
+        }
 
-    await spawnWasmPack({
-        cwd: buildFolder,
-        outDir,
-        outName: constants.OUT_NAME,
-        typescript: true,
-        args: logLevelArgs(options.logLevel || "info"),
-        extraArgs: ["--target", "web"],
+        await spawnWasmPack({
+            cwd: buildFolder,
+            outDir,
+            outName: constants.OUT_NAME,
+            typescript: true,
+            args: logLevelArgs(options.logLevel || "info"),
+            extraArgs: ["--target", "web"],
+        });
+
+        return fs.readFileSync(
+            path.join(outDir, `${constants.OUT_NAME}.d.ts`),
+            "utf8",
+        );
     });
-
-    return fs.readFileSync(
-        path.join(outDir, `${constants.OUT_NAME}.d.ts`),
-        "utf8",
-    );
 }
 
 /**

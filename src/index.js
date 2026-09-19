@@ -6,6 +6,7 @@ const loaderUtils = require("loader-utils");
 const schemaUtils = require("schema-utils");
 const { merge } = require("lodash");
 const pack = require("./pack");
+const withBuildLock = require("./utils/buildLock.util");
 const bun = require("./bun");
 const esbuild = require("./esbuild");
 const rollup = require("./rollup");
@@ -103,46 +104,55 @@ const noopEmit = () => undefined;
  * a project-local cache path both bundlers can resolve, then regenerate the glue
  * around an `import <binding> from "<cache>?module"` line. The second pass is a
  * wasm-pack cache hit on the same content-addressed dir, so Rust never recompiles.
+ * The build-folder lock spans both passes and the copy between them. No other
+ * process can rewrite the pkg dir while the bytes are read out of it.
  * @param {import("./pack").Options} basePackParams
  * @param {string} sourceHash
  * @returns {Promise<string>}
  */
 async function buildModuleDelivery(basePackParams, sourceHash) {
-    await pack(basePackParams, noopEmit);
-    const cacheDir = path.join(
-        basePackParams.baseFolder,
-        "node_modules",
-        ".cache",
-        "rust-wasmpack-loader",
-    );
-    fs.mkdirSync(cacheDir, { recursive: true });
-    const cachePath = path.join(cacheDir, `${sourceHash}.wasm`);
-    fs.copyFileSync(
-        path.join(basePackParams.buildFolder, "pkg", basePackParams.wasmName),
-        cachePath,
-    );
-    // Reference the cache file relatively to the `.rs` resource. Turbopack only
-    // applies its native `.wasm?module` transform to in-tree relative specifiers
-    // (an absolute path is treated as an external native module and fails to
-    // load); webpack resolves the relative specifier against the resource too.
-    const relativeWasm = path
-        .relative(path.dirname(basePackParams.resourcePath), cachePath)
-        .split(path.sep)
-        .join("/");
-    const wasmSpecifier = relativeWasm.startsWith(".")
-        ? `${relativeWasm}?module`
-        : `./${relativeWasm}?module`;
-    return pack(
-        {
-            ...basePackParams,
-            import: {
-                strategy: "module",
-                urlExpression: moduleBinding,
-                preamble: `import ${moduleBinding} from ${JSON.stringify(wasmSpecifier)};`,
+    return withBuildLock(basePackParams.buildFolder, async () => {
+        await pack(basePackParams, noopEmit);
+        const cacheDir = path.join(
+            basePackParams.baseFolder,
+            "node_modules",
+            ".cache",
+            "rust-wasmpack-loader",
+        );
+        fs.mkdirSync(cacheDir, { recursive: true });
+        const cachePath = path.join(cacheDir, `${sourceHash}.wasm`);
+        fs.copyFileSync(
+            path.join(
+                basePackParams.buildFolder,
+                "pkg",
+                basePackParams.wasmName,
+            ),
+            cachePath,
+        );
+        // Reference the cache file relatively to the `.rs` resource. Turbopack
+        // only applies its native `.wasm?module` transform to in-tree relative
+        // specifiers (an absolute path is treated as an external native module
+        // and fails to load). Webpack resolves the relative specifier against
+        // the resource too.
+        const relativeWasm = path
+            .relative(path.dirname(basePackParams.resourcePath), cachePath)
+            .split(path.sep)
+            .join("/");
+        const wasmSpecifier = relativeWasm.startsWith(".")
+            ? `${relativeWasm}?module`
+            : `./${relativeWasm}?module`;
+        return pack(
+            {
+                ...basePackParams,
+                import: {
+                    strategy: "module",
+                    urlExpression: moduleBinding,
+                    preamble: `import ${moduleBinding} from ${JSON.stringify(wasmSpecifier)};`,
+                },
             },
-        },
-        noopEmit,
-    );
+            noopEmit,
+        );
+    });
 }
 
 async function rustWasmLoader(source) {
