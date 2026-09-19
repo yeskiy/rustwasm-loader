@@ -83,6 +83,8 @@ works across different setups:
 - [Vite](https://github.com/yeskiy/rustwasm-loader/tree/main/example/vite) - SSR and client builds with the Vite plugin
 - [Next.js](https://github.com/yeskiy/rustwasm-loader/tree/main/example/next) - App Router with Server and Client
   Components using the `withRustWasm` helper
+- [Next.js 15](https://github.com/yeskiy/rustwasm-loader/tree/main/example/next15) - the same helper on Next.js 15,
+  with an Edge page and an Edge route handler, under both webpack and Turbopack
 - [Electron](https://github.com/yeskiy/rustwasm-loader/tree/main/example/electron) - main and renderer processes with
   Webpack
 

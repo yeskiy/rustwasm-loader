@@ -29,6 +29,21 @@ Two limits come from Next.js itself. Next.js 14 and Next.js 15.0 through 15.2 bu
 Next.js 15 also has no `next build --webpack` flag, because webpack is already the default there. The flag arrived in
 Next.js 16 when Turbopack became the default.
 
+## Examples in this repository
+
+The repository carries three Next.js examples. Each one pins a different Next.js major or a different build mode, so
+both Turbopack shapes the helper writes are proved end to end.
+
+| Directory                  | Next.js | The test builds with            | Surfaces covered                                                       |
+|----------------------------|---------|---------------------------------|------------------------------------------------------------------------|
+| `example/next`             | 16.x    | `--webpack` and Turbopack       | Server Component, Client Component, Edge page                          |
+| `example/next15`           | 15.5.25 | webpack and `--turbopack`       | Server Component, Client Component, Edge page, Edge route handler      |
+| `example/next-turbopack`   | 16.x    | Turbopack with `output: "export"` | Server Component, Client Component, static export                    |
+
+`example/next15` is the Next.js 15 proof. Next.js 15.3 through 15.5 reads the Turbopack block at the top-level
+`turbopack` key and takes the rule MAP shape, which Next.js 16 does not accept. The example asserts that shape against
+the Next.js it pins, then builds and serves every surface under both bundlers.
+
 ## How delivery is decided
 
 Next runs the webpack build once per environment. The helper reads the `isServer` and `nextRuntime` signals Next passes
@@ -76,7 +91,7 @@ correctly. On Next.js 16.3, Edge **pages** build under webpack and Edge route ha
 of those two, or move the route handler to the `nodejs` runtime.
 
 Next.js 15 does not have this defect. Next.js 15.5.25 builds and serves the same Edge route handler under both webpack
-and Turbopack.
+and Turbopack. `example/next15` covers that route handler.
 :::
 
 ## Turbopack
