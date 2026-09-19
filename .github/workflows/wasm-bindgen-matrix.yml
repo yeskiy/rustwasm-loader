@@ -105,6 +105,4 @@ jobs:
                         crate="example/typed-imports"
                     fi
                     git checkout -- "$crate/Cargo.toml" "$crate/Cargo.lock"
-                    changed=$(git status --porcelain)
-                    echo "$changed"
-                    test -z "$changed"
+                    git diff --exit-code -- "$crate/Cargo.toml" "$crate/Cargo.lock"
