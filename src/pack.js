@@ -4,6 +4,7 @@ const findNearestCargoBy = require("./utils/findNearestCargo.util");
 const spawnWasmPack = require("./utils/spawnWasmPack.util");
 const writeSidecar = require("./utils/writeSidecar.util");
 const stripGlueFooter = require("./utils/stripGlueFooter.util");
+const stripTypesBanner = require("./utils/stripTypesBanner.util");
 const buildGlueImports = require("./utils/buildGlueImports.util");
 const withBuildLock = require("./utils/buildLock.util");
 
@@ -317,15 +318,19 @@ async function doPack(params, emitFile) {
         },
     };
 
-    // read generated .js file
-    const generatedJs = fs.readFileSync(
-        path.join(
-            wasmBuildSource,
-            `${params.wasmName.replace(".wasm", "")}.js`,
+    // read generated .js file. A build that keeps the typings heads the glue
+    // with a banner that names the `.d.ts`, so cut it before any patch branch
+    // reads the glue: the loader returns the glue alone.
+    const generatedJs = stripTypesBanner(
+        fs.readFileSync(
+            path.join(
+                wasmBuildSource,
+                `${params.wasmName.replace(".wasm", "")}.js`,
+            ),
+            {
+                encoding: "utf8",
+            },
         ),
-        {
-            encoding: "utf8",
-        },
     );
 
     // Typings reuse this build: wasm-bindgen also emitted `<name>.d.ts` (the
