@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [4.4.0](https://github.com/yeskiy/rustwasm-loader/compare/v4.3.0...v4.4.0) (2026-09-20)
+
+### Features
+
+* **loader:** expose and type wasm-bindgen classes ([344aa72](https://github.com/yeskiy/rustwasm-loader/commit/344aa72cc03a7523b4d181c441dcf6a69506bea3))
+
+### Bug Fixes
+
+* emit the memory initializer only when the glue defines it ([55c33a4](https://github.com/yeskiy/rustwasm-loader/commit/55c33a4e1f89e7a4b8d7c3d65e42b0855a651ac6))
+* **loader:** apply the public path to the async wasm URL ([6adb635](https://github.com/yeskiy/rustwasm-loader/commit/6adb63550d6ef8e1ab67e9056cc3e0d96fdf0465))
+* **loader:** fall through when binary-install is absent ([6979290](https://github.com/yeskiy/rustwasm-loader/commit/69792900641ba3e11c93f9f39b528901024b7733))
+* **loader:** keep the emitted module identical when types are generated ([f416447](https://github.com/yeskiy/rustwasm-loader/commit/f4164479b6ad7df770f53c74aceb61a1a829a57f))
+* **loader:** support an absolute public path for the async wasm URL ([a2acbaf](https://github.com/yeskiy/rustwasm-loader/commit/a2acbaf9d88161da7a92d3ffc477918322fab754))
+* lock the shared build folder across processes ([e124b65](https://github.com/yeskiy/rustwasm-loader/commit/e124b656436eaede0421f97a0d9f031250fd1ca0))
+* narrow the node range and refresh every dependency ([c6fc7fb](https://github.com/yeskiy/rustwasm-loader/commit/c6fc7fb7709a3e8d71b4aa77c48a449a12f4fb81))
+* **next:** move the edge example off a broken route handler ([aca686a](https://github.com/yeskiy/rustwasm-loader/commit/aca686ad9fbde73f08b0d60d6bcbea218db9cb89))
+* **next:** rebuild and resolve the wasm when the Rust inputs change ([b448344](https://github.com/yeskiy/rustwasm-loader/commit/b448344d337346862f530628e22e599032a66d1f))
+* **next:** write the turbopack config shape the running next reads ([8c13d35](https://github.com/yeskiy/rustwasm-loader/commit/8c13d35fa7d9735b774247cecfb372780f2e6a6a))
+* strip the merged wasm-bindgen glue footer ([280eb9d](https://github.com/yeskiy/rustwasm-loader/commit/280eb9d1b69361d21b724792fb6090825221c854))
+
 ## [4.3.0](https://github.com/yeskiy/rustwasm-loader/compare/v4.2.0...v4.3.0) (2026-06-29)
 
 
