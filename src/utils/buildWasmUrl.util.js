@@ -19,11 +19,15 @@ const ORIGIN_PREFIX = /^(?:[a-z][a-z\d+\-.]*:)?\/\//i;
 module.exports = function buildWasmUrl(wasmPathModifier, publicPath, wasmName) {
     const origin = publicPath ? ORIGIN_PREFIX.exec(publicPath)?.[0] : undefined;
 
-    return origin
-        ? origin + path.posix.join(publicPath.slice(origin.length), wasmName)
-        : path.posix.join(
-              ...wasmPathModifier,
-              ...(publicPath ? [publicPath] : []),
-              wasmName,
-          );
+    if (origin) {
+        return (
+            origin + path.posix.join(publicPath.slice(origin.length), wasmName)
+        );
+    }
+
+    return path.posix.join(
+        ...wasmPathModifier,
+        ...(publicPath ? [publicPath] : []),
+        wasmName,
+    );
 };
