@@ -13,8 +13,8 @@
     },
     "devDependencies": {
         "next": "15.5.25",
-        "react": "^19.2.7",
-        "react-dom": "^19.2.7",
+        "react": "^19.3.0",
+        "react-dom": "^19.3.0",
         "rust-wasmpack-loader": "file:../.."
     }
 }

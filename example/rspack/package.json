@@ -8,8 +8,8 @@
         "test": "rspack build --config test.rspack.config.js && node --test dist/comp.test.js"
     },
     "devDependencies": {
-        "@rspack/cli": "^2.1.1",
-        "@rspack/core": "^2.1.1",
+        "@rspack/cli": "^2.2.6",
+        "@rspack/core": "^2.2.6",
         "rust-wasmpack-loader": "file:../..",
         "webpack-node-externals": "^3.0.0"
     }

@@ -21,7 +21,7 @@ Before you use rust-wasmpack-loader, set up your environment with the tools belo
 
 | Tool    | Minimum Version | Recommended   |
 |---------|-----------------|---------------|
-| Node.js | 22.22.2         | 22.x.x (LTS)  |
+| Node.js | 22.22.2 (or 24.0.0) | 22.x.x (LTS)  |
 | Rust    | 1.88.0          | latest stable |
 | npm     | 10.0.0          | Latest        |
 
@@ -29,7 +29,7 @@ Before you use rust-wasmpack-loader, set up your environment with the tools belo
 
 ### 1. Node.js
 
-rust-wasmpack-loader requires Node.js 22.22.2 or higher.
+rust-wasmpack-loader requires Node.js 22.22.2 or higher on the 22 line, or 24.0.0 or higher. Node.js 23 is end of life and is not supported.
 
 :::tip Best Practice
 Use [Volta](https://volta.sh/) to manage Node.js versions. It keeps the Node.js version consistent across development and CI.
@@ -103,7 +103,7 @@ Use [Volta](https://volta.sh/) to manage Node.js versions. It keeps the Node.js 
 #### Verify installation
 
 ```bash
-node --version  # Should show v22.22.2 or higher
+node --version  # Should show v22.22.2 or higher, or v24.0.0 or higher
 npm --version   # Should show 10.0.0 or higher
 
 # If using Volta
