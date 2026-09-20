@@ -6,6 +6,9 @@ on:
             - main
     pull_request:
 
+permissions:
+    contents: read
+
 jobs:
     test:
         runs-on: ${{ matrix.os }}
@@ -19,35 +22,41 @@ jobs:
                 os: [ ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest ]
                 node: [ 22, 24 ]
                 rust: [ "1.88.0", "1.93.0" ]
-                test: [ ., example/node-bun, example/node-webpack, example/typed-imports, example/esbuild, example/rspack, example/rollup, example/vite, example/next, example/next-turbopack, example/electron ]
+                test: [ ., example/node-bun, example/node-webpack, example/web-webpack, example/typed-imports, example/esbuild, example/rspack, example/rollup, example/vite, example/next, example/next15, example/next-turbopack, example/electron ]
         steps:
-            -   uses: actions/checkout@v5
-            -   uses: actions/setup-node@v5
+            -   uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+            -   uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
                 with:
                     node-version: ${{ matrix.node }}
             -   name: Install Rust
-                shell: bash
-                run: |
-                    echo "Setting up Rust ${{ matrix.rust }} on $RUNNER_OS platform..."
-                    if [ "$RUNNER_OS" = "Windows" ]; then
-                    echo "Installing Rust on Windows..."
-                    curl https://win.rustup.rs/x86_64 -o rustup-init.exe
-                    ./rustup-init.exe -y
-                    else
-                    echo "Installing Rust on macOS/Linux..."
-                    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
-                    fi
-                    # Install the specific Rust version
-                    source ~/.cargo/env || export PATH="$HOME/.cargo/bin:$PATH"
-                    rustup install ${{ matrix.rust }}
-                    rustup default ${{ matrix.rust }}
+                uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # v1
+                with:
+                    toolchain: ${{ matrix.rust }}
+                    targets: wasm32-unknown-unknown
             -   name: Verify Rust installation
                 run: rustc --version
 
+            # Lifecycle scripts stay off. Two dependencies deliver their binary
+            # through such a script, so the lines below run those installers by
+            # hand. wasm-pack sits at the repository root, and every example
+            # reads it through the linked loader. Only example/node-bun has bun.
             -   name: Install dependencies
+                shell: bash
+                env:
+                    TEST_DIR: ${{ matrix.test }}
                 run: |
-                    npm install
-                    cd ${{ matrix.test }} && npm install
+                    npm ci --ignore-scripts
+                    node node_modules/wasm-pack/install.js
+                    if [ "$TEST_DIR" != "." ]; then
+                        cd "$TEST_DIR"
+                        npm ci --ignore-scripts
+                        if [ -f node_modules/bun/install.js ]; then
+                            node node_modules/bun/install.js
+                        fi
+                    fi
+            -   name: Verify wasm-pack installation
+                run: npm exec --no -- wasm-pack --version
+                working-directory: ${{ matrix.test }}
             -   name: Run tests
                 run: npm test
                 working-directory: ${{ matrix.test }}

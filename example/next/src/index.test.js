@@ -11,6 +11,10 @@ const rustWasmLoader = require("rust-wasmpack-loader");
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const isWin = process.platform === "win32";
+// The suite titles carry the Next.js version that actually ran, so a failure
+// names the release it broke on. The weekly drift job builds this example
+// against the newest releases its ranges allow, which is where it varies.
+const nextVersion = require("next/package.json").version;
 
 // Drives the helper's webpack() for one Next.js pass against a throwaway config
 // and returns the single rule it added (the helper returns a new config rather
@@ -126,7 +130,7 @@ const buildAndServe = async (buildArgs, port) => {
     { name: "webpack", args: ["--webpack"] },
     { name: "Turbopack", args: [] },
 ].forEach((bundler) => {
-    describe(`next build (${bundler.name}) prerenders and serves the wasm`, () => {
+    describe(`next build (${bundler.name}, next ${nextVersion}) prerenders and serves the wasm`, () => {
         const ctx = {};
 
         before(
@@ -154,11 +158,11 @@ const buildAndServe = async (buildArgs, port) => {
         });
 
         test("the edge route runs the wasm through the module delivery", async () => {
-            const result = await (
-                await fetch(`http://localhost:${ctx.port}/api/edge?n=10`)
-            ).json();
-            assert.equal(result.fibonacci, 55);
-            assert.equal(result.cap, "Edge");
+            const html = await (
+                await fetch(`http://localhost:${ctx.port}/edge`)
+            ).text();
+            assert.match(html, /edge fibonacci\(10\) = 55/);
+            assert.match(html, /edge cap\(&quot;edge&quot;\) = Edge/);
         });
     });
 });

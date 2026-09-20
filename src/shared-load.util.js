@@ -1,8 +1,9 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
-const crypto = require("node:crypto");
 const pack = require("./pack");
+const buildInputsHash = require("./utils/buildInputsHash.util");
+const withBuildLock = require("./utils/buildLock.util");
 
 /** @typedef {Object} SharedLoadParams
  * @property {string} resourcePath - absolute path to the .rs file being loaded
@@ -18,19 +19,20 @@ const pack = require("./pack");
 
 const inlineWebOptions = {
     asyncLoading: false,
-    usePublicPath: false,
-    publicPath: [],
+    publicPath: "",
     wasmPathModifier: ["/"],
 };
 
 const inlineNodeOptions = { bundle: true };
 
-// Per-source temp build dir, content-addressed by the source hash so rebuilds
-// are cache-friendly. Mirrors the scheme the Webpack loader computes inline.
-function resolveBuildContext(resourcePath) {
+// Per-source temp build dir, content-addressed by the source and the cargo
+// manifests so rebuilds are cache-friendly and a dependency bump never reuses
+// the artifacts of the set before it. Mirrors the scheme the Webpack loader
+// computes inline.
+function resolveBuildContext(resourcePath, baseFolder) {
     const source = fs.readFileSync(resourcePath, "utf8");
     const { base } = path.parse(path.normalize(resourcePath));
-    const hash = crypto.createHash("sha256").update(source).digest("hex");
+    const hash = buildInputsHash(source, resourcePath, baseFolder);
     const buildFolder = path.join(os.tmpdir(), `${base}.${hash}`);
     if (!fs.existsSync(buildFolder)) {
         fs.mkdirSync(buildFolder, { recursive: true });
@@ -58,7 +60,10 @@ const noopEmit = async () => {
  */
 async function buildRsModule(params) {
     const baseFolder = params.baseFolder || process.cwd();
-    const { buildFolder, wasmName } = resolveBuildContext(params.resourcePath);
+    const { buildFolder, wasmName } = resolveBuildContext(
+        params.resourcePath,
+        baseFolder,
+    );
 
     const basePackParams = {
         resourcePath: params.resourcePath,
@@ -80,20 +85,26 @@ async function buildRsModule(params) {
     // after the bytes do. Build once so the wasm lands in the pkg dir, emit those
     // bytes to get the URL expression, then let pack regenerate the glue around
     // `params.import`. The second pass is a wasm-pack cache hit on the same
-    // content-addressed dir, so no Rust recompilation happens.
-    await pack(basePackParams, noopEmit);
-    const wasmBytes = fs.readFileSync(path.join(buildFolder, "pkg", wasmName));
-    return pack(
-        {
-            ...basePackParams,
-            import: {
-                urlExpression: params.emitWasm(wasmBytes, wasmName),
-                strategy: params.strategy,
-                preamble: params.preamble,
+    // content-addressed dir, so no Rust recompilation happens. The lock spans
+    // both passes and the read between them. No other process can rewrite the
+    // pkg dir while the bytes are read out of it.
+    return withBuildLock(buildFolder, async () => {
+        await pack(basePackParams, noopEmit);
+        const wasmBytes = fs.readFileSync(
+            path.join(buildFolder, "pkg", wasmName),
+        );
+        return pack(
+            {
+                ...basePackParams,
+                import: {
+                    urlExpression: params.emitWasm(wasmBytes, wasmName),
+                    strategy: params.strategy,
+                    preamble: params.preamble,
+                },
             },
-        },
-        noopEmit,
-    );
+            noopEmit,
+        );
+    });
 }
 
 /**

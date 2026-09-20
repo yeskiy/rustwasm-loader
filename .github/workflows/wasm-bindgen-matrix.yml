@@ -1,0 +1,108 @@
+name: wasm-bindgen matrix
+
+# Every example pins wasm-bindgen twice, in a committed Cargo.toml and in a
+# committed Cargo.lock. For this reason one pull request build meets one
+# version of the generated glue only. Each job below rewrites that requirement
+# to an exact version in the runner workspace, then builds and tests. The three
+# versions cover the three glue shapes the loader patches. 0.2.95 splits the
+# export footer and defines `__wbg_init_memory`. 0.2.105 splits the footer and
+# defines no `__wbg_init_memory`. 0.2.128 merges the footer into one export
+# statement. No job commits anything.
+
+on:
+    push:
+        branches:
+            - main
+    pull_request:
+
+permissions:
+    contents: read
+
+jobs:
+    test:
+        name: ${{ matrix.test }} with wasm-bindgen ${{ matrix.version }}
+        runs-on: ubuntu-latest
+        env:
+            # The electron example builds and tests without launching Electron, so
+            # it never needs the platform binary - skip that download.
+            ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+        strategy:
+            fail-fast: false
+            matrix:
+                version: [ "0.2.95", "0.2.105", "0.2.128" ]
+                test: [ ., example/node-bun, example/node-webpack, example/web-webpack, example/typed-imports, example/esbuild, example/rspack, example/rollup, example/vite, example/next, example/next15, example/next-turbopack, example/electron ]
+        steps:
+            -   uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+            -   uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
+                with:
+                    node-version: 24
+            -   name: Install Rust
+                uses: dtolnay/rust-toolchain@6c977a6ca4077a0ceb28ffbe03f59d46e9ac8772 # v1
+                with:
+                    toolchain: "1.93.0"
+                    targets: wasm32-unknown-unknown
+            -   name: Verify Rust installation
+                run: rustc --version
+
+            # Lifecycle scripts stay off. Two dependencies deliver their binary
+            # through such a script, so the lines below run those installers by
+            # hand. wasm-pack sits at the repository root, and every example
+            # reads it through the linked loader. Only example/node-bun has bun.
+            -   name: Install dependencies
+                shell: bash
+                env:
+                    TEST_DIR: ${{ matrix.test }}
+                run: |
+                    npm ci --ignore-scripts
+                    node node_modules/wasm-pack/install.js
+                    if [ "$TEST_DIR" != "." ]; then
+                        cd "$TEST_DIR"
+                        npm ci --ignore-scripts
+                        if [ -f node_modules/bun/install.js ]; then
+                            node node_modules/bun/install.js
+                        fi
+                    fi
+            -   name: Verify wasm-pack installation
+                run: npm exec --no -- wasm-pack --version
+                working-directory: ${{ matrix.test }}
+
+            # The root suite builds Rust through example/typed-imports, so that
+            # is the manifest it pins. The grep after the rewrite fails the job
+            # if the requirement kept its committed value. The three Next
+            # examples keep the crate entry outside `src/lib.rs`, and the loader
+            # writes `lib.path` into its build folder. Cargo cannot read those
+            # manifests here, so the lock update fails for them, and the exact
+            # requirement still drives the build.
+            -   name: Pin wasm-bindgen to ${{ matrix.version }}
+                shell: bash
+                env:
+                    TEST_DIR: ${{ matrix.test }}
+                    VERSION: ${{ matrix.version }}
+                run: |
+                    crate="$TEST_DIR"
+                    if [ "$crate" = "." ]; then
+                        crate="example/typed-imports"
+                    fi
+                    sed -i -E "s/^wasm-bindgen = .*/wasm-bindgen = \"=$VERSION\"/" "$crate/Cargo.toml"
+                    grep -qx "wasm-bindgen = \"=$VERSION\"" "$crate/Cargo.toml"
+                    echo "Pinned requirement:"
+                    grep '^wasm-bindgen = ' "$crate/Cargo.toml"
+                    cargo update --manifest-path "$crate/Cargo.toml" --package wasm-bindgen --precise "$VERSION" \
+                        || echo "The lock keeps its committed versions. Cargo cannot read this manifest here, and the loader resolves the exact requirement in its build folder."
+
+            -   name: Build and test ${{ matrix.test }}
+                run: npm test
+                working-directory: ${{ matrix.test }}
+
+            -   name: Discard the pinned manifest and lock
+                if: always()
+                shell: bash
+                env:
+                    TEST_DIR: ${{ matrix.test }}
+                run: |
+                    crate="$TEST_DIR"
+                    if [ "$crate" = "." ]; then
+                        crate="example/typed-imports"
+                    fi
+                    git checkout -- "$crate/Cargo.toml" "$crate/Cargo.lock"
+                    git diff --exit-code -- "$crate/Cargo.toml" "$crate/Cargo.lock"

@@ -1,0 +1,20 @@
+{
+    "type": "module",
+    "engines": {
+        "node": ">=22.22.2"
+    },
+    "scripts": {
+        "build": "next build",
+        "build:turbopack": "next build --turbopack",
+        "test": "node --test src/index.test.js"
+    },
+    "dependencies": {
+        "prop-types": "^15.8.1"
+    },
+    "devDependencies": {
+        "next": "15.5.25",
+        "react": "^19.3.0",
+        "react-dom": "^19.3.0",
+        "rust-wasmpack-loader": "file:../.."
+    }
+}

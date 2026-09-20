@@ -77,9 +77,11 @@ works under both. See the [Electron example](../examples/electron) for the two-c
 Next.js uses the loader through the `withRustWasm` helper: the server build runs `node`, the client build runs `web`, and
 both inline the wasm bytes. Edge routes work too, through a separate `module` delivery that ships the wasm as a
 pre-compiled `WebAssembly.Module` (the one form the Edge runtime can instantiate). The helper wires all of this into both
-bundlers, so the wrapped config builds under Turbopack (`next build`, the Next.js 16 default) and webpack (`next build
---webpack`) alike. The asset-emitting modes (`web.asyncLoading`, `node.bundle: false`) still need `emitFile`, which
-Turbopack does not expose, so the helper leaves them out of the Next path.
+bundlers, so the wrapped config builds under Turbopack and webpack alike, on Next.js 14 through 16. The helper reads the
+version of the Next.js you run and writes the Turbopack settings under the key that release accepts. See the
+[Next.js example](../examples/next) for the command each release takes. The asset-emitting modes (`web.asyncLoading`,
+`node.bundle: false`) still need `emitFile`, which Turbopack does not expose, so the helper leaves them out of the Next
+path.
 
 ## Comparison with alternatives
 

@@ -40,11 +40,28 @@ function buildWebpack() {
     });
 }
 
-function typedMembers() {
+// The members of the sidecar's `declare const _default: {...}` block alone. The
+// class bodies it also declares sit outside that block, so reading the whole
+// file would count `norm` or `free` as a top-level export.
+function defaultExportBlock() {
+    return fs
+        .readFileSync(SIDECAR, "utf8")
+        .match(/declare const _default: \{([\s\S]*?)\n\};/)[1];
+}
+
+// A function member reads `name(params): ret;`.
+function typedFunctions() {
     return [
-        ...fs
-            .readFileSync(SIDECAR, "utf8")
-            .matchAll(/^\s+([A-Za-z_$][\w$]*)\s*\(/gm),
+        ...defaultExportBlock().matchAll(/^\s+([A-Za-z_$][\w$]*)\s*\(/gm),
+    ].map((match) => match[1]);
+}
+
+// A class member reads `Name: typeof Name;`.
+function typedClasses() {
+    return [
+        ...defaultExportBlock().matchAll(
+            /^\s+([A-Za-z_$][\w$]*): typeof \1;/gm,
+        ),
     ].map((match) => match[1]);
 }
 
@@ -53,8 +70,9 @@ test("precise types, floor fallback, and runtime fidelity", async () => {
         fs.existsSync(SIDECAR),
         "pretest should have generated the sidecar",
     );
-    const members = typedMembers();
+    const members = typedFunctions();
     assert.deepEqual([...members].sort(), ["cap", "fibonacci"]);
+    assert.deepEqual(typedClasses(), ["Point"]);
 
     // Correct usage type-checks against the precise sidecar.
     const precise = runTsc("tsconfig.json");
@@ -95,6 +113,13 @@ test("precise types, floor fallback, and runtime fidelity", async () => {
     );
     assert.equal(built.fib10, 55);
     assert.equal(built.capped, "Hello");
+
+    // The class is on the default export, and a live instance answers.
+    const point = new built.runtime.Point(3, 4);
+    assert.equal(point.x, 3);
+    assert.equal(point.norm(), 5);
+    assert.equal(built.pointX, 3);
+    assert.equal(built.pointNorm, 5);
 });
 
 test("the webpack build writes the sidecar when `types: true`", async () => {
@@ -109,8 +134,8 @@ test("the webpack build writes the sidecar when `types: true`", async () => {
         fs.existsSync(SIDECAR),
         "the build with types:true must write the sidecar",
     );
-    assert.match(
-        fs.readFileSync(SIDECAR, "utf8"),
-        /fibonacci\(n: number\): number;/,
-    );
+    const content = fs.readFileSync(SIDECAR, "utf8");
+    assert.match(content, /fibonacci\(n: number\): number;/);
+    assert.match(content, /declare class Point \{/);
+    assert.match(content, /Point: typeof Point;/);
 });

@@ -34,13 +34,41 @@ export function initSync(module: { module: SyncInitInput } | SyncInitInput): Ini
 export default function __wbg_init (module_or_path?: { module_or_path: InitInput | Promise<InitInput> } | InitInput | Promise<InitInput>): Promise<InitOutput>;
 `;
 
-test("emits a default-export object of only the exported functions", () => {
+test("emits a default-export object of the exported functions and classes", () => {
     const out = dtsToSidecar(FIXTURE);
     assert.match(out, /cap\(s: string\): string;/);
     assert.match(out, /fibonacci\(n: number\): number;/);
-    assert.doesNotMatch(out, /Point/);
+    assert.match(out, /Point: typeof Point;/);
     assert.doesNotMatch(out, /initSync|InitOutput|__wbg_init/);
     assert.match(out, /export default _default;/);
+});
+
+test("declares the class body, so its members carry their own types", () => {
+    const out = dtsToSidecar(FIXTURE);
+    assert.match(out, /declare class Point \{/);
+    assert.match(out, /free\(\): void;/);
+    assert.match(out, /x: number;/);
+    assert.match(out, /y: number;/);
+});
+
+test("keeps a constructor signature, so the class stays constructible", () => {
+    assert.match(
+        dtsToSidecar(
+            [
+                "export class Point {",
+                "  constructor(x: number, y: number);",
+                "  norm(): number;",
+                "}",
+                "",
+            ].join("\n"),
+        ),
+        /constructor\(x: number, y: number\);/,
+    );
+});
+
+test("never exports the class by name (the runtime has a default only)", () => {
+    // A named export here would type-check an import the loader never emits.
+    assert.doesNotMatch(dtsToSidecar(FIXTURE), /export\s+(declare\s+)?class/);
 });
 
 test("produces no index signature (unknown members stay errors)", () => {

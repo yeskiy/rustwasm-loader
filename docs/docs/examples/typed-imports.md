@@ -10,7 +10,7 @@ A `.rs` import can be a fully typed module in TypeScript, ESLint, and your edito
 
 Types come in two layers:
 
-- **The floor** - the package ships an ambient `declare module "*.rs"`. Once you reference it, every `.rs` import is valid and loosely typed (a record of callables), so the import never errors even before anything is generated.
+- **The floor** - the package ships an ambient `declare module "*.rs"`. Once you reference it, every `.rs` import is valid and loosely typed (a record of members you can call or construct), so the import never errors even before anything is generated.
 - **Precise sidecars** - for each `.rs`, a `<name>.d.rs.ts` file carries the exact signatures, generated from wasm-bindgen's own types. TypeScript resolves it through `allowArbitraryExtensions` and it overrides the floor for that file.
 
 wasm-bindgen already knows the types; the loader normally discards them. The pieces below keep them and reshape them to match what a `.rs` import actually exposes at runtime.
@@ -26,7 +26,7 @@ Reference the shipped floor from your `tsconfig.json`:
 }
 ```
 
-That alone clears the `Cannot find module './math.rs'` error. The import is typed as `Record<string, (...args: any[]) => any>` until precise types are generated.
+That alone clears the `Cannot find module './math.rs'` error. Until precise types are generated, every member of the import accepts a call and a `new`, and returns `any`.
 
 ## Get precise types
 
@@ -126,6 +126,24 @@ pub fn fibonacci(n: i32) -> i32 {
 pub fn cap(s: &str) -> String {
     s[0..1].to_uppercase() + &s[1..]
 }
+
+#[wasm_bindgen]
+pub struct Point {
+    pub x: f64,
+    pub y: f64,
+}
+
+#[wasm_bindgen]
+impl Point {
+    #[wasm_bindgen(constructor)]
+    pub fn new(x: f64, y: f64) -> Point {
+        Point { x, y }
+    }
+
+    pub fn norm(&self) -> f64 {
+        (self.x * self.x + self.y * self.y).sqrt()
+    }
+}
 ```
 
 ```typescript title="src/index.ts"
@@ -135,6 +153,29 @@ import lib from "../math.rs";
 // `(s: string) => string`. A typo like `lib.fib()` is a compile error.
 export const fib10 = lib.fibonacci(10);
 export const capped = lib.cap("hello");
+
+// `lib.Point` is the exported struct. The constructor, the `norm` method, and
+// the `x` and `y` properties all carry their Rust types.
+const point = new lib.Point(3, 4);
+export const norm = point.norm();
+```
+
+The generated sidecar declares the class and names it on the default export:
+
+```typescript title="math.d.rs.ts"
+declare class Point {
+    free(): void;
+    constructor(x: number, y: number);
+    norm(): number;
+    x: number;
+    y: number;
+}
+declare const _default: {
+    fibonacci(n: number): number;
+    cap(s: string): string;
+    Point: typeof Point;
+};
+export default _default;
 ```
 
 ```json title="tsconfig.json"
@@ -154,6 +195,7 @@ export const capped = lib.cap("hello");
 
 ## Notes
 
-- **Functions are typed; classes are not yet.** A `#[wasm_bindgen]` function gets its exact signature. An exported `struct`/class stays on the loose floor for now, since the loader does not yet expose wasm-bindgen classes on the default export.
+- **Functions and classes are both typed.** A `#[wasm_bindgen]` function gets its exact signature. A `#[wasm_bindgen]` struct reaches the default export as a class, and the sidecar declares its constructor, its methods, and its properties. An unknown member stays a compile error on either one.
+- **A class has no named export.** The loader emits a default export only. The sidecar therefore declares each class beside that object, instead of exporting it. Use `InstanceType<typeof lib.Point>` when you need to name the instance type.
 - **The plugin is editor-only.** `tsc` on the command line never loads a Language Service plugin, so it reads the on-disk sidecar instead. Generate it with `types: true` or the CLI for `tsc` and CI; the plugin keeps the editor live.
 - **`typescript` is a dependency** of the loader (the generator and the plugin use the compiler API), so it is installed for you.

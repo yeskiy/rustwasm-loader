@@ -21,3 +21,15 @@ pub struct Point {
     pub x: f64,
     pub y: f64,
 }
+
+#[wasm_bindgen]
+impl Point {
+    #[wasm_bindgen(constructor)]
+    pub fn new(x: f64, y: f64) -> Point {
+        Point { x, y }
+    }
+
+    pub fn norm(&self) -> f64 {
+        (self.x * self.x + self.y * self.y).sqrt()
+    }
+}

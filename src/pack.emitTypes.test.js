@@ -46,8 +46,7 @@ function packParams(dir, emitTypes) {
         logLevel: "error",
         web: {
             asyncLoading: false,
-            usePublicPath: false,
-            publicPath: [],
+            publicPath: "",
             wasmPathModifier: ["/"],
         },
         node: { bundle: true },
@@ -79,7 +78,9 @@ test(
             const content = fs.readFileSync(sidecar, "utf8");
             assert.match(content, /fibonacci\(n: number\): number;/);
             assert.match(content, /cap\(s: string\): string;/);
-            assert.doesNotMatch(content, /Point|initSync|\[key: string\]/);
+            assert.match(content, /declare class Point \{/);
+            assert.match(content, /Point: typeof Point;/);
+            assert.doesNotMatch(content, /initSync|\[key: string\]/);
 
             // The returned module is a function of the source alone: emission is a
             // side effect, never a change to what consumers import.

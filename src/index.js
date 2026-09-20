@@ -1,11 +1,15 @@
 const fs = require("node:fs");
-const crypto = require("node:crypto");
 const os = require("node:os");
 const path = require("node:path");
 const loaderUtils = require("loader-utils");
 const schemaUtils = require("schema-utils");
 const { merge } = require("lodash");
 const pack = require("./pack");
+const buildInputsHash = require("./utils/buildInputsHash.util");
+const edgeWasmPath = require("./utils/edgeCache.util");
+
+const { cargoManifestsFor } = buildInputsHash;
+const withBuildLock = require("./utils/buildLock.util");
 const bun = require("./bun");
 const esbuild = require("./esbuild");
 const rollup = require("./rollup");
@@ -103,64 +107,222 @@ const noopEmit = () => undefined;
  * a project-local cache path both bundlers can resolve, then regenerate the glue
  * around an `import <binding> from "<cache>?module"` line. The second pass is a
  * wasm-pack cache hit on the same content-addressed dir, so Rust never recompiles.
+ * The build-folder lock spans both passes and the copy between them. No other
+ * process can rewrite the pkg dir while the bytes are read out of it.
+ *
+ * The build-input digest names the cache file, so a crate whose dependencies
+ * changed reaches the bundler under a specifier of its own. A bundler that
+ * caches the compiled module against the specifier then compiles the current
+ * wasm rather than serving the module of the dependency set before it, which no
+ * longer matches the glue.
  * @param {import("./pack").Options} basePackParams
- * @param {string} sourceHash
+ * @param {string} inputsHash the crate-input digest that names the cache file
+ * @param {(file: string) => void} addDependency declares a build dependency, or does nothing on a host without a loader context
  * @returns {Promise<string>}
  */
-async function buildModuleDelivery(basePackParams, sourceHash) {
-    await pack(basePackParams, noopEmit);
-    const cacheDir = path.join(
-        basePackParams.baseFolder,
-        "node_modules",
-        ".cache",
-        "rust-wasmpack-loader",
-    );
-    fs.mkdirSync(cacheDir, { recursive: true });
-    const cachePath = path.join(cacheDir, `${sourceHash}.wasm`);
-    fs.copyFileSync(
-        path.join(basePackParams.buildFolder, "pkg", basePackParams.wasmName),
-        cachePath,
-    );
-    // Reference the cache file relatively to the `.rs` resource. Turbopack only
-    // applies its native `.wasm?module` transform to in-tree relative specifiers
-    // (an absolute path is treated as an external native module and fails to
-    // load); webpack resolves the relative specifier against the resource too.
-    const relativeWasm = path
-        .relative(path.dirname(basePackParams.resourcePath), cachePath)
-        .split(path.sep)
-        .join("/");
-    const wasmSpecifier = relativeWasm.startsWith(".")
-        ? `${relativeWasm}?module`
-        : `./${relativeWasm}?module`;
-    return pack(
-        {
-            ...basePackParams,
-            import: {
-                strategy: "module",
-                urlExpression: moduleBinding,
-                preamble: `import ${moduleBinding} from ${JSON.stringify(wasmSpecifier)};`,
+async function buildModuleDelivery(basePackParams, inputsHash, addDependency) {
+    return withBuildLock(basePackParams.buildFolder, async () => {
+        await pack(basePackParams, noopEmit);
+        const cachePath = edgeWasmPath(basePackParams.baseFolder, inputsHash);
+        fs.mkdirSync(path.dirname(cachePath), { recursive: true });
+        const bytes = fs.readFileSync(
+            path.join(
+                basePackParams.buildFolder,
+                "pkg",
+                basePackParams.wasmName,
+            ),
+        );
+        // The name carries the input digest, so a file already here holds this
+        // build's bytes. Rewriting it would only move its timestamp, and the
+        // loader declares it below, which turns a moved timestamp into another
+        // rebuild in watch mode.
+        if (
+            !fs.existsSync(cachePath) ||
+            !fs.readFileSync(cachePath).equals(bytes)
+        ) {
+            fs.writeFileSync(cachePath, bytes);
+        }
+        addDependency(cachePath);
+        // Reference the cache file relatively to the `.rs` resource. Turbopack
+        // only applies its native `.wasm?module` transform to in-tree relative
+        // specifiers (an absolute path is treated as an external native module
+        // and fails to load). Webpack resolves the relative specifier against
+        // the resource too.
+        const relativeWasm = path
+            .relative(path.dirname(basePackParams.resourcePath), cachePath)
+            .split(path.sep)
+            .join("/");
+        const wasmSpecifier = relativeWasm.startsWith(".")
+            ? `${relativeWasm}?module`
+            : `./${relativeWasm}?module`;
+        return pack(
+            {
+                ...basePackParams,
+                import: {
+                    strategy: "module",
+                    urlExpression: moduleBinding,
+                    preamble: `import ${moduleBinding} from ${JSON.stringify(wasmSpecifier)};`,
+                },
             },
-        },
-        noopEmit,
+            noopEmit,
+        );
+    });
+}
+
+/**
+ * Reads the values the loader takes from its host. Webpack and Rspack expose
+ * `_compilation`, and Turbopack's core loader API does not. When it is present the
+ * values are the webpack ones. When it is absent the plain loader-context
+ * fields keep the inline path running.
+ * @param {object} loaderContext the loader `this`
+ * @returns {{fileNameStruct: string, baseFolder: string, resourcePath: string}}
+ */
+const loaderParams = (loaderContext) => ({
+    fileNameStruct:
+        loaderContext._compilation?.outputOptions?.webassemblyModuleFilename ||
+        "[hash].module.wasm",
+    baseFolder:
+        loaderContext._compilation?.options?.context ||
+        loaderContext.rootContext ||
+        process.cwd(),
+    resourcePath: loaderContext.resourcePath,
+});
+
+/**
+ * Picks the build strategy. The loader option wins over the host's own target.
+ *
+ * Electron's webpack targets map onto the two strategies we already have: the
+ * main and preload processes are Node, the renderer is a browser. Both build
+ * with inlined bytes. webpack normalizes versioned targets (for example
+ * `electron20-main`) down to these three strings before the loader sees them.
+ * @param {string|undefined} optionTarget the `target` loader option
+ * @param {string|undefined} contextTarget the target the host declares
+ * @returns {string} `web` or `node`
+ */
+function resolveTarget(optionTarget, contextTarget) {
+    const requested = optionTarget ?? contextTarget;
+    const target = constants.electronTargets[requested] ?? requested;
+
+    if (!constants.supportedTargets.includes(target)) {
+        throw new Error(
+            `patch is not presented for this target (${target}). Please, create new Issue or check the documentation.`,
+        );
+    }
+
+    return target;
+}
+
+/**
+ * Declares a build dependency on a host that has a loader context, and does
+ * nothing on a host that has not. Only the webpack-style hosts supply the call.
+ * The Bun, esbuild, Rollup and Vite paths have no loader context.
+ * @param {object} loaderContext the loader `this`
+ * @returns {(file: string) => void}
+ */
+const dependencyDeclarer = (loaderContext) =>
+    typeof loaderContext.addDependency === "function"
+        ? (file) => loaderContext.addDependency(file)
+        : () => undefined;
+
+/**
+ * Makes the per-source, per-target temp build dir and returns it. Keying on the
+ * target as well as the build inputs keeps concurrent builds of the same `.rs`
+ * for different environments (Next runs the server and client passes in
+ * parallel) in separate directories, so their wasm-pack runs never collide. The
+ * `module` delivery shares the `web` target with the browser build but runs in
+ * its own Turbopack worker, where the in-process build queue cannot serialize
+ * it, so it gets a distinct dir too.
+ * @param {string} resourcePath absolute path of the `.rs` file
+ * @param {string} inputsHash the crate-input digest
+ * @param {string} target `web` or `node`
+ * @param {boolean} moduleDelivery true for the Edge `module` delivery
+ * @returns {string} absolute path of the build dir
+ */
+function buildFolderFor(resourcePath, inputsHash, target, moduleDelivery) {
+    const buildFolder = path.join(
+        os.tmpdir(),
+        `${path.parse(path.normalize(resourcePath)).base}.${inputsHash}.${
+            moduleDelivery ? `${target}.module` : target
+        }`,
     );
+
+    if (!fs.existsSync(buildFolder)) {
+        fs.mkdirSync(buildFolder, { recursive: true });
+    }
+
+    return buildFolder;
+}
+
+/**
+ * Names the wasm file. Webpack and Rspack feed it through `interpolateName`.
+ * Under Turbopack the loader context is thinner, so when interpolation cannot
+ * run we derive a content-hashed name directly. The name is internal scratch
+ * for the inline path and never surfaces, so the exact shape does not matter.
+ * A host that has a compilation gets the interpolation error itself.
+ * @param {object} loaderContext the loader `this`
+ * @param {string} fileNameStruct the name template
+ * @param {string|Buffer} source the `.rs` source
+ * @param {string} inputsHash the crate-input digest
+ * @returns {string}
+ */
+function resolveWasmName(loaderContext, fileNameStruct, source, inputsHash) {
+    try {
+        return loaderUtils.interpolateName(loaderContext, fileNameStruct, {
+            content: source,
+        });
+    } catch (error) {
+        if (loaderContext._compilation) {
+            throw error;
+        }
+        return `${inputsHash}.module.wasm`;
+    }
+}
+
+/**
+ * Resolves the public path for the one web delivery that fetches the emitted
+ * asset at runtime. Every other delivery slices it off, so it stays empty and
+ * we avoid dereferencing compilation internals. The `web.publicPath` option is
+ * the documented opt-out.
+ * @param {object} loaderContext the loader `this`
+ * @param {object} webOptions the `web` loader options
+ * @param {string} target `web` or `node`
+ * @param {string} wasmName the emitted asset name
+ * @returns {string}
+ */
+function resolvePublicPath(loaderContext, webOptions, target, wasmName) {
+    if (
+        target !== "web" ||
+        !webOptions.asyncLoading ||
+        !webOptions.publicPath
+    ) {
+        return "";
+    }
+
+    const compilation = loaderContext._compilation;
+    const webpackPublicPath = compilation.getAssetPath(
+        compilation.outputOptions.publicPath,
+        { hash: compilation.hash || "" },
+    );
+
+    return webpackPublicPath.trim() !== "" && webpackPublicPath !== "auto"
+        ? webpackPublicPath
+        : path
+              .relative(
+                  path.resolve(
+                      compilation.options.output.path,
+                      path.dirname(wasmName),
+                  ),
+                  compilation.options.output.path,
+              )
+              .split(path.sep)
+              .join("/");
 }
 
 async function rustWasmLoader(source) {
     // this loader is async
     const callback = this.async();
 
-    // Webpack/Rspack expose `_compilation`; Turbopack's core loader API does not.
-    // When it is present the values below are byte-identical to before; when it is
-    // absent we fall back to plain loader-context fields so the inline path still runs.
-    const compilation = this._compilation;
-    const params = {
-        fileNameStruct:
-            compilation?.outputOptions?.webassemblyModuleFilename ||
-            "[hash].module.wasm",
-        baseFolder:
-            compilation?.options?.context || this.rootContext || process.cwd(),
-        resourcePath: this.resourcePath,
-    };
+    const params = loaderParams(this);
 
     try {
         const options = merge(
@@ -182,123 +344,67 @@ async function rustWasmLoader(source) {
             name: "rust-wasmpack-loader",
         });
 
-        // Loader option wins; fall back to webpack's own target.
-        params.target = options.target ?? this.target;
+        const target = resolveTarget(options.target, this.target);
+        const moduleDelivery = options.import?.strategy === "module";
 
-        // Electron's webpack targets map onto the two strategies we already have:
-        // the main and preload processes are Node, the renderer is a browser. Both
-        // build with inlined bytes. webpack normalizes versioned targets (e.g.
-        // `electron20-main`) down to these three strings before the loader sees them.
-        params.target =
-            constants.electronTargets[params.target] ?? params.target;
-
-        if (!constants.supportedTargets.includes(params.target)) {
-            throw new Error(
-                `patch is not presented for this target (${params.target}). Please, create new Issue or check the documentation.`,
-            );
-        }
-
-        const { base } = path.parse(path.normalize(params.resourcePath));
-
-        // Per-source, per-target temp build dir. Keying on the target as well as
-        // the source hash keeps concurrent builds of the same `.rs` for different
-        // environments (Next runs the server and client passes in parallel) in
-        // separate directories, so their wasm-pack runs never collide. The `module`
-        // delivery shares the `web` target with the browser build but runs in its
-        // own Turbopack worker, where the in-process build queue cannot serialize
-        // it, so it gets a distinct dir too.
-        const tmp = os.tmpdir();
-        const sourceHash = crypto
-            .createHash("sha256")
-            .update(source)
-            .digest("hex");
-        const buildVariant =
-            options.import?.strategy === "module"
-                ? `${params.target}.module`
-                : params.target;
-        const buildFolder = path.join(
-            tmp,
-            `${base}.${sourceHash}.${buildVariant}`,
+        // The generated module is a function of the `.rs` source and of the
+        // cargo manifests beside it, so the manifests are build dependencies.
+        // Without them a bundler reuses the module it cached against an
+        // unchanged source and never rebuilds the wasm after a dependency
+        // change.
+        const addDependency = dependencyDeclarer(this);
+        cargoManifestsFor(params.resourcePath, params.baseFolder).forEach(
+            addDependency,
         );
 
-        // create required folders for build
-        if (!fs.existsSync(buildFolder)) {
-            fs.mkdirSync(buildFolder, { recursive: true });
-        }
-
-        // Create name of wasm file. Webpack/Rspack feed it through
-        // `interpolateName`; under Turbopack (no compilation) the loader context
-        // is thinner, so if interpolation cannot run we derive a content-hashed
-        // name directly. The name is internal scratch for the inline path and
-        // never surfaces, so the exact shape does not matter.
-        const wasmName = compilation
-            ? loaderUtils.interpolateName(this, params.fileNameStruct, {
-                  content: source,
-              })
-            : (() => {
-                  try {
-                      return loaderUtils.interpolateName(
-                          this,
-                          params.fileNameStruct,
-                          { content: source },
-                      );
-                  } catch {
-                      return `${sourceHash}.module.wasm`;
-                  }
-              })();
-
-        // Resolve publicPath only for the web path that actually fetches the
-        // emitted asset at runtime; every other delivery slices it off, so it
-        // stays empty and we avoid dereferencing compilation internals.
-        const publicPath =
-            params.target === "web" && options.web.asyncLoading
-                ? (() => {
-                      const webpackPublicPath = this._compilation.getAssetPath(
-                          this._compilation.outputOptions.publicPath,
-                          { hash: this._compilation.hash || "" },
-                      );
-                      return webpackPublicPath.trim() !== "" &&
-                          webpackPublicPath !== "auto"
-                          ? webpackPublicPath
-                          : path
-                                .relative(
-                                    path.resolve(
-                                        this._compilation.options.output.path,
-                                        path.dirname(
-                                            this._compilation.getAssetPath(
-                                                wasmName,
-                                                this.context,
-                                            ),
-                                        ),
-                                    ),
-                                    this._compilation.options.output.path,
-                                )
-                                .split(path.sep)
-                                .join("/");
-                  })()
-                : "";
+        const inputsHash = buildInputsHash(
+            source,
+            params.resourcePath,
+            params.baseFolder,
+        );
+        const buildFolder = buildFolderFor(
+            params.resourcePath,
+            inputsHash,
+            target,
+            moduleDelivery,
+        );
+        const wasmName = resolveWasmName(
+            this,
+            params.fileNameStruct,
+            source,
+            inputsHash,
+        );
 
         const basePackParams = {
             resourcePath: params.resourcePath,
             baseFolder: params.baseFolder,
             buildFolder,
             wasmName,
-            target: params.target,
+            target,
             logLevel: options.logLevel,
             emitTypes: options.types === true,
             web: {
                 ...options.web,
-                publicPath,
+                publicPath: resolvePublicPath(
+                    this,
+                    options.web,
+                    target,
+                    wasmName,
+                ),
             },
             node: options.node,
         };
 
-        const content =
-            options.import?.strategy === "module"
-                ? await buildModuleDelivery(basePackParams, sourceHash)
-                : await pack(basePackParams, this.emitFile);
-
-        callback(null, content);
+        callback(
+            null,
+            moduleDelivery
+                ? await buildModuleDelivery(
+                      basePackParams,
+                      inputsHash,
+                      addDependency,
+                  )
+                : await pack(basePackParams, this.emitFile),
+        );
     } catch (e) {
         callback(e, null);
     }
