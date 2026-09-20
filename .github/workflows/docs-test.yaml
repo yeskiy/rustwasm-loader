@@ -18,18 +18,18 @@ jobs:
         name: Test deployment
         runs-on: ubuntu-latest
         steps:
-            -   uses: actions/checkout@v5
+            -   uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
                 with:
                     fetch-depth: 0
-            -   uses: actions/setup-node@v5
+            -   uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5.0.0
                 with:
-                    node-version: 20
+                    node-version: 22
                     cache: npm
 
             -   name: Install dependencies
                 run: |
-                    npm ci
-                    npm install @docusaurus/core@3.10.1 @docusaurus/module-type-aliases@3.10.1 @docusaurus/preset-classic@3.10.1 @docusaurus/tsconfig@3.10.1 @docusaurus/types@3.10.1 @docusaurus/theme-mermaid@3.10.1 @mermaid-js/layout-elk@0.1.9
+                    npm ci --ignore-scripts
+                    npm install @docusaurus/core@3.10.1 @docusaurus/module-type-aliases@3.10.1 @docusaurus/preset-classic@3.10.1 @docusaurus/tsconfig@3.10.1 @docusaurus/types@3.10.1 @docusaurus/theme-mermaid@3.10.1 @mermaid-js/layout-elk@0.1.9 --ignore-scripts
             
             -   name: Test build website
                 run: npm run docs:build
