@@ -1,8 +1,8 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
-const crypto = require("node:crypto");
 const pack = require("./pack");
+const buildInputsHash = require("./utils/buildInputsHash.util");
 const withBuildLock = require("./utils/buildLock.util");
 
 /** @typedef {Object} SharedLoadParams
@@ -25,12 +25,14 @@ const inlineWebOptions = {
 
 const inlineNodeOptions = { bundle: true };
 
-// Per-source temp build dir, content-addressed by the source hash so rebuilds
-// are cache-friendly. Mirrors the scheme the Webpack loader computes inline.
-function resolveBuildContext(resourcePath) {
+// Per-source temp build dir, content-addressed by the source and the cargo
+// manifests so rebuilds are cache-friendly and a dependency bump never reuses
+// the artifacts of the set before it. Mirrors the scheme the Webpack loader
+// computes inline.
+function resolveBuildContext(resourcePath, baseFolder) {
     const source = fs.readFileSync(resourcePath, "utf8");
     const { base } = path.parse(path.normalize(resourcePath));
-    const hash = crypto.createHash("sha256").update(source).digest("hex");
+    const hash = buildInputsHash(source, resourcePath, baseFolder);
     const buildFolder = path.join(os.tmpdir(), `${base}.${hash}`);
     if (!fs.existsSync(buildFolder)) {
         fs.mkdirSync(buildFolder, { recursive: true });
@@ -58,7 +60,10 @@ const noopEmit = async () => {
  */
 async function buildRsModule(params) {
     const baseFolder = params.baseFolder || process.cwd();
-    const { buildFolder, wasmName } = resolveBuildContext(params.resourcePath);
+    const { buildFolder, wasmName } = resolveBuildContext(
+        params.resourcePath,
+        baseFolder,
+    );
 
     const basePackParams = {
         resourcePath: params.resourcePath,

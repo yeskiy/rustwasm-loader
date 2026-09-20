@@ -1,11 +1,14 @@
 const fs = require("node:fs");
-const crypto = require("node:crypto");
 const os = require("node:os");
 const path = require("node:path");
 const loaderUtils = require("loader-utils");
 const schemaUtils = require("schema-utils");
 const { merge } = require("lodash");
 const pack = require("./pack");
+const buildInputsHash = require("./utils/buildInputsHash.util");
+const edgeWasmPath = require("./utils/edgeCache.util");
+
+const { cargoManifestsFor } = buildInputsHash;
 const withBuildLock = require("./utils/buildLock.util");
 const bun = require("./bun");
 const esbuild = require("./esbuild");
@@ -106,29 +109,40 @@ const noopEmit = () => undefined;
  * wasm-pack cache hit on the same content-addressed dir, so Rust never recompiles.
  * The build-folder lock spans both passes and the copy between them. No other
  * process can rewrite the pkg dir while the bytes are read out of it.
+ *
+ * The build-input digest names the cache file, so a crate whose dependencies
+ * changed reaches the bundler under a specifier of its own. A bundler that
+ * caches the compiled module against the specifier then compiles the current
+ * wasm rather than serving the module of the dependency set before it, which no
+ * longer matches the glue.
  * @param {import("./pack").Options} basePackParams
- * @param {string} sourceHash
+ * @param {string} inputsHash the crate-input digest that names the cache file
+ * @param {(file: string) => void} addDependency declares a build dependency, or does nothing on a host without a loader context
  * @returns {Promise<string>}
  */
-async function buildModuleDelivery(basePackParams, sourceHash) {
+async function buildModuleDelivery(basePackParams, inputsHash, addDependency) {
     return withBuildLock(basePackParams.buildFolder, async () => {
         await pack(basePackParams, noopEmit);
-        const cacheDir = path.join(
-            basePackParams.baseFolder,
-            "node_modules",
-            ".cache",
-            "rust-wasmpack-loader",
-        );
-        fs.mkdirSync(cacheDir, { recursive: true });
-        const cachePath = path.join(cacheDir, `${sourceHash}.wasm`);
-        fs.copyFileSync(
+        const cachePath = edgeWasmPath(basePackParams.baseFolder, inputsHash);
+        fs.mkdirSync(path.dirname(cachePath), { recursive: true });
+        const bytes = fs.readFileSync(
             path.join(
                 basePackParams.buildFolder,
                 "pkg",
                 basePackParams.wasmName,
             ),
-            cachePath,
         );
+        // The name carries the input digest, so a file already here holds this
+        // build's bytes. Rewriting it would only move its timestamp, and the
+        // loader declares it below, which turns a moved timestamp into another
+        // rebuild in watch mode.
+        if (
+            !fs.existsSync(cachePath) ||
+            !fs.readFileSync(cachePath).equals(bytes)
+        ) {
+            fs.writeFileSync(cachePath, bytes);
+        }
+        addDependency(cachePath);
         // Reference the cache file relatively to the `.rs` resource. Turbopack
         // only applies its native `.wasm?module` transform to in-tree relative
         // specifiers (an absolute path is treated as an external native module
@@ -211,24 +225,40 @@ async function rustWasmLoader(source) {
         const { base } = path.parse(path.normalize(params.resourcePath));
 
         // Per-source, per-target temp build dir. Keying on the target as well as
-        // the source hash keeps concurrent builds of the same `.rs` for different
+        // the build inputs keeps concurrent builds of the same `.rs` for different
         // environments (Next runs the server and client passes in parallel) in
         // separate directories, so their wasm-pack runs never collide. The `module`
         // delivery shares the `web` target with the browser build but runs in its
         // own Turbopack worker, where the in-process build queue cannot serialize
         // it, so it gets a distinct dir too.
         const tmp = os.tmpdir();
-        const sourceHash = crypto
-            .createHash("sha256")
-            .update(source)
-            .digest("hex");
+
+        // The generated module is a function of the `.rs` source and of the
+        // cargo manifests beside it, so the manifests are build dependencies.
+        // Without them a bundler reuses the module it cached against an
+        // unchanged source and never rebuilds the wasm after a dependency
+        // change. Only the webpack-style hosts supply this call. The Bun,
+        // esbuild, Rollup and Vite paths have no loader context.
+        const addDependency =
+            typeof this.addDependency === "function"
+                ? (file) => this.addDependency(file)
+                : () => undefined;
+        cargoManifestsFor(params.resourcePath, params.baseFolder).forEach(
+            addDependency,
+        );
+
+        const inputsHash = buildInputsHash(
+            source,
+            params.resourcePath,
+            params.baseFolder,
+        );
         const buildVariant =
             options.import?.strategy === "module"
                 ? `${params.target}.module`
                 : params.target;
         const buildFolder = path.join(
             tmp,
-            `${base}.${sourceHash}.${buildVariant}`,
+            `${base}.${inputsHash}.${buildVariant}`,
         );
 
         // create required folders for build
@@ -253,7 +283,7 @@ async function rustWasmLoader(source) {
                           { content: source },
                       );
                   } catch {
-                      return `${sourceHash}.module.wasm`;
+                      return `${inputsHash}.module.wasm`;
                   }
               })();
 
@@ -303,7 +333,11 @@ async function rustWasmLoader(source) {
 
         const content =
             options.import?.strategy === "module"
-                ? await buildModuleDelivery(basePackParams, sourceHash)
+                ? await buildModuleDelivery(
+                      basePackParams,
+                      inputsHash,
+                      addDependency,
+                  )
                 : await pack(basePackParams, this.emitFile);
 
         callback(null, content);

@@ -94,6 +94,49 @@ Next.js 15 does not have this defect. Next.js 15.5.25 builds and serves the same
 and Turbopack. `example/next15` covers that route handler.
 :::
 
+## Work the helper does when the config loads
+
+`withRustWasm` returns a value that Next.js calls. Inside that call the helper builds the Edge wasm of every `.rs` file
+in your project, before the bundler starts.
+
+This exists because Turbopack keeps a cache in `.next`. A wasm file that first appears while the build runs is absent
+from that cache, so the build cannot resolve it. A change to a Rust dependency gives the file a new name, which is
+exactly that case. A file that is already on disk when the build starts is read normally.
+
+The helper hashes each `.rs` file together with the `Cargo.toml` and `Cargo.lock` of its crate. If the wasm of that
+digest is already on disk, the helper does nothing. This is the usual case.
+
+| Case | Cost |
+|------|------|
+| Every wasm is current | About 0.3 ms for each config load, measured on `example/next` |
+| A Rust input changed | One Rust build, which the bundler pays instead when the helper does not |
+
+The scan passes over `node_modules`, `.next`, `target` and `.git`. A `.rs` file that belongs to no crate is passed over
+too, because you cannot import it either.
+
+Use the `prebuild` option to change this behavior.
+
+Name the files yourself, instead of a scan:
+
+```javascript title="next.config.mjs"
+import rustWasmLoader from "rust-wasmpack-loader";
+
+export default rustWasmLoader.next({}, { prebuild: ["lib.rs"] });
+```
+
+Or switch the pre-build off, and accept that a Turbopack build after a dependency change needs a second run:
+
+```javascript title="next.config.mjs"
+import rustWasmLoader from "rust-wasmpack-loader";
+
+export default rustWasmLoader.next({}, { prebuild: false });
+```
+
+A file you name yourself must belong to a crate. The helper reports an error that gives the path of the file.
+
+The returned value also carries the config keys as properties, so `config.turbopack` and `config.webpack` still read
+as before.
+
 ## Turbopack
 
 `withRustWasm` supports Turbopack. The helper registers the loader under both the Turbopack rules and the `webpack`
