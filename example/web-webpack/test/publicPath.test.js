@@ -19,4 +19,10 @@ describe("emitted wasm URL", () => {
             /^\/assets\/[^/]+\.module\.wasm$/,
         );
     });
+
+    test("an absolute public path keeps its scheme and host", () => {
+        expect(wasmUrlOf("cdn.bundle.js")).toMatch(
+            /^https:\/\/cdn\.example\.com\/[^/]+\.module\.wasm$/,
+        );
+    });
 });

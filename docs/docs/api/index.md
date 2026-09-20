@@ -206,13 +206,17 @@ Whether to use webpack's public path for WASM file URLs.
     }
 }
 
-// Don't use webpack public path
+// Do not use webpack public path
 {
     web: {
         publicPath: false
     }
 }
 ```
+
+When webpack's `output.publicPath` is an absolute URL (`https://cdn.example.com/`) or a protocol-relative URL
+(`//cdn.example.com/`), the WASM URL keeps that origin. `web.wasmPathModifier` does not apply to such a public path,
+because the origin already makes the URL absolute.
 
 ### `web.wasmPathModifier`
 
@@ -237,6 +241,9 @@ Modify the WASM request path when the public path is incorrect.
     }
 }
 ```
+
+The modifier applies only to a root-relative public path. An absolute or protocol-relative public path already carries
+an origin. For this reason, the loader ignores the modifier in that case.
 
 ### `node.bundle`
 

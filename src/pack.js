@@ -6,6 +6,7 @@ const writeSidecar = require("./utils/writeSidecar.util");
 const stripGlueFooter = require("./utils/stripGlueFooter.util");
 const stripTypesBanner = require("./utils/stripTypesBanner.util");
 const buildGlueImports = require("./utils/buildGlueImports.util");
+const buildWasmUrl = require("./utils/buildWasmUrl.util");
 const withBuildLock = require("./utils/buildLock.util");
 
 const constants = Object.seal({
@@ -189,12 +190,13 @@ async function doPack(params, emitFile) {
             const badImportIndex = lines.findIndex(
                 (item) => !!item.match(/import.meta.url/g)?.length,
             );
-            lines[badImportIndex] =
-                `        module_or_path = "${path.posix.join(
-                    ...params.web.wasmPathModifier,
-                    ...(params.web.publicPath ? [params.web.publicPath] : []),
+            lines[badImportIndex] = `        module_or_path = ${JSON.stringify(
+                buildWasmUrl(
+                    params.web.wasmPathModifier,
+                    params.web.publicPath,
                     params.wasmName,
-                )}";`;
+                ),
+            )};`;
             // Async loading keeps wasm-bindgen's own `__wbg_init` and only drops the
             // export footer. The inline mode cuts higher, at the bootstrap itself,
             // because it feeds the bytes straight to `initSync`.
