@@ -14,20 +14,20 @@ function runTsc(projectDir) {
     });
 }
 
+const CALL_USAGE = [
+    "const value: number = mod.whatever(1, 2);",
+    "export default value;",
+];
+
 // A throwaway TS project that imports a sidecar-less `.rs` and uses it loosely.
-// With the floor in `files` the wildcard ambient module covers the import; the
+// With the floor in `files` the wildcard ambient module covers the import. The
 // returned value is `any`, so assigning it to a typed const is accepted.
-function scaffold(includeFloor) {
+function scaffold(includeFloor, usage = CALL_USAGE) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rs-floor-"));
     fs.writeFileSync(path.join(dir, "thing.rs"), "// rust source\n");
     fs.writeFileSync(
         path.join(dir, "index.ts"),
-        [
-            'import mod from "./thing.rs";',
-            "const value: number = mod.whatever(1, 2);",
-            "export default value;",
-            "",
-        ].join("\n"),
+        ['import mod from "./thing.rs";', ...usage, ""].join("\n"),
     );
     fs.writeFileSync(
         path.join(dir, "tsconfig.json"),
@@ -47,6 +47,18 @@ function scaffold(includeFloor) {
 
 test("a sidecar-less .rs import type-checks with the floor in scope", () => {
     const result = runTsc(scaffold(true));
+    assert.equal(result.status, 0, `${result.stdout}${result.stderr}`);
+});
+
+// A `#[wasm_bindgen]` struct reaches the default export as a class, so the floor
+// has to cover `new` as well as a plain call until the sidecar lands.
+test("the floor also covers constructing an exported class", () => {
+    const result = runTsc(
+        scaffold(true, [
+            "const made = new mod.Point(3, 4);",
+            "export default made.x;",
+        ]),
+    );
     assert.equal(result.status, 0, `${result.stdout}${result.stderr}`);
 });
 

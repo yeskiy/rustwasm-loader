@@ -53,7 +53,7 @@ test(
 );
 
 test(
-    "writes a sidecar with the precise function signatures",
+    "writes a sidecar with the precise function and class signatures",
     { skip },
     async () => {
         const dir = isolatedCrate();
@@ -63,7 +63,9 @@ test(
             const content = fs.readFileSync(out, "utf8");
             assert.match(content, /fibonacci\(n: number\): number;/);
             assert.match(content, /cap\(s: string\): string;/);
-            assert.doesNotMatch(content, /Point|initSync|\[key: string\]/);
+            assert.match(content, /declare class Point \{/);
+            assert.match(content, /Point: typeof Point;/);
+            assert.doesNotMatch(content, /initSync|\[key: string\]/);
         } finally {
             fs.rmSync(dir, { recursive: true, force: true });
         }

@@ -6,8 +6,8 @@ const path = require("node:path");
 const writeSidecar = require("./writeSidecar.util");
 
 // wasm-bindgen `--target web` `.d.ts` for a crate exporting `cap`, `fibonacci`,
-// and a `#[wasm_bindgen] struct Point`: the public functions plus the class,
-// init, and raw-wasm noise the sidecar must drop.
+// and a `#[wasm_bindgen] struct Point`: the public functions and the class the
+// sidecar must keep, plus the init noise it must drop.
 const FIXTURE = [
     "export class Point {",
     "    private constructor();",
@@ -30,7 +30,9 @@ test("writes <stem>.d.rs.ts next to the source and returns its path", () => {
         const content = fs.readFileSync(out, "utf8");
         assert.match(content, /fibonacci\(n: number\): number;/);
         assert.match(content, /cap\(s: string\): string;/);
-        assert.doesNotMatch(content, /Point|initSync|\[key: string\]/);
+        assert.match(content, /declare class Point \{/);
+        assert.match(content, /Point: typeof Point;/);
+        assert.doesNotMatch(content, /initSync|\[key: string\]/);
     } finally {
         fs.rmSync(dir, { recursive: true, force: true });
     }

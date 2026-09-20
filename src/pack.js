@@ -6,6 +6,7 @@ const writeSidecar = require("./utils/writeSidecar.util");
 const stripGlueFooter = require("./utils/stripGlueFooter.util");
 const stripTypesBanner = require("./utils/stripTypesBanner.util");
 const buildGlueImports = require("./utils/buildGlueImports.util");
+const buildExportedBindings = require("./utils/buildExportedBindings.util");
 const buildWasmUrl = require("./utils/buildWasmUrl.util");
 const withBuildLock = require("./utils/buildLock.util");
 
@@ -172,14 +173,7 @@ async function doPack(params, emitFile) {
                           )})}`
                         : `{module:require('fs').readFileSync(require('path').join(__dirname, '${params.wasmName}'))}`
                 });`,
-                `const exportedFunctions = {${lines
-                    .filter(
-                        (item) =>
-                            !!item.match(/export function .+ {$/g)?.length,
-                    )
-                    .map((item) => item.split("function")[1].split("(")[0])
-                    .map((item) => `${item}:${item}`)
-                    .join(",")}};`,
+                buildExportedBindings(lines),
                 ...(params.node.bundle ? [constants.toArrayBuffer] : []),
                 `export default {...exportedFunctions, ...Object.entries(wasm).filter(([item]) => Object.keys(exportedFunctions).indexOf(item) === -1).reduce((acc, item) => ({...acc,[item[0]]: item[1]}), {})}`,
             ].join("\n")}`;
@@ -230,14 +224,7 @@ async function doPack(params, emitFile) {
                                   .toJSON().data,
                           )}));`,
                       ]),
-                `const exportedFunctions = {${lines
-                    .filter(
-                        (item) =>
-                            !!item.match(/export function .+ {$/g)?.length,
-                    )
-                    .map((item) => item.split("function")[1].split("(")[0])
-                    .map((item) => `${item}:${item}`)
-                    .join(",")}};`,
+                buildExportedBindings(lines),
                 `export default ${
                     params.web.asyncLoading
                         ? `new Promise(async (resolve, reject)=> { try{await __wbg_init(); resolve(${exportGen})}catch(e){reject(e)}})`
@@ -253,13 +240,7 @@ async function doPack(params, emitFile) {
         import: (generatedJs) => {
             const { urlExpression, strategy, preamble } = params.import;
             const lines = generatedJs.replaceAll("_bg.wasm", "").split("\n");
-            const exportedFunctions = `const exportedFunctions = {${lines
-                .filter(
-                    (item) => !!item.match(/export function .+ {$/g)?.length,
-                )
-                .map((item) => item.split("function")[1].split("(")[0])
-                .map((item) => `${item}:${item}`)
-                .join(",")}};`;
+            const exportedFunctions = buildExportedBindings(lines);
             // `fetch` reuses wasm-bindgen's own loader: it swaps the default
             // `import.meta.url` URL for the host asset URL, then awaits __wbg_init()
             // so the wasm is fetched at runtime (Promise default export). The sync
