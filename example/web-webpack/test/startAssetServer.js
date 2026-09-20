@@ -13,7 +13,7 @@ const CONTENT_TYPES = {
 // absolute URL path. This server gives that path an origin, as a browser does.
 // One bundle sets `output.publicPath` to `/assets/`, so the output folder also
 // answers under that prefix, as a deployment behind that public path does.
-module.exports = async () => {
+module.exports = async function startAssetServer() {
     const server = http.createServer((request, response) => {
         const target = path.join(
             DIST,

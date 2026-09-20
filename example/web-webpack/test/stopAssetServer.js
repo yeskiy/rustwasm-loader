@@ -1,4 +1,4 @@
-module.exports = async () => {
+module.exports = async function stopAssetServer() {
     const server = globalThis.__assetServer;
     if (!server) {
         return;
