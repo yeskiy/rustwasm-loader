@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [4.4.1](https://github.com/yeskiy/rustwasm-loader/compare/v4.4.0...v4.4.1) (2026-09-20)
+
+### Bug Fixes
+
+* **ci:** pin the docs actions and install without lifecycle scripts ([1565a01](https://github.com/yeskiy/rustwasm-loader/commit/1565a01970327a6a6274313e2acaeb6cf0057f76))
+* **ci:** publish on a supported node version without install scripts ([a8c9677](https://github.com/yeskiy/rustwasm-loader/commit/a8c967775b68b045f98e2c53079eaf0ef2cfca3e))
+
 ## [4.4.0](https://github.com/yeskiy/rustwasm-loader/compare/v4.3.0...v4.4.0) (2026-09-20)
 
 ### Features
