@@ -135,7 +135,7 @@ const config = {
                         ],
                     },
                 ],
-                copyright: `Copyright © ${new Date().getFullYear()} Yehor Brodskiy. Built with ❤️ in 🇺🇦`,
+                copyright: `Copyright © ${new Date().getFullYear()} Yehor Brodskiy`,
             },
             prism: {
                 theme: lightCodeTheme,

@@ -69,9 +69,8 @@ test("passes over node_modules, .next, target and .git", () => {
 test("builds nothing when every wasm is already on disk", async () => {
     const dir = project();
     try {
-        // Seed the cache with the digest of the one file the crate owns, so the
-        // pre-build has no work and never reaches wasm-pack. The other `.rs`
-        // belongs to no crate, and a scan passes over it.
+        // A cache hit for the crate file keeps the pre-build away from wasm-pack.
+        // The other `.rs` belongs to no crate, so the scan skips it.
         const owned = path.join(dir, "lib.rs");
         const cachePath = edgeWasmPath(
             dir,

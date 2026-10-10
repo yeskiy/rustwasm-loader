@@ -19,9 +19,8 @@ const CALL_USAGE = [
     "export default value;",
 ];
 
-// A throwaway TS project that imports a sidecar-less `.rs` and uses it loosely.
-// With the floor in `files` the wildcard ambient module covers the import. The
-// returned value is `any`, so assigning it to a typed const is accepted.
+// A temporary TS project that imports a `.rs` with no sidecar. With the floor
+// in `files`, the wildcard module types the import as `any`.
 function scaffold(includeFloor, usage = CALL_USAGE) {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rs-floor-"));
     fs.writeFileSync(path.join(dir, "thing.rs"), "// rust source\n");

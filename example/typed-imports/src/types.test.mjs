@@ -40,9 +40,8 @@ function buildWebpack() {
     });
 }
 
-// The members of the sidecar's `declare const _default: {...}` block alone. The
-// class bodies it also declares sit outside that block, so reading the whole
-// file would count `norm` or `free` as a top-level export.
+// Returns only the `declare const _default: {...}` block, so class members such
+// as `norm` or `free` do not count as top-level exports.
 function defaultExportBlock() {
     return fs
         .readFileSync(SIDECAR, "utf8")

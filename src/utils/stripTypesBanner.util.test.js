@@ -2,10 +2,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const stripTypesBanner = require("./stripTypesBanner.util");
 
-// The head of wasm-bindgen's `--target web` glue. A build that keeps the
-// typings starts it with the banner and a blank line. A build that drops them
-// starts it with the first statement. Everything below the head is identical,
-// so the fixtures only differ in the first two lines.
+// Glue from a build with typings starts with the banner and a blank line.
+// Without typings it starts with the first statement. The rest is the same.
 const BODY = [
     "export class Point {",
     "    __destroy_into_raw() {",

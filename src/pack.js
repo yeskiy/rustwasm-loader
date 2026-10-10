@@ -29,42 +29,12 @@ function logLevelSelector(level) {
     }
 }
 
-/** @typedef {Object} WebOptions
- * @property {boolean} asyncLoading - async loading of the wasm file
- * @property {string} publicPath - path to the public folder (only for web target)
- * @property {string[]} wasmPathModifier - path to the wasm file
- * */
-
-/** @typedef {Object} NodeOptions
- * @property {boolean} bundle - bundle the wasm file
- */
-
-/** @typedef {Object} ImportOptions
- * @property {string} urlExpression - JS expression the chosen strategy consumes: the runtime wasm URL for `fetch`/`fs`, or a pre-compiled `WebAssembly.Module` binding for `module`
- * @property {"fetch" | "fs" | "module"} strategy - how the wasm is consumed (fetch for web, fs for node/SSR, module for an already-compiled module on Edge)
- * @property {string} [preamble] - source prepended to the module (e.g. a `import url from "./x.wasm?url"` line)
- */
-
-/** @typedef {Object} Options
- * @property {string} resourcePath - path to the resource
- * @property {string} baseFolder - path to the base folder
- * @property {string} buildFolder - path to the build folder
- * @property {string} wasmName - name of the wasm file
- * @property {string} target - target of the build
- * @property {string} logLevel - log level of the build
- * @property {WebOptions} web - web options
- * @property {NodeOptions} node - node options
- * @property {ImportOptions} [import] - opt-in import-based wasm delivery (host bundler supplies the URL)
- * @property {boolean} [emitTypes] - also write the `<name>.d.rs.ts` sidecar from this build (keeps wasm-bindgen typings instead of `--no-typescript`)
- * */
-
-// Shared default-export body: spreads the named Rust exports over any remaining
-// `wasm` bindings. Identical across every delivery so the module shape matches.
+// The default-export body: the named Rust exports over the remaining `wasm` bindings.
+// Every delivery uses it, so the module shape is the same.
 const exportGenExpr = `{...exportedFunctions, ...Object.entries(wasm).filter(([item]) => Object.keys(exportedFunctions).indexOf(item) === -1).reduce((acc, item) => ({...acc,[item[0]]: item[1]}), {})}`;
 
-// Resolves the explicit wasm-delivery strategy from the loader params. The three
-// legacy values (fetch / inline / fsread) preserve the original target+option
-// branching exactly; `import` is opt-in and only chosen when `params.import` is set.
+// Selects the wasm delivery from the target and its options. The loader uses
+// `import` only when `params.import` is set: the host bundler then supplies the wasm.
 function selectDelivery(params) {
     if (params.import) {
         return "import";
@@ -75,15 +45,8 @@ function selectDelivery(params) {
     return params.node.bundle ? "inline" : "fsread";
 }
 
-// Deliveries that emit the .wasm as a standalone asset (the host reads it at
-// runtime). inline/import keep everything in the JS, so they emit nothing.
+// Deliveries that emit the .wasm as a separate asset, which the host reads at runtime.
 const assetEmittingDeliveries = new Set(["fetch", "fsread"]);
-
-/**
- * pack function
- * @param {Options} params
- * emitFile - function to emit file
- * */
 
 async function doPack(params, emitFile) {
     // Get  dir from resources
@@ -92,8 +55,6 @@ async function doPack(params, emitFile) {
     // Set wasm build folder
     const wasmBuildSource = path.join(params.buildFolder, "pkg");
 
-    // Pick the explicit delivery strategy up front so the emit decision and the
-    // post-processing branch read from one source of truth.
     const delivery = selectDelivery(params);
 
     // Find the nearest Cargo.toml file
@@ -129,8 +90,7 @@ async function doPack(params, emitFile) {
         cwd: params.buildFolder,
         outDir: wasmBuildSource,
         outName: params.wasmName,
-        // Keep wasm-bindgen's `.d.ts` only when the sidecar is requested; otherwise
-        // the build drops it.
+        // Keep the wasm-bindgen `.d.ts` only when the typings sidecar is requested.
         typescript: !!params.emitTypes,
         args: [...logLevelSelector(params.logLevel)],
         // use `web` target because the generated file of this target modifies easily
@@ -195,9 +155,8 @@ async function doPack(params, emitFile) {
                     params.wasmName,
                 ),
             )};`;
-            // Async loading keeps wasm-bindgen's own `__wbg_init` and only drops the
-            // export footer. The inline mode cuts higher, at the bootstrap itself,
-            // because it feeds the bytes straight to `initSync`.
+            // Async loading keeps the wasm-bindgen `__wbg_init` and drops only the export footer.
+            // Inline mode cuts at the bootstrap, because it gives the bytes to `initSync`.
             const keptLines = params.web.asyncLoading
                 ? stripGlueFooter(lines)
                 : lines.slice(
@@ -237,19 +196,14 @@ async function doPack(params, emitFile) {
             ].join("\n")}`;
         },
 
-        // Import-based delivery: the host bundler resolves the .wasm itself and
-        // hands us either its URL (fetch/fs) or an already-compiled module
-        // (module). We strip the wasm-pack bootstrap like the other modes and
-        // init from `params.import.urlExpression`.
+        // The host bundler resolves the .wasm. `urlExpression` is its URL for fetch and fs,
+        // or a compiled `WebAssembly.Module` for the `module` strategy.
         import: (generatedJs) => {
             const { urlExpression, strategy, preamble } = params.import;
             const lines = generatedJs.replaceAll("_bg.wasm", "").split("\n");
             const exportedFunctions = buildExportedBindings(lines);
-            // `fetch` reuses wasm-bindgen's own loader: it swaps the default
-            // `import.meta.url` URL for the host asset URL, then awaits __wbg_init()
-            // so the wasm is fetched at runtime (Promise default export). The sync
-            // strategies strip the bootstrap and init in place from the kept glue
-            // helpers, which `buildGlueImports` reads off the glue itself.
+            // `fetch` gives the host asset URL to the wasm-bindgen loader and exports a Promise.
+            // The sync strategies strip the bootstrap and start the wasm in place.
             const body =
                 strategy === "fetch"
                     ? (() => {
@@ -266,15 +220,8 @@ async function doPack(params, emitFile) {
                           ];
                       })()
                     : (() => {
-                          // `fs` reads the URL off disk into bytes and lets initSync
-                          // compile them (node only). `module` is handed an
-                          // already-compiled WebAssembly.Module and instantiates it
-                          // directly: initSync guards on `module instanceof
-                          // WebAssembly.Module`, which is false for a module the Next
-                          // Edge sandbox compiled in the host realm, so it would fall
-                          // back to a byte compile the Edge runtime forbids.
-                          // `new WebAssembly.Instance(module, imports)` accepts the
-                          // cross-realm module and never compiles bytes.
+                          // `module` skips initSync: a module from another realm fails its instanceof check,
+                          // and the byte compile it then tries is forbidden on the Next Edge runtime.
                           const initBlock =
                               strategy === "module"
                                   ? [
@@ -305,9 +252,8 @@ async function doPack(params, emitFile) {
         },
     };
 
-    // read generated .js file. A build that keeps the typings heads the glue
-    // with a banner that names the `.d.ts`, so cut it before any patch branch
-    // reads the glue: the loader returns the glue alone.
+    // A build that keeps the typings puts a `.d.ts` banner on the glue. Cut it,
+    // because the loader returns the glue alone.
     const generatedJs = stripTypesBanner(
         fs.readFileSync(
             path.join(
@@ -320,10 +266,8 @@ async function doPack(params, emitFile) {
         ),
     );
 
-    // Typings reuse this build: wasm-bindgen also emitted `<name>.d.ts` (the
-    // companion to the glue `.js` above) when `emitTypes` is set, so transform it
-    // into the sidecar next to the source. The glue returned below is identical
-    // whether or not this runs.
+    // With `emitTypes`, write the wasm-bindgen `<name>.d.ts` as the sidecar next to the source.
+    // The returned glue does not change.
     if (params.emitTypes) {
         writeSidecar(
             params.resourcePath,
@@ -342,13 +286,8 @@ async function doPack(params, emitFile) {
         : patch[params.target](generatedJs);
 }
 
-// wasm-pack shells out to cargo, so running several builds at once contends on
-// the shared cargo cache. A cold cache (CI) makes this fail outright when a
-// parallel webpack MultiCompiler builds the same `.rs` for two targets at once.
-// Serialize the builds. The per-source temp dirs already isolate their output.
-// Turbopack runs its loader passes in a pool of Node worker processes. A project
-// can also run two build commands at once. This queue reaches neither case, so
-// the build folder is locked across processes as well.
+// Parallel cargo builds fail on a cold shared cache, so this queue runs one build at a time.
+// The lock also covers other processes, for example Turbopack workers.
 let buildQueue = Promise.resolve();
 module.exports = function pack(params, emitFile) {
     const guarded = () =>

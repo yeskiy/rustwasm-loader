@@ -69,9 +69,8 @@ const messagesOf = (diagnostics) =>
         ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
     );
 
-// A real `ts.createLanguageService` over a virtual host that holds the `.ts`
-// importer and serves the rest (the `.rs` and the lib files) from disk. The
-// plugin's `create` decorates it exactly as tsserver would.
+// A real language service over a host that holds the `.ts` importer in memory
+// and reads the rest from disk. The plugin decorates it as tsserver does.
 function harness(dir) {
     // tsserver hands the host forward-slash paths, so key in-memory files the
     // same way and normalize every lookup.
@@ -151,9 +150,8 @@ test(
                 "the background build never completed",
             );
 
-            // The precise sidecar now overrides the floor. The only error is the
-            // unknown export: `lib.nope()` is rejected, while the valid
-            // `lib.fibonacci(1)` produces none (a bad call would be a second one).
+            // The sidecar overrides the floor. The only error is the unknown
+            // export `lib.nope()`. The valid `lib.fibonacci(1)` gives no error.
             const messages = messagesOf(
                 languageService.getSemanticDiagnostics(importer),
             );

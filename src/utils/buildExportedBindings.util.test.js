@@ -41,9 +41,8 @@ test("keeps the functions ahead of the classes", () => {
     assert.ok(out.indexOf("cap") < out.indexOf("Point"));
 });
 
-test("leaves a function-only glue byte-identical to the legacy shape", () => {
-    // The legacy inline harvest kept the leading space that `split("function")`
-    // produces. A crate with no class must emit exactly the same module text.
+test("emits the exact bindings text for a function-only glue", () => {
+    // The text keeps the leading space that `split("function")` produces.
     assert.equal(
         buildExportedBindings(GLUE.slice(0, 9)),
         "const exportedFunctions = { fibonacci: fibonacci, cap: cap};",

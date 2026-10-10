@@ -122,9 +122,8 @@ test(
     },
 );
 
-// The emitted text proves nothing about the wasm boundary. Both self-contained
-// deliveries are imported here as real modules, so the class is constructed and
-// its property and method are read off a live wasm instance.
+// Import both self-contained deliveries as real modules, so the class runs on
+// a live wasm instance. The emitted text alone does not test the wasm boundary.
 const SELF_CONTAINED = [
     ["node inline", { target: "node", node: { bundle: true } }],
     [

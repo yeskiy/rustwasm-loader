@@ -60,12 +60,12 @@ Concrete examples:
 
 ## Supported targets
 
-| Target       | Webpack           | Rspack            | Bun | esbuild | Rollup | Vite | Next.js |
-|--------------|-------------------|-------------------|-----|---------|--------|------|---------|
-| `web`        | ✅                 | ✅                 | ❌   | ✅       | ✅      | ✅    | ✅       |
-| `node`       | ✅                 | ✅                 | ✅   | ✅       | ✅      | ✅    | ✅       |
-| `node-async` | ✅                 | ✅                 | ✅   | ❌       | ❌      | ❌    | ❌       |
-| `electron`   | ✅                 | ✅                 | ❌   | ❌       | ❌      | ❌    | ❌       |
+| Target       | Webpack | Rspack | Bun | esbuild | Rollup | Vite | Next.js |
+|--------------|---------|--------|-----|---------|--------|------|---------|
+| `web`        | Yes     | Yes    | No  | Yes     | Yes    | Yes  | Yes     |
+| `node`       | Yes     | Yes    | Yes | Yes     | Yes    | Yes  | Yes     |
+| `node-async` | Yes     | Yes    | Yes | No      | No     | No   | No      |
+| `electron`   | Yes     | Yes    | No  | No      | No     | No   | No      |
 
 Rspack reuses the Webpack loader context, so the loader works with it through the same configuration.
 
@@ -85,33 +85,23 @@ path.
 
 ## Comparison with alternatives
 
-Legend:
-
-- ✅ Full support - works out of the box
-- ⚠️ Partial support - works with extra configuration
-- 🤚 Manual setup - needs manual steps to enable
-- ❌ No support - not available
-- 🟢 Good - smooth experience
-- 🟡 Medium - workable with some effort
-- 🔴 Poor - significant friction
-
 | Feature                       | rust-wasmpack-loader | Manual wasm-pack | @wasm-tool/wasm-pack-plugin | vite-plugin-wasm | Rollup WASM | esbuild WASM | Raw WASM imports |
 |-------------------------------|----------------------|------------------|-----------------------------|------------------|-------------|--------------|------------------|
-| **Direct .rs imports**        | ✅                    | ❌                | ❌                           | ❌                | ❌           | ❌            | ❌                |
-| **Auto Cargo.toml detection** | ✅                    | ❌                | 🤚                          | ❌                | ❌           | ❌            | ❌                |
-| **Hot reload support**        | ✅                    | ❌                | ✅                           | ✅                | ⚠️          | ✅            | ❌                |
-| **Bun runtime support**       | ✅                    | 🤚               | ❌                           | ❌                | ❌           | 🤚           | 🤚               |
-| **Webpack integration**       | ✅                    | ❌                | ✅                           | ❌                | ❌           | ❌            | ⚠️               |
-| **Vite/Rollup integration**   | ✅                    | ❌                | ❌                           | ✅                | ✅           | ❌            | ⚠️               |
-| **esbuild integration**       | ✅                    | ❌                | ❌                           | ❌                | ❌           | ✅            | ⚠️               |
-| **TypeScript bindings**       | ✅                    | ✅                | ✅                           | ✅                | ✅           | ✅            | ❌                |
-| **Zero configuration**        | ✅                    | ❌                | ❌                           | ❌                | ❌           | ❌            | ❌                |
-| **Async WASM loading**        | ✅                    | ✅                | ✅                           | ✅                | ✅           | ✅            | ✅                |
-| **Bundle size optimization**  | ✅                    | ⚠️               | ⚠️                          | ✅                | ✅           | ✅            | ⚠️               |
-| **Node.js target support**    | ✅                    | ✅                | ✅                           | ⚠️               | ✅           | ✅            | ✅                |
-| **Web target support**        | ✅                    | ✅                | ✅                           | ✅                | ✅           | ✅            | ✅                |
-| **Learning curve**            | 🟢 Easy              | 🔴 Hard          | 🟡 Medium                   | 🟡 Medium        | 🟡 Medium   | 🟡 Medium    | 🔴 Hard          |
-| **Maintenance status**        | 🟢 Active            | 🟢 Active        | 🟡 Limited                  | 🟢 Active        | 🟢 Active   | 🟢 Active    | N/A              |
+| **Direct .rs imports**        | Yes                  | No               | No                          | No               | No          | No           | No               |
+| **Auto Cargo.toml detection** | Yes                  | No               | Manual                      | No               | No          | No           | No               |
+| **Hot reload support**        | Yes                  | No               | Yes                         | Yes              | Partial     | Yes          | No               |
+| **Bun runtime support**       | Yes                  | Manual           | No                          | No               | No          | Manual       | Manual           |
+| **Webpack integration**       | Yes                  | No               | Yes                         | No               | No          | No           | Partial          |
+| **Vite/Rollup integration**   | Yes                  | No               | No                          | Yes              | Yes         | No           | Partial          |
+| **esbuild integration**       | Yes                  | No               | No                          | No               | No          | Yes          | Partial          |
+| **TypeScript bindings**       | Yes                  | Yes              | Yes                         | Yes              | Yes         | Yes          | No               |
+| **Zero configuration**        | Yes                  | No               | No                          | No               | No          | No           | No               |
+| **Async WASM loading**        | Yes                  | Yes              | Yes                         | Yes              | Yes         | Yes          | Yes              |
+| **Bundle size optimization**  | Yes                  | Partial          | Partial                     | Yes              | Yes         | Yes          | Partial          |
+| **Node.js target support**    | Yes                  | Yes              | Yes                         | Partial          | Yes         | Yes          | Yes              |
+| **Web target support**        | Yes                  | Yes              | Yes                         | Yes              | Yes         | Yes          | Yes              |
+| **Learning curve**            | Easy                 | Hard             | Medium                      | Medium           | Medium      | Medium       | Hard             |
+| **Maintenance status**        | Active               | Active           | Limited                     | Active           | Active      | Active       | N/A              |
 
 What sets rust-wasmpack-loader apart:
 

@@ -4,7 +4,7 @@ const sidebars = {
         "index",
         {
             type: "category",
-            label: "🚀 Getting Started",
+            label: "Getting Started",
             items: [
                 "docs/getting-started/overview",
                 "docs/getting-started/prerequisites",
@@ -14,7 +14,7 @@ const sidebars = {
         },
         {
             type: "category",
-            label: "🛠️ Examples",
+            label: "Examples",
             items: [
                 "docs/examples/index",
                 "docs/examples/web-webpack",
@@ -31,7 +31,7 @@ const sidebars = {
         },
         {
             type: "category",
-            label: "📚 API Reference",
+            label: "API Reference",
             items: ["docs/api/index"],
         },
         "changelog",

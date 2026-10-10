@@ -9,9 +9,8 @@ const findWasmPack = require("./findWasmPack.util");
 
 const CARGO_BIN = path.join(os.homedir(), ".cargo", "bin", "wasm-pack");
 
-// Runs `findWasmPack` against a host the test describes: the `WASM_PACK_PATH`
-// value, the result of the PATH lookup, the presence of `binary-install`, and
-// the set of files on disk. Every stub goes back after the call.
+// Runs `findWasmPack` on a stubbed host: env var, PATH lookup, binary-install,
+// and files on disk. The stubs are restored after the call.
 function onHost({ env, inPath, binaryInstall, files = [] }, run) {
     const originalEnv = process.env.WASM_PACK_PATH;
     const originalWhich = which.sync;

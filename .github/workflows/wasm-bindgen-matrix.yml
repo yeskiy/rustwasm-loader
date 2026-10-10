@@ -1,13 +1,7 @@
 name: wasm-bindgen matrix
 
-# Every example pins wasm-bindgen twice, in a committed Cargo.toml and in a
-# committed Cargo.lock. For this reason one pull request build meets one
-# version of the generated glue only. Each job below rewrites that requirement
-# to an exact version in the runner workspace, then builds and tests. The three
-# versions cover the three glue shapes the loader patches. 0.2.95 splits the
-# export footer and defines `__wbg_init_memory`. 0.2.105 splits the footer and
-# defines no `__wbg_init_memory`. 0.2.128 merges the footer into one export
-# statement. No job commits anything.
+# Each job pins wasm-bindgen to one exact version in the runner workspace, then builds and tests.
+# The versions 0.2.95, 0.2.105, and 0.2.128 cover the three glue shapes that the loader patches.
 
 on:
     push:
@@ -44,10 +38,8 @@ jobs:
             -   name: Verify Rust installation
                 run: rustc --version
 
-            # Lifecycle scripts stay off. Two dependencies deliver their binary
-            # through such a script, so the lines below run those installers by
-            # hand. wasm-pack sits at the repository root, and every example
-            # reads it through the linked loader. Only example/node-bun has bun.
+            # Lifecycle scripts stay off, so the lines below run the wasm-pack and bun
+            # installers by hand. Every example reads wasm-pack from the repository root.
             -   name: Install dependencies
                 shell: bash
                 env:
@@ -66,13 +58,8 @@ jobs:
                 run: npm exec --no -- wasm-pack --version
                 working-directory: ${{ matrix.test }}
 
-            # The root suite builds Rust through example/typed-imports, so that
-            # is the manifest it pins. The grep after the rewrite fails the job
-            # if the requirement kept its committed value. The three Next
-            # examples keep the crate entry outside `src/lib.rs`, and the loader
-            # writes `lib.path` into its build folder. Cargo cannot read those
-            # manifests here, so the lock update fails for them, and the exact
-            # requirement still drives the build.
+            # The root suite builds Rust through example/typed-imports. The lock update fails for the
+            # Next examples, which keep the crate entry outside src/lib.rs, so the exact pin drives them.
             -   name: Pin wasm-bindgen to ${{ matrix.version }}
                 shell: bash
                 env:

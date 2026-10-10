@@ -1,8 +1,5 @@
 import rustWasmLoader from "rust-wasmpack-loader";
 
-// `next build` defaults to Turbopack in Next 16, so this example builds under
-// Turbopack (no `--webpack`). The helper wires `.rs` into `turbopack.rules`: the
-// node strategy for the server, web for the client, bytes inlined in both.
-// `output: "export"` statically prerenders to `out/`, running the Server
-// Component's wasm at build time.
+// Next 16 builds with Turbopack by default. The helper adds `.rs` to `turbopack.rules`, and
+// `output: "export"` prerenders to `out/`, which runs the Server Component wasm at build time.
 export default rustWasmLoader.next({ output: "export" });

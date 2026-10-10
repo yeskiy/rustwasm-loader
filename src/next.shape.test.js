@@ -34,9 +34,8 @@ function project() {
     return dir;
 }
 
-// The helper returns a value Next.js calls, so the pre-build has somewhere
-// asynchronous to run. The same value carries the config keys, because the
-// example suites and any user may read them instead of calling.
+// Next.js calls the returned value, so the pre-build can run asynchronously.
+// The value also carries the config keys for readers that do not call it.
 
 test("returns a value Next.js calls", () => {
     assert.equal(typeof withRustWasm({}), "function");
@@ -76,9 +75,8 @@ test("an empty list asks for no pre-build work", async (t) => {
     const cwd = process.cwd();
     const wrapped = withRustWasm({ output: "standalone" }, { prebuild: [] });
     process.chdir(dir);
-    // The pre-build reaches a project through this one call, so a scan cannot
-    // happen without it. Throwing from it turns a scan into an immediate
-    // failure instead of a wasm-pack run the test would wait on.
+    // A pre-build scan always calls readdirSync. A throw here fails a scan at
+    // once, so the test does not wait on a wasm-pack run.
     const readdir = t.mock.method(fs, "readdirSync", () => {
         throw new Error("the pre-build scanned the project");
     });

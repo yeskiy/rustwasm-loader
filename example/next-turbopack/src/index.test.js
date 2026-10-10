@@ -55,9 +55,8 @@ describe("withRustWasm helper (turbopack.rules)", () => {
 });
 
 describe("next build under Turbopack (static export prerenders the wasm)", () => {
-    // The first Next build pulls a large dependency tree and compiles Rust, so it
-    // is slow. The whole build runs inside this hook under a generous timeout. No
-    // `--webpack` flag, so this exercises the loader through `turbopack.rules`.
+    // The Turbopack build compiles Rust and is slow, so it runs in this hook
+    // with a long timeout.
     before(
         () => {
             const result = spawnSync("npx", ["next", "build"], {

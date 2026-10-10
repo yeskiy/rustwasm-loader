@@ -1,10 +1,8 @@
 import rsLib from "../lib.rs";
 import Result from "./Result";
 
-// Server Component: the `.rs` is built with the `node` strategy, so `rsLib`
-// resolves synchronously from inlined bytes. Static export prerenders this at
-// build time, which runs the wasm and bakes the result into the HTML. This is the
-// Turbopack build (`next build`, no `--webpack`), wired through `turbopack.rules`.
+// Server Component that Turbopack builds with the `node` strategy. The static
+// export runs the wasm at build time and writes the result into the HTML.
 const NUM = 10;
 
 export default function Home() {

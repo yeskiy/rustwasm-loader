@@ -7,21 +7,13 @@ const edgeWasmPath = require("./edgeCache.util");
 // cargo output, and the others hold dependencies, build state and history.
 const SKIPPED_DIRS = new Set(["node_modules", ".next", "target", ".git"]);
 
-/**
- * Lists the `.rs` files under a project root.
- *
- * `entry.isDirectory()` is false for a symbolic link and for a Windows
- * junction, so the walk steps over both. An example that links the loader back
- * to the repository root makes a directory cycle, and the walk must not follow
- * it.
- * @param {string} dir directory to read
- * @returns {string[]} absolute paths of the `.rs` files below it
- */
 const rsFileIn = (dir, entry) =>
     entry.isFile() && entry.name.endsWith(".rs")
         ? [path.join(dir, entry.name)]
         : [];
 
+// Lists the `.rs` files under a project root. `isDirectory()` is false for a symbolic link
+// and a Windows junction, so the walk does not follow a link that makes a directory cycle.
 function scanRsFiles(dir) {
     return fs
         .readdirSync(dir, { withFileTypes: true })
@@ -62,12 +54,8 @@ const PATH_ATTRIBUTE = /#\s*\[\s*path\s*=\s*"([^"]*)"\s*\]/;
 
 const braceDepth = (code) => code.split("{").length - code.split("}").length;
 
-/**
- * Lists the file module declarations (`mod name;`) at the top level of a Rust
- * source, with the value of a `#[path]` attribute when one is present.
- * @param {string} source Rust source text
- * @returns {{name: string, path: (string|undefined)}[]}
- */
+// Lists the top-level file module declarations (`mod name;`) of a Rust source,
+// each with the value of its `#[path]` attribute when one is present.
 function moduleDeclarations(source) {
     const code = source.replace(LEXEMES, (lexeme, hashes, raw, plain) => {
         const text = raw ?? plain;
@@ -84,14 +72,8 @@ function moduleDeclarations(source) {
         });
 }
 
-/**
- * Lists the files one declaration can name. A mod-rs file (a crate root, a
- * `mod.rs`, or a file a `#[path]` loads) owns the modules of its directory.
- * @param {string} file declaring file
- * @param {boolean} modRs true when the file is a mod-rs file
- * @param {{name: string, path: (string|undefined)}} declaration
- * @returns {{file: string, modRs: boolean}[]}
- */
+// Lists the files that one declaration can name. A mod-rs file (a crate root, a `mod.rs`,
+// or a file that a `#[path]` loads) owns the modules of its directory.
 function moduleCandidates(file, modRs, { name, path: attributePath }) {
     const base = modRs
         ? path.dirname(file)
@@ -109,13 +91,7 @@ function moduleCandidates(file, modRs, { name, path: attributePath }) {
           ];
 }
 
-/**
- * Lists the `.rs` files that one of the given files declares as a module, at
- * any depth. Each file in the list counts as a crate root.
- * @param {string[]} roots absolute paths of the crate roots
- * @param {Set<string>} scanned absolute paths of every scanned `.rs` file
- * @returns {Set<string>}
- */
+// Lists the scanned `.rs` files that one of the `roots` declares as a module, at any depth.
 function reachModules(roots, scanned) {
     const children = (file, modRs) =>
         moduleDeclarations(fs.readFileSync(file, "utf8"))
@@ -141,12 +117,8 @@ function reachModules(roots, scanned) {
     );
 }
 
-/**
- * Lists the scanned `.rs` files that another scanned file declares as a module.
- * Pass one treats every file as a root, pass two only the roots pass one left.
- * @param {string[]} files absolute paths of the scanned `.rs` files
- * @returns {Set<string>}
- */
+// Lists the scanned `.rs` files that another scanned file declares as a module. Pass one
+// treats every file as a root. Pass two uses only the files that pass one did not reach.
 function moduleFiles(files) {
     const scanned = new Set(files);
     const firstPass = reachModules(files, scanned);
@@ -156,20 +128,11 @@ function moduleFiles(files) {
     );
 }
 
-/**
- * Runs the loader itself against one `.rs` file, outside any bundler, with the
- * loader context Turbopack supplies. Driving the real loader is what makes the
- * result usable: the wasm the build wants carries an internal name the loader
- * derives, and only the loader derives it the same way twice.
- * @param {string} resourcePath absolute path to the `.rs` file
- * @param {string} baseFolder project root
- * @param {object} loaderOptions options of the Edge pass
- * @returns {Promise<void>}
- */
+// Runs the loader on one `.rs` file with the loader context of Turbopack, outside a bundler.
+// Only the loader derives the wasm file name that the build expects.
 function runLoader(resourcePath, baseFolder, loaderOptions) {
-    // Required inside the call, because the loader module reaches this helper
-    // through the Next entry point and the two would otherwise load in a cycle.
-
+    // Required inside the call, because the loader reaches this helper through the Next entry
+    // point, and a top-level require makes a load cycle.
     const loader = require("..");
     return new Promise((resolve, reject) => {
         loader
@@ -189,17 +152,8 @@ function runLoader(resourcePath, baseFolder, loaderOptions) {
     });
 }
 
-/**
- * Reports whether a `.rs` file still needs its Edge wasm written.
- *
- * A scan can reach a `.rs` file that belongs to no crate the loader could
- * build. Such a file cannot be imported either, so the scan passes over it. A
- * file the caller named is a different matter, and its error stands.
- * @param {string} file absolute path to the `.rs` file
- * @param {string} baseFolder project root
- * @param {boolean} named true when the caller listed the file itself
- * @returns {boolean}
- */
+// Tells whether the Edge wasm of a `.rs` file is missing. A scanned file outside a crate is
+// skipped, but a file that the caller `named` throws its error.
 function needsBuild(file, baseFolder, named) {
     try {
         return !fs.existsSync(
@@ -222,28 +176,14 @@ function needsBuild(file, baseFolder, named) {
     }
 }
 
-/**
- * Builds the Edge wasm of every `.rs` file before the bundler starts.
- *
- * Turbopack keeps a cache in `.next`. A wasm file that first appears while the
- * build runs is absent from that cache, so the build cannot resolve it, and a
- * dependency change is exactly the case that produces a new file name. A file
- * that is already on disk when the build starts is read normally.
- *
- * A file whose digest already names a wasm needs nothing, which is the usual
- * case and costs one hash and one `existsSync`.
- * @param {string} baseFolder project root
- * @param {object} loaderOptions options of the Edge pass
- * @param {string[]} [explicit] files to build instead of scanning the project
- * @returns {Promise<{built: string[], scanned: number}>}
- */
+// Builds the Edge wasm of each `.rs` file before the bundler starts. The Turbopack cache in
+// `.next` cannot resolve a wasm file that first appears during the build.
 async function prebuildEdgeWasm(baseFolder, loaderOptions, explicit) {
     const files = explicit
         ? explicit.map((file) => path.resolve(baseFolder, file))
         : scanRsFiles(baseFolder);
 
-    // A module file is part of the crate that declares it, and alone it can
-    // fail to compile. Only a scan skips it, a named file always builds.
+    // A module file can fail to compile alone, so a scan skips it. A named file always builds.
     const modules = explicit ? new Set() : moduleFiles(files);
     const pending = files.filter(
         (file) =>
@@ -251,9 +191,8 @@ async function prebuildEdgeWasm(baseFolder, loaderOptions, explicit) {
             needsBuild(file, baseFolder, Boolean(explicit)),
     );
 
-    // One at a time. wasm-pack shells out to cargo, and parallel runs contend
-    // on the shared cargo cache. The loader holds its own build-folder lock
-    // across each run, which covers a second process.
+    // Builds one file at a time, because parallel cargo runs contend on the shared cargo cache.
+    // The build-folder lock of the loader covers a second process.
     await pending.reduce(async (previous, file) => {
         await previous;
         try {

@@ -1,10 +1,8 @@
 const path = require("node:path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 
-// webpack's `target` is per-config, so an Electron app needs one config per
-// process. The loader maps `electron-main` to the `node` strategy and
-// `electron-renderer` to `web`; `node.bundle` inlines the wasm bytes for the
-// main process, and the renderer inlines by default.
+// One config per Electron process. The loader maps `electron-main` to `node` and
+// `electron-renderer` to `web`, and both inline the wasm bytes.
 const rsRule = () => ({
     test: /\.rs$/,
     exclude: /node_modules/,

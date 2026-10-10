@@ -5,9 +5,8 @@ const os = require("node:os");
 const path = require("node:path");
 const writeSidecar = require("./writeSidecar.util");
 
-// wasm-bindgen `--target web` `.d.ts` for a crate exporting `cap`, `fibonacci`,
-// and a `#[wasm_bindgen] struct Point`: the public functions and the class the
-// sidecar must keep, plus the init noise it must drop.
+// A `--target web` `.d.ts` with `cap`, `fibonacci`, and the class `Point` for
+// the sidecar to keep, plus init declarations for it to drop.
 const FIXTURE = [
     "export class Point {",
     "    private constructor();",

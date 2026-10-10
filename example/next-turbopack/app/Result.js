@@ -2,10 +2,8 @@
 
 import rsLib from "../lib.rs";
 
-// Client Component importing the SAME `.rs`. Turbopack picks the loader by its
-// `browser` rule condition, so the client bundle is built with the `web` strategy
-// (inlined, non-async, `rsLib` resolves synchronously); the server prerender of
-// this component uses the `node` build. Either way the same import works.
+// Client Component that imports the same `.rs`. The client bundle uses the `web`
+// strategy and the server prerender uses `node`. In both, `rsLib` is synchronous.
 const NUM = 12;
 
 export default function Result() {

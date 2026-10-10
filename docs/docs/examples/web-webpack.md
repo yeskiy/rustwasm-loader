@@ -210,7 +210,7 @@ console.log(`Execution time: ${end - start} milliseconds`);
 // Update the DOM
 document.body.innerHTML = `
     <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
-        <h1>🦀 Rust + WebAssembly + Webpack</h1>
+        <h1>Rust + WebAssembly + Webpack</h1>
         <div style="background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <h3>Results:</h3>
             <p><strong>Fibonacci(10):</strong> ${fibResult}</p>
@@ -218,7 +218,7 @@ document.body.innerHTML = `
             <p><strong>Execution time:</strong> ${(end - start).toFixed(2)}ms</p>
         </div>
         <div style="background: #e8f4fd; padding: 20px; border-radius: 8px;">
-            <h3>🎉 Success!</h3>
+            <h3>Success!</h3>
             <p>Your Rust code is running in the browser via WebAssembly!</p>
             <p>Check the browser console for more details.</p>
         </div>
@@ -261,7 +261,7 @@ console.log("Processed image data:", Array.from(processedData));
 </head>
 <body>
 <div id="loading">
-    <h2>🦀 Loading Rust WebAssembly...</h2>
+    <h2>Loading Rust WebAssembly...</h2>
     <p>Please wait while we compile and load your Rust code.</p>
 </div>
 </body>

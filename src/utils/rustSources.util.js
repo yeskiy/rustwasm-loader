@@ -7,12 +7,7 @@ const { parse: tomlToJson } = require("toml");
 const WASM_TARGET = "wasm32-unknown-unknown";
 const PROFILE = "release";
 
-/**
- * Returns the cargo target folder that a build in `buildFolder` writes to.
- * `CARGO_TARGET_DIR` wins, and a relative value resolves against the build folder.
- * @param {string} buildFolder the folder wasm-pack runs in
- * @returns {string}
- */
+// The cargo target folder of a build. A relative `CARGO_TARGET_DIR` resolves against `buildFolder`.
 const targetFolderFor = (buildFolder) =>
     process.env.CARGO_TARGET_DIR
         ? path.resolve(buildFolder, process.env.CARGO_TARGET_DIR)
@@ -36,12 +31,8 @@ const depInfoPathFor = (buildFolder) =>
         `${crateNameOf(buildFolder)}.d`,
     );
 
-/**
- * Reads the prerequisites of the first rule of a Makefile dep-info file.
- * A backslash before a newline continues the line, and `\ ` is a literal space.
- * @param {string} text the dep-info file content
- * @returns {string[]}
- */
+// Reads the prerequisites of the first rule of a Makefile dep-info file.
+// A backslash before a newline continues the line, and `\ ` is a literal space.
 function parseDepInfo(text) {
     const rule = text
         .replace(/\\\r?\n/g, " ")
@@ -72,13 +63,8 @@ function isInside(root, file) {
     );
 }
 
-/**
- * Keeps the project files of a dep-info list. Files under the cargo home, the
- * rustup home, or the target folder are registry, toolchain, or generated files.
- * @param {string[]} files absolute paths from the dep-info file
- * @param {string} targetFolder the cargo target folder of the build
- * @returns {string[]} normalized, sorted, and unique paths
- */
+// Keeps the project files of a dep-info list as sorted unique paths. It drops the files under
+// the cargo home, the rustup home, and the target folder.
 const localSources = (files, targetFolder) =>
     [
         ...new Set(
@@ -104,12 +90,8 @@ const recordPathFor = (resourcePath) =>
             .digest("hex")}.sources.json`,
     );
 
-/**
- * Lists the Rust files, other than the entry itself, that the last build of
- * `resourcePath` compiled. Gives an empty list when no build recorded them.
- * @param {string} resourcePath absolute path to the `.rs` entry
- * @returns {string[]}
- */
+// Lists the Rust files, other than the entry, that the last build of `resourcePath` compiled.
+// The list is empty when no build recorded them.
 function recordedSources(resourcePath) {
     try {
         const files = JSON.parse(
@@ -135,13 +117,8 @@ const writeAtomically = (file, content) => {
     }
 };
 
-/**
- * Reads the dep-info file of a finished build and records its local sources for
- * the entry. Keeps the old record when the build left no dep-info file.
- * @param {string} resourcePath absolute path to the `.rs` entry
- * @param {string} buildFolder the folder wasm-pack ran in
- * @returns {string[]} the recorded sources
- */
+// Records the local sources from the dep-info file of a finished build of the entry.
+// When the build left no dep-info file, the previous record stays.
 function recordSources(resourcePath, buildFolder) {
     const depInfo = depInfoPathFor(buildFolder);
     if (!fs.existsSync(depInfo)) {

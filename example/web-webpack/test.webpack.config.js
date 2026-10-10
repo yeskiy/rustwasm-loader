@@ -13,9 +13,8 @@ const rsRule = {
     },
 };
 
-// Both variants write into one folder, so neither may clean it. The test script
-// builds them one after the other with `--config-name`, because two compilers of
-// one webpack process share the build folder of the same `.rs` source.
+// The variants share one output folder, so none cleans it. The test script builds
+// them one at a time, because parallel compilers share the `.rs` build folder.
 const variant = (name, filename, publicPath) => ({
     ...common,
     name,
@@ -30,9 +29,8 @@ const variant = (name, filename, publicPath) => ({
     module: { rules: [rsRule] },
 });
 
-// Only a bundle named `comp*.test.js` is run by jest. The absolute public path
-// points at a host the test server cannot answer for, so that bundle is named
-// apart and only its emitted URL is read.
+// Jest runs only `comp*.test.js` bundles. The test server cannot answer for the
+// absolute public path, so the test reads only the emitted URL of that bundle.
 module.exports = [
     variant("default-public-path", "comp.test.js"),
     variant("explicit-public-path", "comp.assets.test.js", "/assets/"),

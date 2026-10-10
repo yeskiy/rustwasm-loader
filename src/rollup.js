@@ -25,18 +25,11 @@ const optionsSchema = {
     additionalProperties: false,
 };
 
-// Rollup passes the resolved module id, which may carry a `?query` or `#hash`
-// suffix added by other plugins. Strip it before testing the extension.
+// Other plugins can add a `?query` or `#hash` to the module id. Strip it before the extension test.
 const isRustModule = (id) => id.split("?")[0].split("#")[0].endsWith(".rs");
 
-/**
- * Builds a Rollup plugin that compiles `.rs` modules to inline-wasm JavaScript.
- * Exposed as a factory so adjacent integrations (such as Vite, whose plugins are
- * a superset of Rollup's) can wrap the returned object and add their own hooks.
- * @param {{ target?: "web" | "node", logLevel?: string, types?: boolean }} [config]
- * @param {Partial<import("rollup").Plugin>} [overrides] - extra plugin fields merged on top
- * @returns {import("rollup").Plugin}
- */
+// Makes a Rollup plugin that compiles `.rs` modules to JavaScript with inline wasm.
+// `overrides` adds plugin fields, so that another integration can add its own hooks.
 function createRustWasmRollupPlugin(config, overrides) {
     const options = merge({ target: "web", logLevel: "info" }, config);
 

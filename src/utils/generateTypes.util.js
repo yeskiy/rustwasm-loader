@@ -24,9 +24,8 @@ function logLevelArgs(level) {
     }
 }
 
-// Per-source build dir, content-addressed by the source hash so an unchanged
-// `.rs` is a wasm-pack cache hit on the next run. The `.types` suffix keeps the
-// typed build separate from the loader's normal inline build of the same source.
+// Build folder named after the source hash, so an unchanged `.rs` reuses the cache.
+// The `.types` suffix keeps the typed build apart from the normal build of the same source.
 function typedBuildFolder(resourcePath) {
     const hash = crypto
         .createHash("sha256")
@@ -40,16 +39,8 @@ function typedBuildFolder(resourcePath) {
     return buildFolder;
 }
 
-/**
- * Builds a `.rs` source with wasm-bindgen typings enabled and returns the raw
- * wasm-bindgen `.d.ts` source, without writing anything next to the `.rs`.
- * Reuses the loader's Cargo-discovery and wasm-pack pipeline; idempotent across
- * runs. The tsserver plugin uses this to type `.rs` imports live without
- * touching disk; `generateTypes` layers the on-disk sidecar write on top.
- * @param {string} resourcePath absolute path to the `.rs` file
- * @param {{ baseFolder?: string, logLevel?: string }} [options]
- * @returns {Promise<string>} the wasm-bindgen `.d.ts` source
- */
+// Builds a `.rs` source with typings and returns the wasm-bindgen `.d.ts` without a write
+// next to the source. The tsserver plugin uses it, and `generateTypes` adds the sidecar write.
 async function buildTypedDts(resourcePath, options = {}) {
     const baseFolder = path.normalize(options.baseFolder || process.cwd());
     const fileEntry = path.normalize(resourcePath);
@@ -93,14 +84,7 @@ async function buildTypedDts(resourcePath, options = {}) {
     });
 }
 
-/**
- * Builds a `.rs` source with wasm-bindgen typings enabled, transforms the
- * generated `.d.ts` into a sidecar matching the loader's runtime default export,
- * and writes `<name>.d.rs.ts` next to the source.
- * @param {string} resourcePath absolute path to the `.rs` file
- * @param {{ baseFolder?: string, logLevel?: string }} [options]
- * @returns {Promise<string>} the written sidecar path
- */
+// Builds the typings of a `.rs` source and writes the `<name>.d.rs.ts` sidecar next to it.
 async function generateTypes(resourcePath, options = {}) {
     return writeSidecar(
         resourcePath,

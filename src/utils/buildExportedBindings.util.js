@@ -1,23 +1,13 @@
-// wasm-bindgen's `--target web` glue declares each public Rust item at the top
-// level: a `#[wasm_bindgen]` function becomes `export function name(...) {`, and
-// a `#[wasm_bindgen]` struct becomes `export class Name {`. The raw `wasm`
-// exports that the loader also spreads carry only the mangled symbols
-// (`__wbg_point_free`), never the class, so both declarations are read here.
+// The glue declares each public Rust function as `export function` and each struct as
+// `export class`. The raw `wasm` exports carry only mangled symbols, so both are read here.
 const FUNCTION_DECL = /export function .+ {$/;
 const CLASS_DECL = /export class .+ {$/;
 
-// The identifier the emitted module uses. The patch branches append
-// `export default {...exportedFunctions, ...}`, so it is part of the module text.
+// The patch branches append `export default {...exportedFunctions, ...}` to the module.
 const BINDINGS_NAME = "exportedFunctions";
 
-/**
- * Builds the `const exportedFunctions = {...}` statement that every delivery
- * spreads into its default export, naming each public function and class the
- * glue declares. Functions keep the spacing the original harvest produced, so a
- * crate without a class emits a byte-identical module.
- * @param {string[]} lines glue source split into lines
- * @returns {string} the bindings statement
- */
+// Builds `const exportedFunctions = {...}` from the public functions and classes of the glue.
+// Function names keep their source spacing, so a crate without a class emits the same bytes.
 module.exports = function buildExportedBindings(lines) {
     const functions = lines
         .filter((line) => FUNCTION_DECL.test(line))

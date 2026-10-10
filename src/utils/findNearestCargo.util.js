@@ -3,17 +3,8 @@ const jsonToToml = require("json2toml");
 const fs = require("node:fs");
 const { parse: tomlToJson } = require("toml");
 
-/**
- * Walks up from the folder of the `.rs` entry toward the base folder and stops
- * at the first manifest that owns that entry. A manifest whose `lib.path` names
- * a different file belongs to another crate, so the walk steps over it.
- *
- * The walk is the discovery half of {@link module.exports}. It is separate
- * because the build folder is named after a hash of the manifest pair, so the
- * hash has to read the manifest before the build folder exists.
- * @param {{CARGO_TOML: string}} constants file names of the cargo manifests
- * @returns {(currentFolder: string, endFolder: string, fileEntry: string) => {folder: string, data: object}}
- */
+// Walks up to the first manifest that owns the `.rs` entry. It is separate from the export,
+// because the build folder name is a hash of the manifest, so the hash reads it first.
 function locateCargoBy(constants) {
     function locateCargo(currentFolder, endFolder, fileEntry) {
         const tomlFile = path.join(currentFolder, constants.CARGO_TOML);
@@ -23,7 +14,7 @@ function locateCargoBy(constants) {
                     encoding: "utf8",
                 }),
             );
-            // if this lib already have a path, check if this path equals to our .rs file
+            // A manifest whose `lib.path` names another file belongs to another crate.
             if (
                 !data.lib.path ||
                 path.normalize(path.resolve(currentFolder, data.lib.path)) ===
@@ -106,7 +97,6 @@ module.exports = function findNearestCargoBy(constants) {
                 { indent: 2, newlineAfterSection: true },
             ),
         };
-        // try to find Cargo.lock file in folder
         const lockPath = path.join(folder, constants.CARGO_LOCK);
         if (fs.existsSync(lockPath)) {
             returnData[constants.CARGO_LOCK] = fs.readFileSync(lockPath, {

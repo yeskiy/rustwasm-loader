@@ -37,13 +37,8 @@ const rsLoaderRule = (options) => ({
     use: [{ loader: require.resolve("./index"), options }],
 });
 
-// Next.js runs the webpack pass once per environment (browser client, Node
-// server, Edge server). `isServer` is the backend/frontend signal and
-// `nextRuntime` distinguishes the Node server pass from the Edge one. The Node
-// and browser passes inline the wasm bytes; the Edge pass cannot instantiate wasm
-// from bytes, so it takes the `module` delivery (target `web`, since Edge is a
-// web-like runtime), shipping a pre-compiled WebAssembly.Module via a `?module`
-// import that Next's internal Edge wasm loader injects.
+// The browser and Node server passes inline the wasm bytes. The Edge runtime cannot compile bytes,
+// so the Edge pass imports a compiled WebAssembly.Module with `?module`.
 const rsRule = (isServer, nextRuntime, shared) =>
     rsLoaderRule(
         nextRuntime === "edge"
@@ -56,12 +51,8 @@ const rsRule = (isServer, nextRuntime, shared) =>
               },
     );
 
-// Next sets `webassemblyModuleFilename` to a nested, token-laden path
-// (`static/wasm/[modulehash].wasm`). The loader feeds that value to wasm-pack as
-// the scratch output name, where the nested dir does not exist and `[modulehash]`
-// is not a known token, so the build fails. The name never surfaces (the bytes are
-// inlined, and the Edge `module` delivery imports from its own cache path), so a
-// flat name is safe on every pass, Edge included.
+// The Next value `static/wasm/[modulehash].wasm` breaks the wasm-pack output name.
+// No pass emits the wasm under this name, so a flat name is safe.
 const withRsRule = (config, isServer, nextRuntime, shared) => ({
     ...config,
     output: {
@@ -77,41 +68,8 @@ const withRsRule = (config, isServer, nextRuntime, shared) => ({
     },
 });
 
-/**
- * Wraps a Next.js config so `.rs` imports compile to inline-wasm JavaScript: the
- * `node` strategy for the server (SSR/prerender) and the `web` strategy for the
- * client, both with the bytes inlined. The same `.rs` works from a Server
- * Component and a Client Component.
- *
- * The returned config carries both a `webpack` function and a Turbopack rule
- * block, so it builds the same way under either bundler. Next 16 builds with
- * Turbopack by default and `next build --webpack` opts back to webpack. Next 15
- * builds with webpack by default and `next build --turbopack` opts in, from 15.3
- * on. Setting both keys is supported: Next only rejects a `webpack` config under
- * Turbopack when no Turbopack config is present.
- *
- * The Turbopack block goes under whichever key the running Next.js reads, in the
- * rule shape that release accepts. See `utils/nextTurbopack.util.js`.
- *
- * Edge routes work too: the Edge pass takes the `module` delivery, shipping a
- * pre-compiled WebAssembly.Module via a `?module` import (the only form the Edge
- * runtime can instantiate). The Node and browser passes still inline the bytes,
- * so the asset-emitting modes (`web.asyncLoading`, `node.bundle: false`) stay out
- * of the Next path and the helper never needs `emitFile`/`_compilation`, which
- * Turbopack's loader API omits.
- *
- * Loaders resolve through `require.resolve` against this package, so the helper
- * wires up the right files regardless of the consumer's module resolution.
- *
- * The return value is a config Next.js calls, and the call builds the Edge wasm
- * of every `.rs` file before the bundler starts. Turbopack cannot resolve a wasm
- * that first appears while the build runs, and a dependency change gives the
- * file a new name. The same value carries the config keys as properties, so a
- * caller that reads `turbopack` or `webpack` instead of calling still works.
- * @param {import("next").NextConfig} [nextConfig] - the Next.js config to extend
- * @param {{ logLevel?: string, types?: boolean, prebuild?: boolean | string[] }} [pluginOptions]
- * @returns {import("next").NextConfig & (() => Promise<import("next").NextConfig>)}
- */
+// Adds a webpack rule and a Turbopack rule for `.rs` files, so that both bundlers build them.
+// Next rejects a `webpack` key under Turbopack only when the config has no Turbopack key.
 function withRustWasm(nextConfig = {}, pluginOptions = {}) {
     const options = merge({ logLevel: "info" }, pluginOptions);
 
@@ -147,11 +105,8 @@ function withRustWasm(nextConfig = {}, pluginOptions = {}) {
         },
     };
 
-    // Next.js calls a config that is a function, which is what gives the
-    // pre-build somewhere asynchronous to run. The same value also carries the
-    // config keys, so anything that reads `config.turbopack` or `config.webpack`
-    // keeps working. Each key reads the one config object, so the call result
-    // and the properties cannot describe different configurations.
+    // Next calls a function config, so the Edge wasm pre-build runs before the bundler starts,
+    // as Turbopack requires. The function also has the config keys as properties.
     const callable = async () => {
         await prebuildEdgeWasm(
             process.cwd(),

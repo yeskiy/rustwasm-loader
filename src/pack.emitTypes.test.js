@@ -33,9 +33,8 @@ function isolatedCrate() {
     return dir;
 }
 
-// Node inline build params (bundle the wasm bytes into the JS). Both runs share
-// one buildFolder so the second is a wasm-pack cache hit: the wasm binary is
-// byte-for-byte the same and the only variable left is the typings flag.
+// Node inline build. Both runs share one buildFolder, so the wasm binary is the
+// same and the typings flag is the only difference.
 function packParams(dir, emitTypes) {
     return {
         resourcePath: path.join(dir, "math.rs"),

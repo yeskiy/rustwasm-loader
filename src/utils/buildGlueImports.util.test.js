@@ -2,9 +2,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const buildGlueImports = require("./buildGlueImports.util");
 
-// The init helpers of wasm-bindgen's `--target web` glue. Up to 0.2.104 the
-// memory setup is its own function. From 0.2.105 `__wbg_get_imports` does the
-// work and `__wbg_init_memory` is gone.
+// Init helpers of the `--target web` glue. wasm-bindgen 0.2.104 and earlier
+// emit `__wbg_init_memory`. From 0.2.105, `__wbg_get_imports` sets up memory.
 const GET_IMPORTS = [
     "function __wbg_get_imports() {",
     "    const imports = {};",
