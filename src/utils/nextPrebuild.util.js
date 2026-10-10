@@ -32,13 +32,31 @@ function scanRsFiles(dir) {
         );
 }
 
+const joinPatterns = (patterns, separator) =>
+    new RegExp(patterns.map((pattern) => pattern.source).join(separator), "g");
+
 // Comments, string literals and char literals. Strings keep their text in
 // URI-encoded form, so a `mod x;` or a brace inside one cannot match.
-const LEXEMES =
-    /\/\/[^\n]*|\/\*[\s\S]*?\*\/|b?r(#*)"([\s\S]*?)"\1|b?"((?:\\[\s\S]|[^"\\])*)"|b?'(?:\\[^'\n]+|[^\\'\n])'/g;
+const LEXEMES = joinPatterns(
+    [
+        /\/\/[^\n]*/,
+        /\/\*[\s\S]*?\*\//,
+        /b?r(#*)"([\s\S]*?)"\1/,
+        /b?"((?:\\[\s\S]|[^"\\])*)"/,
+        /b?'(?:\\[^'\n]+|[^\\'\n])'/,
+    ],
+    "|",
+);
 
-const DECLARATION =
-    /(?<![\w$])((?:#\s*\[[^\]]*\]\s*)*)(?:pub(?:\s*\([^)]*\)\s*|\s+))?mod\s+(?:r#)?([A-Za-z_]\w*)\s*;/g;
+// Attributes, then an optional visibility, then `mod name;`.
+const DECLARATION = joinPatterns(
+    [
+        /(?<![\w$])((?:#\s*\[[^\]]*\]\s*)*)/,
+        /(?:pub(?:\s*\([^)]*\)\s*|\s+))?/,
+        /mod\s+(?:r#)?([A-Za-z_]\w*)\s*;/,
+    ],
+    "",
+);
 
 const PATH_ATTRIBUTE = /#\s*\[\s*path\s*=\s*"([^"]*)"\s*\]/;
 
@@ -111,14 +129,14 @@ function reachModules(roots, scanned) {
         found.has(`${modRs} ${file}`)
             ? found
             : children(file, modRs).reduce(
-                  visit,
+                  (next, child) => visit(next, child),
                   found.add(`${modRs} ${file}`),
               );
     return new Set(
         [
             ...roots
                 .flatMap((root) => children(root, true))
-                .reduce(visit, new Set()),
+                .reduce((found, child) => visit(found, child), new Set()),
         ].map((key) => key.slice(key.indexOf(" ") + 1)),
     );
 }
@@ -154,18 +172,20 @@ function runLoader(resourcePath, baseFolder, loaderOptions) {
 
     const loader = require("..");
     return new Promise((resolve, reject) => {
-        loader.call(
-            {
-                resourcePath,
-                rootContext: baseFolder,
-                target: "web",
-                getOptions: () => loaderOptions,
-                emitFile: () => undefined,
-                addDependency: () => undefined,
-                async: () => (error) => (error ? reject(error) : resolve()),
-            },
-            fs.readFileSync(resourcePath, "utf8"),
-        );
+        loader
+            .call(
+                {
+                    resourcePath,
+                    rootContext: baseFolder,
+                    target: "web",
+                    getOptions: () => loaderOptions,
+                    emitFile: () => undefined,
+                    addDependency: () => undefined,
+                    async: () => (error) => (error ? reject(error) : resolve()),
+                },
+                fs.readFileSync(resourcePath, "utf8"),
+            )
+            .catch(reject);
     });
 }
 
@@ -234,17 +254,16 @@ async function prebuildEdgeWasm(baseFolder, loaderOptions, explicit) {
     // One at a time. wasm-pack shells out to cargo, and parallel runs contend
     // on the shared cargo cache. The loader holds its own build-folder lock
     // across each run, which covers a second process.
-    await pending.reduce(
-        (chain, file) =>
-            chain.then(() =>
-                runLoader(file, baseFolder, loaderOptions).catch((error) => {
-                    throw new Error(
-                        `rust-wasmpack-loader: failed to pre-build ${file}: ${error.message}`,
-                    );
-                }),
-            ),
-        Promise.resolve(),
-    );
+    await pending.reduce(async (previous, file) => {
+        await previous;
+        try {
+            await runLoader(file, baseFolder, loaderOptions);
+        } catch (error) {
+            throw new Error(
+                `rust-wasmpack-loader: failed to pre-build ${file}: ${error.message}`,
+            );
+        }
+    }, Promise.resolve());
 
     return { built: pending, scanned: files.length };
 }
