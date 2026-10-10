@@ -8,7 +8,7 @@ const pack = require("./pack");
 const buildInputsHash = require("./utils/buildInputsHash.util");
 const edgeWasmPath = require("./utils/edgeCache.util");
 
-const { cargoManifestsFor } = buildInputsHash;
+const { cargoManifestsFor, watchFilesFor } = buildInputsHash;
 const withBuildLock = require("./utils/buildLock.util");
 const bun = require("./bun");
 const esbuild = require("./esbuild");
@@ -259,16 +259,17 @@ function buildFolderFor(resourcePath, inputsHash, target, moduleDelivery) {
  * run we derive a content-hashed name directly. The name is internal scratch
  * for the inline path and never surfaces, so the exact shape does not matter.
  * A host that has a compilation gets the interpolation error itself.
+ * The `[hash]` comes from the crate-input digest, so an edit of a module file
+ * or a manifest also gives a new name.
  * @param {object} loaderContext the loader `this`
  * @param {string} fileNameStruct the name template
- * @param {string|Buffer} source the `.rs` source
  * @param {string} inputsHash the crate-input digest
  * @returns {string}
  */
-function resolveWasmName(loaderContext, fileNameStruct, source, inputsHash) {
+function resolveWasmName(loaderContext, fileNameStruct, inputsHash) {
     try {
         return loaderUtils.interpolateName(loaderContext, fileNameStruct, {
-            content: source,
+            content: inputsHash,
         });
     } catch (error) {
         if (loaderContext._compilation) {
@@ -371,7 +372,6 @@ async function rustWasmLoader(source) {
         const wasmName = resolveWasmName(
             this,
             params.fileNameStruct,
-            source,
             inputsHash,
         );
 
@@ -395,16 +395,18 @@ async function rustWasmLoader(source) {
             node: options.node,
         };
 
-        callback(
-            null,
-            moduleDelivery
-                ? await buildModuleDelivery(
-                      basePackParams,
-                      inputsHash,
-                      addDependency,
-                  )
-                : await pack(basePackParams, this.emitFile),
+        const output = moduleDelivery
+            ? await buildModuleDelivery(
+                  basePackParams,
+                  inputsHash,
+                  addDependency,
+              )
+            : await pack(basePackParams, this.emitFile);
+        // The build recorded the module files it compiled. An edit of one of them rebuilds.
+        watchFilesFor(params.resourcePath, params.baseFolder).forEach(
+            addDependency,
         );
+        callback(null, output);
     } catch (e) {
         callback(e, null);
     }

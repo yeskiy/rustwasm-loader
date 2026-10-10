@@ -1,6 +1,6 @@
 const { merge } = require("lodash");
 const schemaUtils = require("schema-utils");
-const { buildRsModule } = require("./shared-load.util");
+const { buildRsModule, rsWatchFiles } = require("./shared-load.util");
 
 const optionsSchema = {
     type: "object",
@@ -47,15 +47,22 @@ function createRustWasmRollupPlugin(config, overrides) {
     return {
         name: "rust-wasmpack-loader",
         async load(id) {
-            return isRustModule(id)
-                ? buildRsModule({
-                      resourcePath: id.split("?")[0].split("#")[0],
-                      baseFolder: process.cwd(),
-                      target: options.target,
-                      logLevel: options.logLevel,
-                      emitTypes: options.types === true,
-                  })
-                : null;
+            if (!isRustModule(id)) {
+                return null;
+            }
+            const resourcePath = id.split("?")[0].split("#")[0];
+            const code = await buildRsModule({
+                resourcePath,
+                baseFolder: process.cwd(),
+                target: options.target,
+                logLevel: options.logLevel,
+                emitTypes: options.types === true,
+            });
+            // Rollup watches only the files it reads itself, so declare every build input.
+            rsWatchFiles(resourcePath, process.cwd()).forEach((file) =>
+                this.addWatchFile(file),
+            );
+            return code;
         },
         ...overrides,
     };

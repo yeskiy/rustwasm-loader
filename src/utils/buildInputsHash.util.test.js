@@ -5,7 +5,9 @@ const os = require("node:os");
 const path = require("node:path");
 const buildInputsHash = require("./buildInputsHash.util");
 
-const { cargoManifestsFor } = buildInputsHash;
+const { recordPathFor } = require("./rustSources.util");
+
+const { cargoManifestsFor, watchFilesFor } = buildInputsHash;
 
 const SOURCE = "#[no_mangle]\npub fn fib(n: u32) -> u32 { n }\n";
 
@@ -167,6 +169,56 @@ test("leaves out a lock that does not exist", () => {
             path.join(dir, "Cargo.toml"),
         ]);
     } finally {
+        cleanup([dir]);
+    }
+});
+
+// Writes the record that a build of `math.rs` leaves for its module files.
+const recordModules = (dir, files) =>
+    fs.writeFileSync(
+        recordPathFor(path.join(dir, "math.rs")),
+        JSON.stringify(files),
+    );
+
+const dropRecord = (dir) =>
+    fs.rmSync(recordPathFor(path.join(dir, "math.rs")), { force: true });
+
+test("changes the digest when a recorded module file changes", () => {
+    const dir = crate();
+    const util = path.join(dir, "util.rs");
+    try {
+        fs.writeFileSync(util, "pub fn v() -> u32 { 1 }\n");
+        const unrecorded = hashOf(dir);
+        recordModules(dir, [util]);
+        const recorded = hashOf(dir);
+        assert.notEqual(recorded, unrecorded);
+        assert.equal(hashOf(dir), recorded);
+
+        fs.writeFileSync(util, "pub fn v() -> u32 { 2 }\n");
+        const edited = hashOf(dir);
+        assert.notEqual(edited, recorded);
+
+        fs.rmSync(util);
+        assert.notEqual(hashOf(dir), edited);
+        assert.notEqual(hashOf(dir), unrecorded);
+    } finally {
+        dropRecord(dir);
+        cleanup([dir]);
+    }
+});
+
+test("lists the recorded module files and the manifests to watch", () => {
+    const dir = crate();
+    const util = path.join(dir, "util.rs");
+    try {
+        recordModules(dir, [util]);
+        assert.deepEqual(watchFilesFor(path.join(dir, "math.rs"), dir), [
+            util,
+            path.join(dir, "Cargo.toml"),
+            path.join(dir, "Cargo.lock"),
+        ]);
+    } finally {
+        dropRecord(dir);
         cleanup([dir]);
     }
 });

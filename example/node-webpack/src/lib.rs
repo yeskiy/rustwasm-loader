@@ -2,6 +2,8 @@ extern crate wasm_bindgen;
 
 use wasm_bindgen::prelude::*;
 
+mod text;
+
 #[no_mangle]
 pub fn fibonacci_default(n: i32) -> i32 {
     match n {
@@ -23,5 +25,5 @@ pub fn fibonacci_bindgen(n: i32) -> i32 {
 
 #[wasm_bindgen]
 pub fn cap(s: &str) -> String {
-    s[0..1].to_uppercase() + &s[1..]
+    text::capitalize(s)
 }

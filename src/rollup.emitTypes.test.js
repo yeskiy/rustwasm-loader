@@ -31,6 +31,8 @@ function isolatedCrate() {
     return dir;
 }
 
+const pluginContext = { addWatchFile: () => undefined };
+
 test(
     "the rollup `types` option drives sidecar emission, off by default",
     { skip },
@@ -43,7 +45,7 @@ test(
                 target: "node",
                 logLevel: "error",
                 types: true,
-            }).load(rs);
+            }).load.call(pluginContext, rs);
             assert.ok(
                 fs.existsSync(sidecar),
                 "types:true must write the sidecar",
@@ -54,7 +56,10 @@ test(
             );
 
             fs.rmSync(sidecar, { force: true });
-            await rollup({ target: "node", logLevel: "error" }).load(rs);
+            await rollup({ target: "node", logLevel: "error" }).load.call(
+                pluginContext,
+                rs,
+            );
             assert.equal(
                 fs.existsSync(sidecar),
                 false,

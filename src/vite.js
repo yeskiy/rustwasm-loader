@@ -1,6 +1,6 @@
 const { merge } = require("lodash");
 const schemaUtils = require("schema-utils");
-const { buildRsModule } = require("./shared-load.util");
+const { buildRsModule, rsWatchFiles } = require("./shared-load.util");
 
 const optionsSchema = {
     type: "object",
@@ -120,6 +120,17 @@ function vite(config) {
                           })}`,
                   })
                 : buildRsModule(baseParams);
+        },
+
+        // The dev server and the build watcher see only the files a plugin declares.
+        // The dev server keeps them only after it made the module node, which is after load.
+        transform(code, id) {
+            if (isRustModule(id)) {
+                rsWatchFiles(cleanId(id), process.cwd()).forEach((file) =>
+                    this.addWatchFile(file),
+                );
+            }
+            return null;
         },
     };
 }

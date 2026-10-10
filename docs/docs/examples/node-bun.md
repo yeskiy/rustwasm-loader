@@ -447,6 +447,10 @@ bun dev
 bun --inspect src/index.js
 ```
 
+:::note
+`bun dev` does not reload after an edit of a `.rs` file. The Bun plugin API cannot declare watch files. Restart Bun, or save a `.js` file that imports the Rust module.
+:::
+
 ### Tests
 
 ```bash
