@@ -112,7 +112,8 @@ digest is already on disk, the helper does nothing. This is the usual case.
 | A Rust input changed | One Rust build, which the bundler pays instead when the helper does not |
 
 The scan passes over `node_modules`, `.next`, `target` and `.git`. A `.rs` file that belongs to no crate is passed over
-too, because you cannot import it either.
+too, because you cannot import it either. A `.rs` file that another `.rs` file declares with `mod name;` (also with a
+`#[path]` attribute) is part of that crate, so the scan does not build it alone.
 
 Use the `prebuild` option to change this behavior.
 
