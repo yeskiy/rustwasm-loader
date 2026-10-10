@@ -107,6 +107,16 @@ plugin(loader.bun({
 }));
 ```
 
+## Watch mode and rebuilds
+
+After each build, the loader records the Rust files that cargo compiled for the entry. These files are the module files (`mod util;` reads `util.rs`) and the sources of local path dependencies. The loader declares these files and the `Cargo.toml` and `Cargo.lock` of the crate to the bundler. For this reason, an edit of any of these files starts a new build in watch mode and in the dev server. This applies to webpack, Rspack, Next.js (webpack and Turbopack), Rollup, Vite, and esbuild. Files from the cargo registry and the Rust toolchain are not watched.
+
+The build folder and the emitted `.wasm` name come from a digest of the entry, the manifests, and the recorded files. An edit of a module file therefore also gives a new `.wasm` name.
+
+The first build of an entry has no record yet. The next build of that entry records the files and builds one more time under a new name.
+
+Bun is the exception. The Bun plugin API cannot declare watch files, so `bun --watch` and `bun --hot` do not reload after an edit of a `.rs` file. Restart Bun, or save a `.js` file that imports the module.
+
 ## Configuration options by build tool
 
 ### Webpack options

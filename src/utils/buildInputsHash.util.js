@@ -2,6 +2,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { locateCargoBy } = require("./findNearestCargo.util");
+const { recordedSources } = require("./rustSources.util");
 
 const constants = Object.freeze({
     CARGO_LOCK: "Cargo.lock",
@@ -17,6 +18,9 @@ const NO_LOCK = "\u0000<no-lock>";
 // Separates the fields, so a source that ends in the text of a manifest cannot
 // produce the digest of another input set.
 const FIELD_SEPARATOR = "\u0000";
+
+// Stands in for a recorded module file that no longer exists.
+const MISSING_FILE = "\u0000<missing>";
 
 const locateCargo = locateCargoBy(constants);
 
@@ -43,6 +47,9 @@ const folderOf = (resourcePath, baseFolder) =>
  * wasm-bindgen version and every other resolved dependency. The manifest holds
  * the feature and profile settings that the lock does not carry.
  *
+ * The digest also covers each module file that the last build of the entry
+ * compiled, so an edit of a `mod` file alone gives a new digest.
+ *
  * Unchanged inputs give the same digest, so an unchanged crate still reuses its
  * build folder and its cargo cache.
  * @param {string | Buffer} source the `.rs` source
@@ -53,13 +60,26 @@ const folderOf = (resourcePath, baseFolder) =>
  */
 module.exports = function buildInputsHash(source, resourcePath, baseFolder) {
     const folder = folderOf(resourcePath, baseFolder);
-    return crypto
-        .createHash("sha256")
-        .update(source)
-        .update(FIELD_SEPARATOR)
-        .update(readOr(folder, constants.CARGO_TOML, ""))
-        .update(FIELD_SEPARATOR)
-        .update(readOr(folder, constants.CARGO_LOCK, NO_LOCK))
+    return recordedSources(resourcePath)
+        .reduce(
+            (hash, file) =>
+                hash
+                    .update(FIELD_SEPARATOR)
+                    .update(file)
+                    .update(FIELD_SEPARATOR)
+                    .update(
+                        fs.existsSync(file)
+                            ? fs.readFileSync(file)
+                            : MISSING_FILE,
+                    ),
+            crypto
+                .createHash("sha256")
+                .update(source)
+                .update(FIELD_SEPARATOR)
+                .update(readOr(folder, constants.CARGO_TOML, ""))
+                .update(FIELD_SEPARATOR)
+                .update(readOr(folder, constants.CARGO_LOCK, NO_LOCK)),
+        )
         .digest("hex");
 };
 
@@ -82,3 +102,16 @@ module.exports.cargoManifestsFor = function cargoManifestsFor(
         .map((name) => path.join(folder, name))
         .filter((file) => fs.existsSync(file));
 };
+
+/**
+ * Lists the files whose edit changes the build of an entry: the module files the
+ * last build compiled and the cargo manifests. A loader declares them to watch.
+ * @param {string} resourcePath absolute path to the `.rs` file
+ * @param {string} baseFolder project root the manifest walk stops at
+ * @returns {string[]} absolute paths
+ * @throws {Error} when no owning `Cargo.toml` exists
+ */
+module.exports.watchFilesFor = (resourcePath, baseFolder) => [
+    ...recordedSources(resourcePath),
+    ...module.exports.cargoManifestsFor(resourcePath, baseFolder),
+];

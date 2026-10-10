@@ -9,6 +9,7 @@ const buildGlueImports = require("./utils/buildGlueImports.util");
 const buildExportedBindings = require("./utils/buildExportedBindings.util");
 const buildWasmUrl = require("./utils/buildWasmUrl.util");
 const withBuildLock = require("./utils/buildLock.util");
+const { recordSources } = require("./utils/rustSources.util");
 
 const constants = Object.seal({
     toArrayBuffer: `function toArrayBuffer(buffer) {\n    const ab = new ArrayBuffer(buffer.length);\n    const view = new Uint8Array(ab);\n    for (var i = 0; i < buffer.length; ++i) {\n        view[i] = buffer[i];\n    }\n    return ab;\n}`,
@@ -135,6 +136,9 @@ async function doPack(params, emitFile) {
         // use `web` target because the generated file of this target modifies easily
         extraArgs: ["--target", "web"],
     });
+
+    // Record the module files cargo compiled, so the next digest and watch list cover them.
+    recordSources(params.resourcePath, params.buildFolder);
 
     // Add generated .wasm binary to webpack files
     if (assetEmittingDeliveries.has(delivery)) {

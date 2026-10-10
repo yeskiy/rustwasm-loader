@@ -3,6 +3,8 @@ const path = require("node:path");
 const os = require("node:os");
 const pack = require("./pack");
 const buildInputsHash = require("./utils/buildInputsHash.util");
+
+const { watchFilesFor } = buildInputsHash;
 const withBuildLock = require("./utils/buildLock.util");
 
 /** @typedef {Object} SharedLoadParams
@@ -108,17 +110,32 @@ async function buildRsModule(params) {
 }
 
 /**
+ * Lists the files a bundler must watch for one `.rs` entry: the entry itself,
+ * the module files its last build compiled, and the cargo manifests.
+ * @param {string} resourcePath absolute path to the `.rs` entry
+ * @param {string} [baseFolder] project root (defaults to cwd)
+ * @returns {string[]}
+ */
+const rsWatchFiles = (resourcePath, baseFolder) => [
+    path.resolve(resourcePath),
+    ...watchFilesFor(resourcePath, baseFolder || process.cwd()),
+];
+
+/**
  * Shared onLoad routine for esbuild-compatible plugins (Bun and esbuild).
- * Wraps {@link buildRsModule} in the `{ contents, loader }` shape esbuild expects.
+ * Wraps {@link buildRsModule} in the `{ contents, loader, watchFiles }` shape
+ * esbuild expects. Bun ignores `watchFiles`.
  * @param {SharedLoadParams} params
- * @returns {Promise<{ contents: string, loader: "js" }>}
+ * @returns {Promise<{ contents: string, loader: "js", watchFiles: string[] }>}
  */
 async function sharedLoad(params) {
     return {
         contents: await buildRsModule(params),
         loader: "js",
+        watchFiles: rsWatchFiles(params.resourcePath, params.baseFolder),
     };
 }
 
 module.exports = sharedLoad;
 module.exports.buildRsModule = buildRsModule;
+module.exports.rsWatchFiles = rsWatchFiles;
