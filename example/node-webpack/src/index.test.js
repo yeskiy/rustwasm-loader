@@ -9,6 +9,10 @@ describe("node-webpack", () => {
         expect(rsLib.fibonacci_default(10)).toBe(55);
     });
 
+    test("cap", () => {
+        expect(rsLib.cap("hello")).toBe("Hello");
+    });
+
     test("fibonacci", () => {
         expect(fibonacci(10)).toBe(55);
     });
