@@ -1,23 +1,11 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const init = require("./tsserver");
 const { buildTypedDts } = require("./utils/generateTypes.util");
-const findWasmPack = require("./utils/findWasmPack.util");
-
-const CRATE = path.join(__dirname, "..", "example", "typed-imports");
-
-const skip = (() => {
-    try {
-        findWasmPack();
-        return false;
-    } catch {
-        return "wasm-pack is not installed";
-    }
-})();
+const { isolatedCrate, skip, waitFor } = require("../test/helpers");
 
 const COMPILER_OPTIONS = {
     noEmit: true,
@@ -36,33 +24,6 @@ const IMPORTER = [
     "export const bad = lib.nope();",
     "",
 ].join("\n");
-
-// An isolated copy of the example crate with a unique marker, so the test owns
-// its content-addressed build dir.
-function isolatedCrate() {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rs-ls-"));
-    ["Cargo.toml", "Cargo.lock", "math.rs"].forEach((file) =>
-        fs.copyFileSync(path.join(CRATE, file), path.join(dir, file)),
-    );
-    fs.appendFileSync(
-        path.join(dir, "math.rs"),
-        `\n// ${path.basename(dir)}\n`,
-    );
-    return dir;
-}
-
-function waitFor(predicate, timeoutMs) {
-    const start = Date.now();
-    const attempt = async () => {
-        if (predicate()) return true;
-        if (Date.now() - start > timeoutMs) return false;
-        await new Promise((resolve) => {
-            setTimeout(resolve, 100);
-        });
-        return attempt();
-    };
-    return attempt();
-}
 
 const messagesOf = (diagnostics) =>
     diagnostics.map((diagnostic) =>
@@ -133,7 +94,7 @@ test(
     "serves the floor first, then precise types that flag a bad call",
     { skip },
     async () => {
-        const dir = isolatedCrate();
+        const dir = isolatedCrate("rs-ls-");
         const { languageService, importer, refreshed } = harness(dir);
         try {
             // Before the build lands, the floor keeps every member callable, so
@@ -146,7 +107,7 @@ test(
             // The first snapshot read enqueued the background build; wait for it
             // to finish and ask the project to refresh.
             assert.ok(
-                await waitFor(() => refreshed.length > 0, 180000),
+                await waitFor(() => refreshed.length > 0, 180000, 100),
                 "the background build never completed",
             );
 

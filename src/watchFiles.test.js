@@ -1,9 +1,9 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const { recordPathFor } = require("./utils/rustSources.util");
+const { tempDir } = require("../test/helpers");
 
 // A stand-in build, so the test checks the declared files without wasm-pack.
 require.cache[require.resolve("./pack")] = {
@@ -15,9 +15,7 @@ require.cache[require.resolve("./pack")] = {
 
 const loader = require(".");
 
-const dir = fs.realpathSync(
-    fs.mkdtempSync(path.join(os.tmpdir(), "rs-watch-")),
-);
+const dir = tempDir("rs-watch-");
 const entry = path.join(dir, "lib.rs");
 const util = path.join(dir, "util.rs");
 fs.writeFileSync(

@@ -1,49 +1,10 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const pack = require("./pack");
-const findWasmPack = require("./utils/findWasmPack.util");
-
-const CRATE = path.join(__dirname, "..", "example", "typed-imports");
-
-const skip = (() => {
-    try {
-        findWasmPack();
-        return false;
-    } catch {
-        return "wasm-pack is not installed";
-    }
-})();
-
-// An isolated copy of the example crate, which exports `cap`, `fibonacci`, and a
-// `#[wasm_bindgen] struct Point` with a constructor and a `norm` method.
-function isolatedCrate() {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rs-pack-class-"));
-    ["Cargo.toml", "Cargo.lock", "math.rs"].forEach((file) =>
-        fs.copyFileSync(path.join(CRATE, file), path.join(dir, file)),
-    );
-    fs.mkdirSync(path.join(dir, "build"), { recursive: true });
-    return dir;
-}
-
-// Every delivery shares one build folder, so only the first call pays for a
-// wasm-pack build and the rest are cache hits on the same binary.
-function packParams(dir, overrides) {
-    return {
-        resourcePath: path.join(dir, "math.rs"),
-        baseFolder: dir,
-        buildFolder: path.join(dir, "build"),
-        wasmName: "out.wasm",
-        target: "node",
-        logLevel: "error",
-        web: { asyncLoading: false, publicPath: "", wasmPathModifier: ["/"] },
-        node: { bundle: true },
-        ...overrides,
-    };
-}
+const { isolatedCrate, packParams, skip } = require("../test/helpers");
 
 // The seven deliveries `selectDelivery` can pick, named as the loader reports
 // them: the four target/option combinations plus the three import strategies.
@@ -86,11 +47,16 @@ const DELIVERIES = [
     ],
 ];
 
+// Every delivery shares one build folder, so only the first call pays for a
+// wasm-pack build and the rest are cache hits on the same binary.
 test(
     "every delivery exposes the class on the default export",
     { skip },
     async (t) => {
-        const dir = isolatedCrate();
+        const dir = isolatedCrate("rs-pack-class-", {
+            marker: false,
+            buildFolder: true,
+        });
         try {
             await DELIVERIES.reduce(
                 (chain, [name, overrides]) =>
@@ -124,26 +90,16 @@ test(
 
 // Import both self-contained deliveries as real modules, so the class runs on
 // a live wasm instance. The emitted text alone does not test the wasm boundary.
-const SELF_CONTAINED = [
-    ["node inline", { target: "node", node: { bundle: true } }],
-    [
-        "web inline",
-        {
-            target: "web",
-            web: {
-                asyncLoading: false,
-                publicPath: "",
-                wasmPathModifier: ["/"],
-            },
-        },
-    ],
-];
+const SELF_CONTAINED = DELIVERIES.filter(([name]) => name.endsWith(" inline"));
 
 test(
     "the class is constructible and live in the inline deliveries",
     { skip },
     async (t) => {
-        const dir = isolatedCrate();
+        const dir = isolatedCrate("rs-pack-class-", {
+            marker: false,
+            buildFolder: true,
+        });
         try {
             await SELF_CONTAINED.reduce(
                 (chain, [name, overrides], index) =>

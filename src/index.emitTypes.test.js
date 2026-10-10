@@ -1,40 +1,13 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const rustWasmLoader = require(".");
-const findWasmPack = require("./utils/findWasmPack.util");
-
-const CRATE = path.join(__dirname, "..", "example", "typed-imports");
-
-const skip = (() => {
-    try {
-        findWasmPack();
-        return false;
-    } catch {
-        return "wasm-pack is not installed";
-    }
-})();
-
-// An isolated copy of the example crate with a unique marker, so this test owns
-// its own content-addressed build dir and sidecar.
-function isolatedCrate() {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rs-loader-types-"));
-    ["Cargo.toml", "Cargo.lock", "math.rs"].forEach((file) =>
-        fs.copyFileSync(path.join(CRATE, file), path.join(dir, file)),
-    );
-    fs.appendFileSync(
-        path.join(dir, "math.rs"),
-        `\n// ${path.basename(dir)}\n`,
-    );
-    return dir;
-}
+const { isolatedCrate, skip } = require("../test/helpers");
 
 // Drives the loader with a thin loader context (the Turbopack-style shape: no
 // `_compilation`, inline node build), the same surface the loader falls back to.
 function runLoader(dir, loaderOptions) {
-    const source = fs.readFileSync(path.join(dir, "math.rs"), "utf8");
     return new Promise((resolve, reject) => {
         rustWasmLoader.call(
             {
@@ -46,7 +19,7 @@ function runLoader(dir, loaderOptions) {
                 getOptions: () => loaderOptions,
                 emitFile: () => undefined,
             },
-            source,
+            fs.readFileSync(path.join(dir, "math.rs"), "utf8"),
         );
     });
 }
@@ -55,7 +28,7 @@ test(
     "the `types` option drives sidecar emission, off by default",
     { skip },
     async () => {
-        const dir = isolatedCrate();
+        const dir = isolatedCrate("rs-loader-types-");
         const sidecar = path.join(dir, "math.d.rs.ts");
         try {
             await runLoader(dir, {

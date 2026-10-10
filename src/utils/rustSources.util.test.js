@@ -1,7 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const {
     parseDepInfo,
@@ -12,31 +11,7 @@ const {
     recordSources,
     targetFolderFor,
 } = require("./rustSources.util");
-
-const tempDir = (prefix) =>
-    fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), prefix)));
-
-// An undefined value removes the variable.
-const setEnv = (vars) =>
-    Object.entries(vars).forEach(([key, value]) => {
-        if (value === undefined) {
-            delete process.env[key];
-        } else {
-            process.env[key] = value;
-        }
-    });
-
-const withEnv = (vars, run) => {
-    const saved = Object.fromEntries(
-        Object.keys(vars).map((key) => [key, process.env[key]]),
-    );
-    setEnv(vars);
-    try {
-        return run();
-    } finally {
-        setEnv(saved);
-    }
-};
+const { tempDir, withEnv } = require("../../test/helpers");
 
 test("reads the prerequisites of the first rule", () => {
     assert.deepEqual(

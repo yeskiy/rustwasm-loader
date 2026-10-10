@@ -4,18 +4,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const spawnWasmPack = require("./spawnWasmPack.util");
-const findWasmPack = require("./findWasmPack.util");
-
-const CRATE = path.join(__dirname, "..", "..", "example", "typed-imports");
-
-const skip = (() => {
-    try {
-        findWasmPack();
-        return false;
-    } catch {
-        return "wasm-pack is not installed";
-    }
-})();
+const { CRATE, skip } = require("../../test/helpers");
 
 async function buildInto(extra) {
     const outDir = fs.mkdtempSync(path.join(os.tmpdir(), "rs-tsopt-"));
@@ -31,11 +20,17 @@ async function buildInto(extra) {
 }
 
 test("omits the .d.ts by default", { skip }, async () => {
-    const outDir = await buildInto({});
-    assert.equal(fs.existsSync(path.join(outDir, "math.d.ts")), false);
+    assert.equal(
+        fs.existsSync(path.join(await buildInto({}), "math.d.ts")),
+        false,
+    );
 });
 
 test("emits the .d.ts when typescript is true", { skip }, async () => {
-    const outDir = await buildInto({ typescript: true });
-    assert.equal(fs.existsSync(path.join(outDir, "math.d.ts")), true);
+    assert.equal(
+        fs.existsSync(
+            path.join(await buildInto({ typescript: true }), "math.d.ts"),
+        ),
+        true,
+    );
 });

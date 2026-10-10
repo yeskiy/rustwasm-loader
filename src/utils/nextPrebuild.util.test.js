@@ -1,36 +1,22 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const prebuildEdgeWasm = require("./nextPrebuild.util");
 const edgeWasmPath = require("./edgeCache.util");
 const buildInputsHash = require("./buildInputsHash.util");
+const {
+    PROBE_MANIFEST: MANIFEST,
+    PROBE_SOURCE: SOURCE,
+    tempDir,
+} = require("../../test/helpers");
 
 const { scanRsFiles, moduleDeclarations, moduleFiles } = prebuildEdgeWasm;
-
-const SOURCE = "pub fn fib(n: u32) -> u32 { n }\n";
-
-const MANIFEST = [
-    "[package]",
-    'name = "probe"',
-    'version = "0.1.0"',
-    "",
-    "[lib]",
-    'crate-type = ["cdylib"]',
-    'path = "lib.rs"',
-    "",
-    "[dependencies]",
-    'wasm-bindgen = "0.2.95"',
-    "",
-].join("\n");
 
 // A throwaway project: a crate at the root plus the directories a scan has to
 // pass over.
 function project() {
-    const dir = fs.realpathSync(
-        fs.mkdtempSync(path.join(os.tmpdir(), "rs-prebuild-")),
-    );
+    const dir = tempDir("rs-prebuild-");
     fs.writeFileSync(path.join(dir, "lib.rs"), SOURCE);
     fs.writeFileSync(path.join(dir, "Cargo.toml"), MANIFEST);
     fs.writeFileSync(path.join(dir, "Cargo.lock"), "version = 4\n");
@@ -88,9 +74,7 @@ test("builds nothing when every wasm is already on disk", async () => {
 });
 
 test("names the file in the error when a listed one owns no crate", async () => {
-    const dir = fs.realpathSync(
-        fs.mkdtempSync(path.join(os.tmpdir(), "rs-prebuild-bare-")),
-    );
+    const dir = tempDir("rs-prebuild-bare-");
     try {
         fs.writeFileSync(path.join(dir, "stray.rs"), SOURCE);
         await assert.rejects(
@@ -103,9 +87,7 @@ test("names the file in the error when a listed one owns no crate", async () => 
 });
 
 test("a scan passes over a .rs file that owns no crate", async () => {
-    const dir = fs.realpathSync(
-        fs.mkdtempSync(path.join(os.tmpdir(), "rs-prebuild-stray-")),
-    );
+    const dir = tempDir("rs-prebuild-stray-");
     try {
         fs.writeFileSync(path.join(dir, "stray.rs"), SOURCE);
         assert.deepEqual(await prebuildEdgeWasm(dir, {}), {
@@ -120,9 +102,7 @@ test("a scan passes over a .rs file that owns no crate", async () => {
 // Writes the given `.rs` files and returns the module files among them,
 // relative to the tree root.
 function modulesOf(sources) {
-    const dir = fs.realpathSync(
-        fs.mkdtempSync(path.join(os.tmpdir(), "rs-modules-")),
-    );
+    const dir = tempDir("rs-modules-");
     try {
         Object.entries(sources).forEach(([name, source]) => {
             fs.mkdirSync(path.dirname(path.join(dir, name)), {

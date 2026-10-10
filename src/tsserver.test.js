@@ -42,24 +42,19 @@ function makeCache(opts = {}) {
     });
 }
 
+const overridesFor = (cache = makeCache()) =>
+    buildHostOverrides({ tsm: ts, host: mockHost(), cache });
+
 const snapshotText = (snapshot) => snapshot.getText(0, snapshot.getLength());
 
 test("getScriptKind classifies .rs as TS and delegates the rest", () => {
-    const overrides = buildHostOverrides({
-        tsm: ts,
-        host: mockHost(),
-        cache: makeCache(),
-    });
+    const overrides = overridesFor();
     assert.equal(overrides.getScriptKind("/a/math.rs"), ts.ScriptKind.TS);
     assert.equal(overrides.getScriptKind("/a/app.ts"), ts.ScriptKind.JS);
 });
 
 test("resolveModuleNameLiterals points .rs at a declaration, delegates others", () => {
-    const overrides = buildHostOverrides({
-        tsm: ts,
-        host: mockHost(),
-        cache: makeCache(),
-    });
+    const overrides = overridesFor();
     const containing = path.join(os.tmpdir(), "app.ts");
     const [rs, other] = overrides.resolveModuleNameLiterals(
         [{ text: "./math.rs" }, { text: "./other" }],
@@ -79,18 +74,14 @@ test("resolveModuleNameLiterals points .rs at a declaration, delegates others", 
 });
 
 test("getScriptSnapshot passes non-.rs reads straight through", () => {
-    const overrides = buildHostOverrides({
-        tsm: ts,
-        host: mockHost(),
-        cache: makeCache(),
-    });
+    const overrides = overridesFor();
     assert.equal(overrides.getScriptSnapshot("/a/app.ts"), SENTINEL);
     assert.equal(overrides.getScriptVersion("/a/app.ts"), "host-version");
 });
 
 test("getScriptSnapshot serves the floor first, then the precise types", async () => {
     const cache = makeCache();
-    const overrides = buildHostOverrides({ tsm: ts, host: mockHost(), cache });
+    const overrides = overridesFor(cache);
     const rs = "/x/math.rs";
 
     const before = overrides.getScriptVersion(rs);

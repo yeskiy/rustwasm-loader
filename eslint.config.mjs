@@ -48,6 +48,7 @@ export default defineConfig([
         name: "project/commonjs-sources",
         files: [
             "src/**/*.js",
+            "test/**/*.js",
             "bin/**/*.js",
             "tsserver.js",
             "*.cjs",

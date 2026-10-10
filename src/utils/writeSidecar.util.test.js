@@ -4,6 +4,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const writeSidecar = require("./writeSidecar.util");
+const { assertSidecar } = require("../../test/helpers");
 
 // A `--target web` `.d.ts` with `cap`, `fibonacci`, and the class `Point` for
 // the sidecar to keep, plus init declarations for it to drop.
@@ -26,12 +27,7 @@ test("writes <stem>.d.rs.ts next to the source and returns its path", () => {
     try {
         const out = writeSidecar(path.join(dir, "math.rs"), FIXTURE);
         assert.equal(out, path.join(dir, "math.d.rs.ts"));
-        const content = fs.readFileSync(out, "utf8");
-        assert.match(content, /fibonacci\(n: number\): number;/);
-        assert.match(content, /cap\(s: string\): string;/);
-        assert.match(content, /declare class Point \{/);
-        assert.match(content, /Point: typeof Point;/);
-        assert.doesNotMatch(content, /initSync|\[key: string\]/);
+        assertSidecar(fs.readFileSync(out, "utf8"));
     } finally {
         fs.rmSync(dir, { recursive: true, force: true });
     }
