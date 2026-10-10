@@ -20,6 +20,8 @@ jobs:
             # The electron example builds and tests without launching Electron, so
             # it never needs the platform binary - skip that download.
             ELECTRON_SKIP_BINARY_DOWNLOAD: 1
+            # The root suite builds Rust through example/typed-imports.
+            CRATE: ${{ matrix.test == '.' && 'example/typed-imports' || matrix.test }}
         strategy:
             fail-fast: false
             matrix:
@@ -58,23 +60,18 @@ jobs:
                 run: npm exec --no -- wasm-pack --version
                 working-directory: ${{ matrix.test }}
 
-            # The root suite builds Rust through example/typed-imports. The lock update fails for the
-            # Next examples, which keep the crate entry outside src/lib.rs, so the exact pin drives them.
+            # The lock update fails for the Next examples, which keep the crate entry outside
+            # src/lib.rs, so the exact pin drives them.
             -   name: Pin wasm-bindgen to ${{ matrix.version }}
                 shell: bash
                 env:
-                    TEST_DIR: ${{ matrix.test }}
                     VERSION: ${{ matrix.version }}
                 run: |
-                    crate="$TEST_DIR"
-                    if [ "$crate" = "." ]; then
-                        crate="example/typed-imports"
-                    fi
-                    sed -i -E "s/^wasm-bindgen = .*/wasm-bindgen = \"=$VERSION\"/" "$crate/Cargo.toml"
-                    grep -qx "wasm-bindgen = \"=$VERSION\"" "$crate/Cargo.toml"
+                    sed -i -E "s/^wasm-bindgen = .*/wasm-bindgen = \"=$VERSION\"/" "$CRATE/Cargo.toml"
+                    grep -qx "wasm-bindgen = \"=$VERSION\"" "$CRATE/Cargo.toml"
                     echo "Pinned requirement:"
-                    grep '^wasm-bindgen = ' "$crate/Cargo.toml"
-                    cargo update --manifest-path "$crate/Cargo.toml" --package wasm-bindgen --precise "$VERSION" \
+                    grep '^wasm-bindgen = ' "$CRATE/Cargo.toml"
+                    cargo update --manifest-path "$CRATE/Cargo.toml" --package wasm-bindgen --precise "$VERSION" \
                         || echo "The lock keeps its committed versions. Cargo cannot read this manifest here, and the loader resolves the exact requirement in its build folder."
 
             -   name: Build and test ${{ matrix.test }}
@@ -84,12 +81,6 @@ jobs:
             -   name: Discard the pinned manifest and lock
                 if: always()
                 shell: bash
-                env:
-                    TEST_DIR: ${{ matrix.test }}
                 run: |
-                    crate="$TEST_DIR"
-                    if [ "$crate" = "." ]; then
-                        crate="example/typed-imports"
-                    fi
-                    git checkout -- "$crate/Cargo.toml" "$crate/Cargo.lock"
-                    git diff --exit-code -- "$crate/Cargo.toml" "$crate/Cargo.lock"
+                    git checkout -- "$CRATE/Cargo.toml" "$CRATE/Cargo.lock"
+                    git diff --exit-code -- "$CRATE/Cargo.toml" "$CRATE/Cargo.lock"

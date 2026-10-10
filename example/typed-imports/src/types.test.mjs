@@ -10,8 +10,7 @@ const require = createRequire(import.meta.url);
 const webpack = require("webpack");
 const webpackConfig = require("../webpack.config");
 
-const here = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.join(here, "..");
+const ROOT = path.join(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SIDECAR = path.join(ROOT, "math.d.rs.ts");
 const DIST = path.join(ROOT, "dist", "bundle.js");
 const TSC = path.join(ROOT, "node_modules", "typescript", "bin", "tsc");

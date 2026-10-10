@@ -389,14 +389,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 import wasmModule from "../src/lib.rs";
 
 describe("Rust WebAssembly Module", () => {
-    let module;
-
-    beforeAll(async () => {
-        module = wasmModule;
-    });
-
     test("should greet correctly", () => {
-        const result = module.greet("Test User");
+        const result = wasmModule.greet("Test User");
         expect(result)
             .toContain("Hello, Test User!");
         expect(result)
@@ -404,14 +398,14 @@ describe("Rust WebAssembly Module", () => {
     });
 
     test("should calculate prime count correctly", () => {
-        const result = module.calculate_prime_count(10);
+        const result = wasmModule.calculate_prime_count(10);
         expect(result)
             .toBe(4); // Primes up to 10: 2, 3, 5, 7
     });
 
     test("should process data correctly", () => {
         const input = new Uint8Array([1, 2, 3]);
-        const result = module.process_data(input);
+        const result = wasmModule.process_data(input);
         expect(result)
             .toHaveLength(3);
         expect(Array.from(result))
@@ -420,7 +414,7 @@ describe("Rust WebAssembly Module", () => {
 
     test("should analyze text correctly", () => {
         const text = "Hello world test";
-        const result = module.analyze_text(text);
+        const result = wasmModule.analyze_text(text);
         expect(result)
             .toContain("Words: 3");
         expect(result)
@@ -428,7 +422,7 @@ describe("Rust WebAssembly Module", () => {
     });
 
     test("should perform heavy computation", () => {
-        const result = module.heavy_computation(1000);
+        const result = wasmModule.heavy_computation(1000);
         expect(typeof result)
             .toBe("number");
         expect(result)
@@ -437,7 +431,7 @@ describe("Rust WebAssembly Module", () => {
 
     test("should process numbers array", () => {
         const input = [1, 2, 3];
-        const result = module.process_numbers(input);
+        const result = wasmModule.process_numbers(input);
         expect(Array.from(result))
             .toEqual([4, 9, 16]); // f(x) = x² + 2x + 1
     });

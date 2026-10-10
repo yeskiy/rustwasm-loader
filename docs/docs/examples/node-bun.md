@@ -236,51 +236,51 @@ async function main() {
         console.log("Loading Rust WebAssembly module in Bun...");
 
         // Load the WASM module
-        if (typeof module !== "undefined") {
+        if (typeof wasmModule !== "undefined") {
             console.log("WebAssembly module loaded successfully!");
         }
 
         // Test basic functionality
         console.log("\nBasic Functions:");
-        const greeting = module.greet("Bun Developer");
+        const greeting = wasmModule.greet("Bun Developer");
         console.log(greeting);
 
         // Test mathematical operations
         console.log("\nMathematical Operations:");
-        console.log(`Fibonacci(15): ${module.fibonacci(15)}`);
-        console.log(`Factorial(10): ${module.factorial(10)}`);
-        console.log(`Is 17 prime? ${module.is_prime(17)}`);
-        console.log(`Is 18 prime? ${module.is_prime(18)}`);
+        console.log(`Fibonacci(15): ${wasmModule.fibonacci(15)}`);
+        console.log(`Factorial(10): ${wasmModule.factorial(10)}`);
+        console.log(`Is 17 prime? ${wasmModule.is_prime(17)}`);
+        console.log(`Is 18 prime? ${wasmModule.is_prime(18)}`);
 
         // Test array operations
         console.log("\nArray Operations:");
         const numbers = [3.14, -2.5, 7.8, -1.2, 9.9, 0.5];
         console.log("Original array:", numbers);
-        console.log("Sorted:", module.sort_numbers(numbers));
-        console.log("Positive only:", module.filter_positive(numbers));
-        console.log("Sum:", module.sum_array(numbers));
-        console.log("Multiplied by 2:", module.multiply_array(numbers, 2));
+        console.log("Sorted:", wasmModule.sort_numbers(numbers));
+        console.log("Positive only:", wasmModule.filter_positive(numbers));
+        console.log("Sum:", wasmModule.sum_array(numbers));
+        console.log("Multiplied by 2:", wasmModule.multiply_array(numbers, 2));
 
         // Test string operations
         console.log("\nString Operations:");
         const text = "Hello Bun and Rust!";
         console.log(`Original: "${text}"`);
-        console.log(`Reversed: "${module.reverse_string(text)}"`);
-        console.log(`Uppercase: "${module.to_uppercase(text)}"`);
-        console.log(`Word count: ${module.count_words(text)}`);
-        console.log(`Simple hash: ${module.simple_hash(text)}`);
+        console.log(`Reversed: "${wasmModule.reverse_string(text)}"`);
+        console.log(`Uppercase: "${wasmModule.to_uppercase(text)}"`);
+        console.log(`Word count: ${wasmModule.count_words(text)}`);
+        console.log(`Simple hash: ${wasmModule.simple_hash(text)}`);
 
         // Test palindrome detection
         console.log("\nPalindrome Detection:");
         const palindromes = ["racecar", "hello", "A man a plan a canal Panama", "bun"];
         palindromes.forEach(word => {
-            console.log(`"${word}" is palindrome: ${module.is_palindrome(word)}`);
+            console.log(`"${word}" is palindrome: ${wasmModule.is_palindrome(word)}`);
         });
 
         // Performance test
         console.log("\nPerformance Test:");
         const start = Bun.nanoseconds();
-        const pi = module.compute_pi(1000000);
+        const pi = wasmModule.compute_pi(1000000);
         const end = Bun.nanoseconds();
         const duration = (end - start) / 1000000; // Convert to milliseconds
 
@@ -311,17 +311,11 @@ if (import.meta.main) {
 ### 8. Create the test file
 
 ```javascript title="tests/wasm.test.js"
-import { beforeAll, test, expect } from "bun:test";
+import { test, expect } from "bun:test";
 import wasmModule from "../src/lib.rs";
 
-let module;
-
-beforeAll(() => {
-    module = wasmModule;
-});
-
 test("should greet correctly", () => {
-    const result = module.greet("Test User");
+    const result = wasmModule.greet("Test User");
     expect(result)
         .toContain("Hello, Test User!");
     expect(result)
@@ -329,87 +323,87 @@ test("should greet correctly", () => {
 });
 
 test("should calculate fibonacci correctly", () => {
-    expect(module.fibonacci(0))
+    expect(wasmModule.fibonacci(0))
         .toBe(0);
-    expect(module.fibonacci(1))
+    expect(wasmModule.fibonacci(1))
         .toBe(1);
-    expect(module.fibonacci(10))
+    expect(wasmModule.fibonacci(10))
         .toBe(55);
 });
 
 test("should calculate factorial correctly", () => {
-    expect(module.factorial(0))
+    expect(wasmModule.factorial(0))
         .toBe(1);
-    expect(module.factorial(5))
+    expect(wasmModule.factorial(5))
         .toBe(120);
-    expect(module.factorial(10))
+    expect(wasmModule.factorial(10))
         .toBe(3628800);
 });
 
 test("should sort numbers correctly", () => {
     const input = [3, 1, 4, 1, 5, 9, 2, 6];
     const expected = [1, 1, 2, 3, 4, 5, 6, 9];
-    expect(module.sort_numbers(input))
+    expect(wasmModule.sort_numbers(input))
         .toEqual(expected);
 });
 
 test("should filter positive numbers", () => {
     const input = [-2, -1, 0, 1, 2, 3];
     const expected = [1, 2, 3];
-    expect(module.filter_positive(input))
+    expect(wasmModule.filter_positive(input))
         .toEqual(expected);
 });
 
 test("should reverse string correctly", () => {
-    expect(module.reverse_string("hello"))
+    expect(wasmModule.reverse_string("hello"))
         .toBe("olleh");
-    expect(module.reverse_string("bun"))
+    expect(wasmModule.reverse_string("bun"))
         .toBe("nub");
 });
 
 test("should count words correctly", () => {
-    expect(module.count_words("hello world"))
+    expect(wasmModule.count_words("hello world"))
         .toBe(2);
-    expect(module.count_words("one two three four"))
+    expect(wasmModule.count_words("one two three four"))
         .toBe(4);
 });
 
 test("should detect prime numbers", () => {
-    expect(module.is_prime(2))
+    expect(wasmModule.is_prime(2))
         .toBe(true);
-    expect(module.is_prime(17))
+    expect(wasmModule.is_prime(17))
         .toBe(true);
-    expect(module.is_prime(4))
+    expect(wasmModule.is_prime(4))
         .toBe(false);
-    expect(module.is_prime(18))
+    expect(wasmModule.is_prime(18))
         .toBe(false);
 });
 
 test("should detect palindromes", () => {
-    expect(module.is_palindrome("racecar"))
+    expect(wasmModule.is_palindrome("racecar"))
         .toBe(true);
-    expect(module.is_palindrome("A man a plan a canal Panama"))
+    expect(wasmModule.is_palindrome("A man a plan a canal Panama"))
         .toBe(true);
-    expect(module.is_palindrome("hello"))
+    expect(wasmModule.is_palindrome("hello"))
         .toBe(false);
 });
 
 test("should compute pi approximation", () => {
-    const pi = module.compute_pi(100000);
+    const pi = wasmModule.compute_pi(100000);
     expect(pi)
         .toBeCloseTo(Math.PI, 3);
 });
 
 test("should sum array correctly", () => {
     const input = [1, 2, 3, 4, 5];
-    expect(module.sum_array(input))
+    expect(wasmModule.sum_array(input))
         .toBe(15);
 });
 
 test("should multiply array correctly", () => {
     const input = [1, 2, 3];
     const expected = [2, 4, 6];
-    expect(module.multiply_array(input, 2))
+    expect(wasmModule.multiply_array(input, 2))
         .toEqual(expected);
 });
 ```

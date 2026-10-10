@@ -13,11 +13,10 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 
 // The helper builds both keys; this reads the Turbopack rules it produced.
 const turbopackRules = rustWasmLoader.next({}, {}).turbopack.rules["*.rs"];
-const ruleFor = (conditionPredicate) => turbopackRules.find(conditionPredicate);
 
 describe("withRustWasm helper (turbopack.rules)", () => {
     test("server (non-browser) rule uses the loader with the node target", () => {
-        const rule = ruleFor(
+        const rule = turbopackRules.find(
             (r) =>
                 typeof r.condition === "object" &&
                 r.condition.not === "browser",
@@ -29,7 +28,7 @@ describe("withRustWasm helper (turbopack.rules)", () => {
     });
 
     test("client (browser) rule uses the loader with the web target", () => {
-        const rule = ruleFor((r) => r.condition === "browser");
+        const rule = turbopackRules.find((r) => r.condition === "browser");
         assert.equal(rule.as, "*.js");
         assert.match(rule.loaders[0].loader, /index\.js$/);
         assert.equal(rule.loaders[0].options.target, "web");

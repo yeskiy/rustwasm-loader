@@ -47,18 +47,13 @@ module.exports = {
         ],
     },
     resolve: {
-        extensions: [".js", ".ts"],
+        extensions: [".js"],
     },
     plugins: [
         new NodemonPlugin({
             script: path.resolve("./dist/bundle.js"),
             watch: [path.resolve("./dist")],
-            ignore: [
-                "*.js.map",
-                "./src/**/*.js",
-                "./src/**/*.ts",
-                "swagger.json",
-            ],
+            ignore: ["*.js.map"],
         }),
     ],
 
