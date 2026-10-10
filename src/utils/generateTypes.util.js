@@ -1,43 +1,29 @@
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const findNearestCargoBy = require("./findNearestCargo.util");
+const {
+    findNearestCargo,
+    writeCargoFiles,
+} = require("./findNearestCargo.util");
 const spawnWasmPack = require("./spawnWasmPack.util");
 const writeSidecar = require("./writeSidecar.util");
 const withBuildLock = require("./buildLock.util");
+const { logLevelSelector } = require("../pack");
+const { tempBuildFolder } = require("../shared-load.util");
 
-const constants = Object.freeze({
-    CARGO_TOML: "Cargo.toml",
-    CARGO_LOCK: "Cargo.lock",
-    OUT_NAME: "types",
-});
-
-function logLevelArgs(level) {
-    switch (level) {
-        case "quiet":
-            return ["--quiet"];
-        case "verbose":
-            return ["--verbose"];
-        default:
-            return ["--log-level", level];
-    }
-}
+const OUT_NAME = "types";
 
 // Build folder named after the source hash, so an unchanged `.rs` reuses the cache.
 // The `.types` suffix keeps the typed build apart from the normal build of the same source.
-function typedBuildFolder(resourcePath) {
-    const hash = crypto
-        .createHash("sha256")
-        .update(fs.readFileSync(resourcePath))
-        .digest("hex");
-    const { base } = path.parse(path.normalize(resourcePath));
-    const buildFolder = path.join(os.tmpdir(), `${base}.${hash}.types`);
-    if (!fs.existsSync(buildFolder)) {
-        fs.mkdirSync(buildFolder, { recursive: true });
-    }
-    return buildFolder;
-}
+const typedBuildFolder = (resourcePath) =>
+    tempBuildFolder(
+        resourcePath,
+        crypto
+            .createHash("sha256")
+            .update(fs.readFileSync(resourcePath))
+            .digest("hex"),
+        "types",
+    );
 
 // Builds a `.rs` source with typings and returns the wasm-bindgen `.d.ts` without a write
 // next to the source. The tsserver plugin uses it, and `generateTypes` adds the sidecar write.
@@ -49,38 +35,21 @@ async function buildTypedDts(resourcePath, options = {}) {
     const outDir = path.join(buildFolder, "pkg");
 
     return withBuildLock(buildFolder, async () => {
-        const cargoData = findNearestCargoBy(constants)(
-            dir,
-            baseFolder,
-            fileEntry,
+        writeCargoFiles(
             buildFolder,
+            findNearestCargo(dir, baseFolder, fileEntry, buildFolder),
         );
-        fs.writeFileSync(
-            path.join(buildFolder, constants.CARGO_TOML),
-            cargoData[constants.CARGO_TOML],
-            { encoding: "utf8" },
-        );
-        if (cargoData[constants.CARGO_LOCK]) {
-            fs.writeFileSync(
-                path.join(buildFolder, constants.CARGO_LOCK),
-                cargoData[constants.CARGO_LOCK],
-                { encoding: "utf8" },
-            );
-        }
 
         await spawnWasmPack({
             cwd: buildFolder,
             outDir,
-            outName: constants.OUT_NAME,
+            outName: OUT_NAME,
             typescript: true,
-            args: logLevelArgs(options.logLevel || "info"),
+            args: logLevelSelector(options.logLevel || "info"),
             extraArgs: ["--target", "web"],
         });
 
-        return fs.readFileSync(
-            path.join(outDir, `${constants.OUT_NAME}.d.ts`),
-            "utf8",
-        );
+        return fs.readFileSync(path.join(outDir, `${OUT_NAME}.d.ts`), "utf8");
     });
 }
 

@@ -1,5 +1,4 @@
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const loaderUtils = require("loader-utils");
 const schemaUtils = require("schema-utils");
@@ -9,12 +8,25 @@ const buildInputsHash = require("./utils/buildInputsHash.util");
 const edgeWasmPath = require("./utils/edgeCache.util");
 
 const { cargoManifestsFor, watchFilesFor } = buildInputsHash;
-const withBuildLock = require("./utils/buildLock.util");
+const {
+    sharedOptionProperties,
+    tempBuildFolder,
+    packWithImport,
+} = require("./shared-load.util");
 const bun = require("./bun");
 const esbuild = require("./esbuild");
 const rollup = require("./rollup");
 const vite = require("./vite");
 const next = require("./next");
+
+const constants = Object.seal({
+    supportedTargets: ["web", "node"],
+    electronTargets: {
+        "electron-main": "node",
+        "electron-preload": "node",
+        "electron-renderer": "web",
+    },
+});
 
 const optionsSchema = {
     type: "object",
@@ -51,20 +63,11 @@ const optionsSchema = {
         },
         target: {
             type: "string",
-            enum: ["web", "node"],
+            enum: constants.supportedTargets,
             description:
                 "Build target (`web` or `node`). Overrides webpack's `target` when set.",
         },
-        logLevel: {
-            type: "string",
-            description:
-                "Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)",
-        },
-        types: {
-            type: "boolean",
-            description:
-                "Also write the `<name>.d.rs.ts` sidecar next to each `.rs` source during the build (off by default)",
-        },
+        ...sharedOptionProperties,
         import: {
             description:
                 'Opt-in import-based wasm delivery. `strategy: "module"` ships the wasm as a pre-compiled WebAssembly.Module via a `?module` import, the only form the Next.js Edge runtime can instantiate.',
@@ -82,35 +85,15 @@ const optionsSchema = {
     additionalProperties: false,
 };
 
-const constants = Object.seal({
-    supportedTargets: ["web", "node"],
-    electronTargets: {
-        "electron-main": "node",
-        "electron-preload": "node",
-        "electron-renderer": "web",
-    },
-});
-
 // The binding the Edge glue starts from. The preamble imports the compiled module into it with `?module`.
 const moduleBinding = "__wbg_wasm_module";
 
-// The module delivery emits no asset. A no-op is necessary, because the Turbopack loader context has no `emitFile`.
-const noopEmit = () => undefined;
-
-// Builds, copies the wasm to a project cache file named by the input digest, then rebuilds the glue around a
-// `?module` import, the only wasm form the Edge runtime accepts. The lock covers both passes and the copy.
-async function buildModuleDelivery(basePackParams, inputsHash, addDependency) {
-    return withBuildLock(basePackParams.buildFolder, async () => {
-        await pack(basePackParams, noopEmit);
+// Copies the wasm to a project cache file named by the input digest, then rebuilds the glue around a `?module`
+// import, the only wasm form the Edge runtime accepts. It emits no asset: Turbopack has no `emitFile`.
+const buildModuleDelivery = (basePackParams, inputsHash, addDependency) =>
+    packWithImport(basePackParams, (bytes) => {
         const cachePath = edgeWasmPath(basePackParams.baseFolder, inputsHash);
         fs.mkdirSync(path.dirname(cachePath), { recursive: true });
-        const bytes = fs.readFileSync(
-            path.join(
-                basePackParams.buildFolder,
-                "pkg",
-                basePackParams.wasmName,
-            ),
-        );
         // A file with this digest name already holds these bytes. Do not rewrite it, because
         // a new timestamp on a declared dependency starts another rebuild in watch mode.
         if (
@@ -126,22 +109,14 @@ async function buildModuleDelivery(basePackParams, inputsHash, addDependency) {
             .relative(path.dirname(basePackParams.resourcePath), cachePath)
             .split(path.sep)
             .join("/");
-        const wasmSpecifier = relativeWasm.startsWith(".")
-            ? `${relativeWasm}?module`
-            : `./${relativeWasm}?module`;
-        return pack(
-            {
-                ...basePackParams,
-                import: {
-                    strategy: "module",
-                    urlExpression: moduleBinding,
-                    preamble: `import ${moduleBinding} from ${JSON.stringify(wasmSpecifier)};`,
-                },
-            },
-            noopEmit,
-        );
+        return {
+            strategy: "module",
+            urlExpression: moduleBinding,
+            preamble: `import ${moduleBinding} from ${JSON.stringify(
+                `${relativeWasm.startsWith(".") ? "" : "./"}${relativeWasm}?module`,
+            )};`,
+        };
     });
-}
 
 // Webpack and Rspack supply `_compilation`. Turbopack does not, so the plain
 // loader-context fields are the fallback.
@@ -179,20 +154,12 @@ const dependencyDeclarer = (loaderContext) =>
 
 // One dir for each target and delivery, because Next builds the server, client, and Edge
 // passes of one `.rs` at the same time, and Turbopack workers do not share the build queue.
-function buildFolderFor(resourcePath, inputsHash, target, moduleDelivery) {
-    const buildFolder = path.join(
-        os.tmpdir(),
-        `${path.parse(path.normalize(resourcePath)).base}.${inputsHash}.${
-            moduleDelivery ? `${target}.module` : target
-        }`,
+const buildFolderFor = (resourcePath, inputsHash, target, moduleDelivery) =>
+    tempBuildFolder(
+        resourcePath,
+        inputsHash,
+        moduleDelivery ? `${target}.module` : target,
     );
-
-    if (!fs.existsSync(buildFolder)) {
-        fs.mkdirSync(buildFolder, { recursive: true });
-    }
-
-    return buildFolder;
-}
 
 // `[hash]` is the crate-input digest. Turbopack cannot run `interpolateName`, so it
 // gets a digest name, which only the inline path uses internally.

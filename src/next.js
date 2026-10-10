@@ -1,6 +1,7 @@
 const { merge } = require("lodash");
 const schemaUtils = require("schema-utils");
 const {
+    EDGE_PASS_OPTIONS,
     detectNextVersion,
     turbopackSection,
 } = require("./utils/nextTurbopack.util");
@@ -42,7 +43,7 @@ const rsLoaderRule = (options) => ({
 const rsRule = (isServer, nextRuntime, shared) =>
     rsLoaderRule(
         nextRuntime === "edge"
-            ? { target: "web", import: { strategy: "module" }, ...shared }
+            ? { ...EDGE_PASS_OPTIONS, ...shared }
             : {
                   target: isServer ? "node" : "web",
                   node: { bundle: true },
@@ -110,7 +111,7 @@ function withRustWasm(nextConfig = {}, pluginOptions = {}) {
     const callable = async () => {
         await prebuildEdgeWasm(
             process.cwd(),
-            { target: "web", import: { strategy: "module" }, ...shared },
+            { ...EDGE_PASS_OPTIONS, ...shared },
             Array.isArray(options.prebuild) ? options.prebuild : undefined,
         );
         return config;

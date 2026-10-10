@@ -1,6 +1,12 @@
 const { merge } = require("lodash");
 const schemaUtils = require("schema-utils");
-const { buildRsModule, rsWatchFiles } = require("./shared-load.util");
+const {
+    buildRsModule,
+    rsWatchFiles,
+    sharedOptionProperties,
+    cleanId,
+    isRustModule,
+} = require("./shared-load.util");
 
 const optionsSchema = {
     type: "object",
@@ -11,24 +17,10 @@ const optionsSchema = {
             type: "array",
             items: { type: "string" },
         },
-        logLevel: {
-            type: "string",
-            description:
-                "Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)",
-        },
-        types: {
-            type: "boolean",
-            description:
-                "Also write the `<name>.d.rs.ts` sidecar next to each `.rs` source during the build (off by default)",
-        },
+        ...sharedOptionProperties,
     },
     additionalProperties: false,
 };
-
-// Vite and Rollup can add a `?query` or `#hash` to the module id. Strip it before the extension test.
-const isRustModule = (id) => id.split("?")[0].split("#")[0].endsWith(".rs");
-
-const cleanId = (id) => id.split("?")[0].split("#")[0];
 
 // SSR consumers that bundle everything into one file (web workers, edge) cannot
 // fetch a sibling asset, so they always take the inline path.
@@ -75,7 +67,6 @@ function vite(config) {
             }
 
             const isSSR = resolveIsSSR(this, loadOptions);
-            const target = isSSR ? "node" : "web";
 
             const shouldEmit =
                 !isSSR &&
@@ -85,7 +76,7 @@ function vite(config) {
             const baseParams = {
                 resourcePath: cleanId(id),
                 baseFolder: process.cwd(),
-                target,
+                target: isSSR ? "node" : "web",
                 logLevel: options.logLevel,
                 emitTypes: options.types === true,
             };

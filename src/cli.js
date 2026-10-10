@@ -18,19 +18,24 @@ function pluralize(count) {
 
 async function collectFiles(patterns) {
     const globs = patterns.length ? patterns : [DEFAULT_PATTERN];
-    const matches = await globs.reduce(
-        (chain, pattern) =>
-            chain.then(async (acc) => {
-                for await (const match of fsp.glob(pattern, {
-                    exclude: isExcluded,
-                })) {
-                    if (match.endsWith(".rs")) acc.add(path.resolve(match));
-                }
-                return acc;
-            }),
-        Promise.resolve(new Set()),
-    );
-    return [...matches];
+    return [
+        ...(await globs.reduce(
+            (chain, pattern) =>
+                chain.then(async (acc) =>
+                    (
+                        await Array.fromAsync(
+                            fsp.glob(pattern, { exclude: isExcluded }),
+                        )
+                    )
+                        .filter((match) => match.endsWith(".rs"))
+                        .reduce(
+                            (set, match) => set.add(path.resolve(match)),
+                            acc,
+                        ),
+                ),
+            Promise.resolve(new Set()),
+        )),
+    ];
 }
 
 async function regenerate(file) {

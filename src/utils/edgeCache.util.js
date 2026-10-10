@@ -7,7 +7,3 @@ const CACHE_SEGMENTS = ["node_modules", ".cache", "rust-wasmpack-loader"];
 module.exports = function edgeWasmPath(baseFolder, inputsHash) {
     return path.join(baseFolder, ...CACHE_SEGMENTS, `${inputsHash}.wasm`);
 };
-
-module.exports.edgeCacheDir = function edgeCacheDir(baseFolder) {
-    return path.join(baseFolder, ...CACHE_SEGMENTS);
-};

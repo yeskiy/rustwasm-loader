@@ -5,26 +5,26 @@ const fs = require("node:fs");
 const TOP_LEVEL_KEY_SINCE = [15, 3];
 const RULE_LIST_SINCE = [16, 0];
 
+// The loader options of the Edge pass, shared with the webpack config and the Edge pre-build.
+const EDGE_PASS_OPTIONS = { target: "web", import: { strategy: "module" } };
+
 // The Next.js passes in rule-list order. `edge-light` is first to win over `{ not: "browser" }`.
 // It uses the `module` delivery, because the Edge runtime cannot instantiate wasm from bytes.
 const PASSES = [
     {
         mapKey: "edge-light",
         condition: "edge-light",
-        target: "web",
-        options: { import: { strategy: "module" } },
+        options: EDGE_PASS_OPTIONS,
     },
     {
         mapKey: "browser",
         condition: "browser",
-        target: "web",
-        options: { web: { asyncLoading: false } },
+        options: { target: "web", web: { asyncLoading: false } },
     },
     {
         mapKey: "default",
         condition: { not: "browser" },
-        target: "node",
-        options: { node: { bundle: true } },
+        options: { target: "node", node: { bundle: true } },
     },
 ];
 
@@ -37,7 +37,7 @@ const ruleBody = (pass, loader, shared) => ({
     loaders: [
         {
             loader,
-            options: { target: pass.target, ...pass.options, ...shared },
+            options: { ...pass.options, ...shared },
         },
     ],
     as: "*.js",
@@ -101,4 +101,4 @@ function turbopackSection(nextConfig, loader, shared, version) {
     };
 }
 
-module.exports = { detectNextVersion, turbopackSection };
+module.exports = { EDGE_PASS_OPTIONS, detectNextVersion, turbopackSection };

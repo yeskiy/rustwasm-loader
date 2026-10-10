@@ -1,6 +1,9 @@
 const path = require("node:path");
 const fs = require("node:fs");
-const findNearestCargoBy = require("./utils/findNearestCargo.util");
+const {
+    findNearestCargo,
+    writeCargoFiles,
+} = require("./utils/findNearestCargo.util");
 const spawnWasmPack = require("./utils/spawnWasmPack.util");
 const writeSidecar = require("./utils/writeSidecar.util");
 const stripGlueFooter = require("./utils/stripGlueFooter.util");
@@ -11,12 +14,7 @@ const buildWasmUrl = require("./utils/buildWasmUrl.util");
 const withBuildLock = require("./utils/buildLock.util");
 const { recordSources } = require("./utils/rustSources.util");
 
-const constants = Object.seal({
-    toArrayBuffer: `function toArrayBuffer(buffer) {\n    const ab = new ArrayBuffer(buffer.length);\n    const view = new Uint8Array(ab);\n    for (var i = 0; i < buffer.length; ++i) {\n        view[i] = buffer[i];\n    }\n    return ab;\n}`,
-    supportedTargets: ["web", "node"],
-    CARGO_LOCK: "Cargo.lock",
-    CARGO_TOML: "Cargo.toml",
-});
+const toArrayBuffer = `function toArrayBuffer(buffer) {\n    const ab = new ArrayBuffer(buffer.length);\n    const view = new Uint8Array(ab);\n    for (var i = 0; i < buffer.length; ++i) {\n        view[i] = buffer[i];\n    }\n    return ab;\n}`;
 
 function logLevelSelector(level) {
     switch (level) {
@@ -32,6 +30,27 @@ function logLevelSelector(level) {
 // The default-export body: the named Rust exports over the remaining `wasm` bindings.
 // Every delivery uses it, so the module shape is the same.
 const exportGenExpr = `{...exportedFunctions, ...Object.entries(wasm).filter(([item]) => Object.keys(exportedFunctions).indexOf(item) === -1).reduce((acc, item) => ({...acc,[item[0]]: item[1]}), {})}`;
+
+// The default-export body of the deliveries that start the wasm with the wasm-bindgen `__wbg_init`.
+const asyncExportExpr = `new Promise(async (resolve, reject)=> { try{await __wbg_init(); resolve(${exportGenExpr})}catch(e){reject(e)}})`;
+
+const INIT_LINE = /async function __wbg_init\(module_or_path\) {/;
+const URL_LINE = /import.meta.url/;
+
+// Keeps the glue lines before the wasm-bindgen bootstrap.
+const cutAtInit = (lines) =>
+    lines.slice(
+        0,
+        lines.findIndex((line) => INIT_LINE.test(line)),
+    );
+
+// Returns the glue lines with the first `import.meta.url` line replaced by the given wasm location.
+const replaceUrlLine = (lines, expression) => {
+    const urlIndex = lines.findIndex((line) => URL_LINE.test(line));
+    return lines.map((line, index) =>
+        index === urlIndex ? `        module_or_path = ${expression};` : line,
+    );
+};
 
 // Selects the wasm delivery from the target and its options. The loader uses
 // `import` only when `params.import` is set: the host bundler then supplies the wasm.
@@ -49,50 +68,28 @@ function selectDelivery(params) {
 const assetEmittingDeliveries = new Set(["fetch", "fsread"]);
 
 async function doPack(params, emitFile) {
-    // Get  dir from resources
-    const { dir } = path.parse(path.normalize(params.resourcePath));
-
-    // Set wasm build folder
     const wasmBuildSource = path.join(params.buildFolder, "pkg");
-
+    const wasmPath = path.join(wasmBuildSource, params.wasmName);
+    const wasmStem = params.wasmName.replace(".wasm", "");
     const delivery = selectDelivery(params);
 
-    // Find the nearest Cargo.toml file
-    const cargoData = findNearestCargoBy(constants)(
-        dir,
-        path.normalize(params.baseFolder),
-        path.normalize(params.resourcePath),
+    writeCargoFiles(
         params.buildFolder,
+        findNearestCargo(
+            path.parse(path.normalize(params.resourcePath)).dir,
+            path.normalize(params.baseFolder),
+            path.normalize(params.resourcePath),
+            params.buildFolder,
+        ),
     );
 
-    // Write files to build dir
-    fs.writeFileSync(
-        path.join(params.buildFolder, constants.CARGO_TOML),
-        cargoData[constants.CARGO_TOML],
-        {
-            encoding: "utf8",
-        },
-    );
-
-    // If got .lock file, also create it in the build folder
-    if (cargoData[constants.CARGO_LOCK]) {
-        fs.writeFileSync(
-            path.join(params.buildFolder, constants.CARGO_LOCK),
-            cargoData[constants.CARGO_LOCK],
-            {
-                encoding: "utf8",
-            },
-        );
-    }
-
-    // build .rs file to .wasm bin
     await spawnWasmPack({
         cwd: params.buildFolder,
         outDir: wasmBuildSource,
         outName: params.wasmName,
         // Keep the wasm-bindgen `.d.ts` only when the typings sidecar is requested.
         typescript: !!params.emitTypes,
-        args: [...logLevelSelector(params.logLevel)],
+        args: logLevelSelector(params.logLevel),
         // use `web` target because the generated file of this target modifies easily
         extraArgs: ["--target", "web"],
     });
@@ -100,100 +97,58 @@ async function doPack(params, emitFile) {
     // Record the module files cargo compiled, so the next digest and watch list cover them.
     recordSources(params.resourcePath, params.buildFolder);
 
-    // Add generated .wasm binary to webpack files
     if (assetEmittingDeliveries.has(delivery)) {
-        emitFile(
-            params.wasmName,
-            fs.readFileSync(path.join(wasmBuildSource, params.wasmName)),
-        );
+        emitFile(params.wasmName, fs.readFileSync(wasmPath));
     }
+
+    // The wasm bytes as an `ArrayBuffer` expression for the inline deliveries.
+    const inlineBytes = () =>
+        `toArrayBuffer(${JSON.stringify(fs.readFileSync(wasmPath).toJSON().data)})`;
 
     // update generated .js script by wasm to remove bad imports and resolve native rs functions without __wasm ident
     const patch = {
         node: (generatedJs) => {
             const lines = generatedJs.split("\n");
-            return `${[
-                ...lines.slice(
-                    0,
-                    lines.findIndex(
-                        (item) =>
-                            !!item.match(
-                                /async function __wbg_init\(module_or_path\) {/g,
-                            )?.length,
-                    ),
-                ),
+            return [
+                ...cutAtInit(lines),
                 `const __wbg_init = {}`,
                 `initSync(${
                     params.node.bundle
-                        ? `{module:toArrayBuffer(${JSON.stringify(
-                              fs
-                                  .readFileSync(
-                                      path.join(
-                                          wasmBuildSource,
-                                          params.wasmName,
-                                      ),
-                                  )
-                                  .toJSON().data,
-                          )})}`
+                        ? `{module:${inlineBytes()}}`
                         : `{module:require('fs').readFileSync(require('path').join(__dirname, '${params.wasmName}'))}`
                 });`,
                 buildExportedBindings(lines),
-                ...(params.node.bundle ? [constants.toArrayBuffer] : []),
-                `export default {...exportedFunctions, ...Object.entries(wasm).filter(([item]) => Object.keys(exportedFunctions).indexOf(item) === -1).reduce((acc, item) => ({...acc,[item[0]]: item[1]}), {})}`,
-            ].join("\n")}`;
+                ...(params.node.bundle ? [toArrayBuffer] : []),
+                `export default ${exportGenExpr}`,
+            ].join("\n");
         },
 
         web: (generatedJs) => {
-            const lines = generatedJs.replaceAll("_bg.wasm", "").split("\n");
-            const badImportIndex = lines.findIndex(
-                (item) => !!item.match(/import.meta.url/g)?.length,
-            );
-            lines[badImportIndex] = `        module_or_path = ${JSON.stringify(
-                buildWasmUrl(
-                    params.web.wasmPathModifier,
-                    params.web.publicPath,
-                    params.wasmName,
+            const lines = replaceUrlLine(
+                generatedJs.replaceAll("_bg.wasm", "").split("\n"),
+                JSON.stringify(
+                    buildWasmUrl(
+                        params.web.wasmPathModifier,
+                        params.web.publicPath,
+                        params.wasmName,
+                    ),
                 ),
-            )};`;
+            );
             // Async loading keeps the wasm-bindgen `__wbg_init` and drops only the export footer.
             // Inline mode cuts at the bootstrap, because it gives the bytes to `initSync`.
-            const keptLines = params.web.asyncLoading
-                ? stripGlueFooter(lines)
-                : lines.slice(
-                      0,
-                      lines.findIndex(
-                          (item) =>
-                              !!item.match(
-                                  /async function __wbg_init\(module_or_path\) {/g,
-                              )?.length,
-                      ),
-                  );
-            const exportGen = `{...exportedFunctions, ...Object.entries(wasm).filter(([item]) => Object.keys(exportedFunctions).indexOf(item) === -1).reduce((acc, item) => ({...acc,[item[0]]: item[1]}), {})}`;
-            return `${[
-                ...keptLines,
-                constants.toArrayBuffer,
+            return [
+                ...(params.web.asyncLoading
+                    ? stripGlueFooter(lines)
+                    : cutAtInit(lines)),
+                toArrayBuffer,
                 ...(params.web.asyncLoading
                     ? []
-                    : [
-                          `const __wbg_init = {}`,
-                          `initSync(toArrayBuffer(${JSON.stringify(
-                              fs
-                                  .readFileSync(
-                                      path.join(
-                                          wasmBuildSource,
-                                          params.wasmName,
-                                      ),
-                                  )
-                                  .toJSON().data,
-                          )}));`,
-                      ]),
+                    : [`const __wbg_init = {}`, `initSync(${inlineBytes()});`]),
                 buildExportedBindings(lines),
                 `export default ${
-                    params.web.asyncLoading
-                        ? `new Promise(async (resolve, reject)=> { try{await __wbg_init(); resolve(${exportGen})}catch(e){reject(e)}})`
-                        : exportGen
+                    params.web.asyncLoading ? asyncExportExpr : exportGenExpr
                 }`,
-            ].join("\n")}`;
+            ].join("\n");
         },
 
         // The host bundler resolves the .wasm. `urlExpression` is its URL for fetch and fs,
@@ -206,19 +161,13 @@ async function doPack(params, emitFile) {
             // The sync strategies strip the bootstrap and start the wasm in place.
             const body =
                 strategy === "fetch"
-                    ? (() => {
-                          const badImportIndex = lines.findIndex(
-                              (item) =>
-                                  !!item.match(/import.meta.url/g)?.length,
-                          );
-                          lines[badImportIndex] =
-                              `        module_or_path = ${urlExpression};`;
-                          return [
-                              ...stripGlueFooter(lines),
-                              exportedFunctions,
-                              `export default new Promise(async (resolve, reject)=> { try{await __wbg_init(); resolve(${exportGenExpr})}catch(e){reject(e)}})`,
-                          ];
-                      })()
+                    ? [
+                          ...stripGlueFooter(
+                              replaceUrlLine(lines, urlExpression),
+                          ),
+                          exportedFunctions,
+                          `export default ${asyncExportExpr}`,
+                      ]
                     : (() => {
                           // `module` skips initSync: a module from another realm fails its instanceof check,
                           // and the byte compile it then tries is forbidden on the Next Edge runtime.
@@ -234,36 +183,20 @@ async function doPack(params, emitFile) {
                                         `initSync({module:require('fs').readFileSync(${urlExpression})});`,
                                     ];
                           return [
-                              ...lines.slice(
-                                  0,
-                                  lines.findIndex(
-                                      (item) =>
-                                          !!item.match(
-                                              /async function __wbg_init\(module_or_path\) {/g,
-                                          )?.length,
-                                  ),
-                              ),
+                              ...cutAtInit(lines),
                               ...initBlock,
                               exportedFunctions,
                               `export default ${exportGenExpr}`,
                           ];
                       })();
-            return `${[...(preamble ? [preamble] : []), ...body].join("\n")}`;
+            return [...(preamble ? [preamble] : []), ...body].join("\n");
         },
     };
 
     // A build that keeps the typings puts a `.d.ts` banner on the glue. Cut it,
     // because the loader returns the glue alone.
     const generatedJs = stripTypesBanner(
-        fs.readFileSync(
-            path.join(
-                wasmBuildSource,
-                `${params.wasmName.replace(".wasm", "")}.js`,
-            ),
-            {
-                encoding: "utf8",
-            },
-        ),
+        fs.readFileSync(path.join(wasmBuildSource, `${wasmStem}.js`), "utf8"),
     );
 
     // With `emitTypes`, write the wasm-bindgen `<name>.d.ts` as the sidecar next to the source.
@@ -272,10 +205,7 @@ async function doPack(params, emitFile) {
         writeSidecar(
             params.resourcePath,
             fs.readFileSync(
-                path.join(
-                    wasmBuildSource,
-                    `${params.wasmName.replace(".wasm", "")}.d.ts`,
-                ),
+                path.join(wasmBuildSource, `${wasmStem}.d.ts`),
                 "utf8",
             ),
         );
@@ -288,14 +218,15 @@ async function doPack(params, emitFile) {
 
 // Parallel cargo builds fail on a cold shared cache, so this queue runs one build at a time.
 // The lock also covers other processes, for example Turbopack workers.
-let buildQueue = Promise.resolve();
+const buildQueue = { tail: Promise.resolve() };
 module.exports = function pack(params, emitFile) {
     const guarded = () =>
         withBuildLock(params.buildFolder, () => doPack(params, emitFile));
-    const run = buildQueue.then(guarded, guarded);
-    buildQueue = run.then(
+    const run = buildQueue.tail.then(guarded, guarded);
+    buildQueue.tail = run.then(
         () => undefined,
         () => undefined,
     );
     return run;
 };
+module.exports.logLevelSelector = logLevelSelector;

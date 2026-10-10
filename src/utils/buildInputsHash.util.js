@@ -1,13 +1,12 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const { locateCargoBy } = require("./findNearestCargo.util");
+const {
+    CARGO_TOML,
+    CARGO_LOCK,
+    locateCargo,
+} = require("./findNearestCargo.util");
 const { recordedSources } = require("./rustSources.util");
-
-const constants = Object.freeze({
-    CARGO_LOCK: "Cargo.lock",
-    CARGO_TOML: "Cargo.toml",
-});
 
 // Stands in for a missing `Cargo.lock`. The value is constant, because a value that changes
 // on every build would force a full Rust rebuild of each crate without a lock.
@@ -19,8 +18,6 @@ const FIELD_SEPARATOR = "\u0000";
 
 // Stands in for a recorded module file that does not exist.
 const MISSING_FILE = "\u0000<missing>";
-
-const locateCargo = locateCargoBy(constants);
 
 const readOr = (folder, name, fallback) =>
     fs.existsSync(path.join(folder, name))
@@ -54,9 +51,9 @@ module.exports = function buildInputsHash(source, resourcePath, baseFolder) {
                 .createHash("sha256")
                 .update(source)
                 .update(FIELD_SEPARATOR)
-                .update(readOr(folder, constants.CARGO_TOML, ""))
+                .update(readOr(folder, CARGO_TOML, ""))
                 .update(FIELD_SEPARATOR)
-                .update(readOr(folder, constants.CARGO_LOCK, NO_LOCK)),
+                .update(readOr(folder, CARGO_LOCK, NO_LOCK)),
         )
         .digest("hex");
 };
@@ -68,7 +65,7 @@ module.exports.cargoManifestsFor = function cargoManifestsFor(
     baseFolder,
 ) {
     const folder = folderOf(resourcePath, baseFolder);
-    return [constants.CARGO_TOML, constants.CARGO_LOCK]
+    return [CARGO_TOML, CARGO_LOCK]
         .map((name) => path.join(folder, name))
         .filter((file) => fs.existsSync(file));
 };

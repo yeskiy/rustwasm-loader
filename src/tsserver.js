@@ -4,6 +4,7 @@ const path = require("node:path");
 const fs = require("node:fs");
 const crypto = require("node:crypto");
 const dtsToSidecar = require("./utils/dtsTransform.util");
+const { sidecarPathOf } = require("./utils/writeSidecar.util");
 const { buildTypedDts } = require("./utils/generateTypes.util");
 
 // The loose types of a `.rs` module before its build completes, or after the build fails.
@@ -21,8 +22,7 @@ const hashOf = (text) => crypto.createHash("sha256").update(text).digest("hex");
 // Reads the `<stem>.d.rs.ts` sidecar of an earlier build, so that a cold editor
 // shows the precise types before its own build completes.
 function diskSidecarOf(resourcePath) {
-    const { dir, name } = path.parse(resourcePath);
-    const sidecar = path.join(dir, `${name}.d.rs.ts`);
+    const sidecar = sidecarPathOf(resourcePath);
     return fs.existsSync(sidecar)
         ? fs.readFileSync(sidecar, "utf8")
         : undefined;

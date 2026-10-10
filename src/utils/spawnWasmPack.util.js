@@ -11,24 +11,19 @@ module.exports = function spawnWasmPack({
     args = [],
     extraArgs = [],
 }) {
-    const bin = findWasmPack();
-
-    const allArgs = [
-        ...args,
-        "build",
-        "--out-dir",
-        outDir,
-        "--out-name",
-        outName,
-        ...(isDebug ? ["--dev"] : []),
-        ...(typescript ? [] : ["--no-typescript"]),
-        ...extraArgs,
-    ];
-
-    const options = {
-        cwd,
-        stdio: "inherit",
-    };
-
-    return runProcess(bin, allArgs, options);
+    return runProcess(
+        findWasmPack(),
+        [
+            ...args,
+            "build",
+            "--out-dir",
+            outDir,
+            "--out-name",
+            outName,
+            ...(isDebug ? ["--dev"] : []),
+            ...(typescript ? [] : ["--no-typescript"]),
+            ...extraArgs,
+        ],
+        { cwd, stdio: "inherit" },
+    );
 };

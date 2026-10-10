@@ -64,7 +64,7 @@ module.exports = function dtsToSidecar(wasmBindgenDts) {
         (node) => isPublicFunction(node) || isPublicClass(node),
     );
 
-    return `${[
+    return [
         ...kept
             .filter(isPublicClass)
             .map(
@@ -78,5 +78,5 @@ module.exports = function dtsToSidecar(wasmBindgenDts) {
         "};",
         "export default _default;",
         "",
-    ].join("\n")}`;
+    ].join("\n");
 };
