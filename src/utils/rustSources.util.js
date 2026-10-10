@@ -55,7 +55,7 @@ function parseDepInfo(text) {
               .trim()
               .split(/(?<!\\)\s+/)
               .filter(Boolean)
-              .map((token) => token.replaceAll("\\ ", " "));
+              .map((token) => token.replaceAll(String.raw`\ `, " "));
 }
 
 const homeOf = (variable, folder) =>
@@ -93,7 +93,7 @@ const localSources = (files, targetFolder) =>
                         ].some((root) => isInside(root, file)),
                 ),
         ),
-    ].sort();
+    ].sort((a, b) => Number(a > b) - Number(a < b));
 
 const recordPathFor = (resourcePath) =>
     path.join(
