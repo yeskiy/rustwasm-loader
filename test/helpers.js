@@ -6,15 +6,17 @@ const findWasmPack = require("../src/utils/findWasmPack.util");
 
 const CRATE = path.join(__dirname, "..", "example", "typed-imports");
 
-// The skip reason for tests that run a real wasm-pack build.
-const skip = (() => {
+const hasWasmPack = (() => {
     try {
         findWasmPack();
-        return false;
+        return true;
     } catch {
-        return "wasm-pack is not installed";
+        return false;
     }
 })();
+
+// The skip reason for tests that run a real wasm-pack build.
+const skip = hasWasmPack ? false : "wasm-pack is not installed";
 
 const tempDir = (prefix) =>
     fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), prefix)));
