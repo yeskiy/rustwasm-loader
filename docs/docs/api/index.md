@@ -107,9 +107,18 @@ plugin(loader.bun({
 }));
 ```
 
+## Crate manifests and workspaces
+
+The loader builds each crate in a temporary build folder. It writes a copy of the crate `Cargo.toml` into that folder and does not change your manifest. A manifest that works with `cargo build` also works with the loader:
+
+- Relative paths, for example `helper = { path = ".." }` or `path = "../shared"`, in the dependency tables (also under `target.<cfg>`), in `[patch]` and `[replace]`, in `package.build`, and in the `[[bin]]`, `[[example]]`, `[[test]]`, and `[[bench]]` targets.
+- A crate that is a member of a cargo workspace. The copy gets the `<field>.workspace = true` fields and the `{ workspace = true }` dependencies from the workspace root. It also gets the `[patch]`, `[replace]`, and `[profile]` sections and the `resolver` of the root.
+
+A workspace member builds against the `Cargo.lock` of the workspace root. Other crates build against the `Cargo.lock` next to their `Cargo.toml`.
+
 ## Watch mode and rebuilds
 
-After each build, the loader records the Rust files that cargo compiled for the entry. These files are the module files (`mod util;` reads `util.rs`) and the sources of local path dependencies. The loader declares these files and the `Cargo.toml` and `Cargo.lock` of the crate to the bundler. For this reason, an edit of any of these files starts a new build in watch mode and in the dev server. This applies to webpack, Rspack, Next.js (webpack and Turbopack), Rollup, Vite, and esbuild. Files from the cargo registry and the Rust toolchain are not watched.
+After each build, the loader records the Rust files that cargo compiled for the entry. These files are the module files (`mod util;` reads `util.rs`) and the sources of local path dependencies. The loader declares these files to the bundler, together with the cargo files of the build: the crate `Cargo.toml`, the `Cargo.lock` that the build uses, the `Cargo.toml` of the workspace root, and the `Cargo.toml` of each local path dependency. For this reason, an edit of any of these files starts a new build in watch mode and in the dev server. This applies to webpack, Rspack, Next.js (webpack and Turbopack), Rollup, Vite, and esbuild. Files from the cargo registry and the Rust toolchain are not watched.
 
 The build folder and the emitted `.wasm` name come from a digest of the entry, the manifests, and the recorded files. An edit of a module file therefore also gives a new `.wasm` name.
 

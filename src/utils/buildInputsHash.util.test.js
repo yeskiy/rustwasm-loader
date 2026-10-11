@@ -218,3 +218,57 @@ test("lists the recorded module files and the manifests to watch", () => {
         cleanup([dir]);
     }
 });
+
+// A workspace whose member `app` owns `math.rs` and depends on the sibling `shared`.
+function workspace() {
+    const dir = tempDir("rs-inputs-ws-");
+    const files = {
+        "Cargo.toml":
+            '[workspace]\nmembers = ["app", "shared"]\n\n[workspace.dependencies]\nwasm-bindgen = "0.2.95"\n',
+        "Cargo.lock": lockWith("0.2.95"),
+        "app/Cargo.toml":
+            '[package]\nname = "app"\nversion = "0.1.0"\n\n[lib]\npath = "math.rs"\n\n[dependencies]\nwasm-bindgen.workspace = true\nshared = { path = "../shared" }\n',
+        "app/math.rs": SOURCE,
+        "shared/Cargo.toml": '[package]\nname = "shared"\nversion = "0.1.0"\n',
+    };
+    fs.mkdirSync(path.join(dir, "app"));
+    fs.mkdirSync(path.join(dir, "shared"));
+    Object.entries(files).forEach(([file, content]) =>
+        fs.writeFileSync(path.join(dir, file), content),
+    );
+    return dir;
+}
+
+const memberHash = (dir) =>
+    buildInputsHash(SOURCE, path.join(dir, "app", "math.rs"), dir);
+
+test("changes the digest when a workspace or path dependency file changes", () => {
+    const dir = workspace();
+    try {
+        ["Cargo.toml", "Cargo.lock", path.join("shared", "Cargo.toml")].reduce(
+            (previous, file) => {
+                fs.appendFileSync(path.join(dir, file), "\n# edit\n");
+                const next = memberHash(dir);
+                assert.notEqual(next, previous, file);
+                return next;
+            },
+            memberHash(dir),
+        );
+    } finally {
+        cleanup([dir]);
+    }
+});
+
+test("lists the workspace and path dependency manifests to watch", () => {
+    const dir = workspace();
+    try {
+        assert.deepEqual(watchFilesFor(path.join(dir, "app", "math.rs"), dir), [
+            path.join(dir, "app", "Cargo.toml"),
+            path.join(dir, "Cargo.lock"),
+            path.join(dir, "Cargo.toml"),
+            path.join(dir, "shared", "Cargo.toml"),
+        ]);
+    } finally {
+        cleanup([dir]);
+    }
+});

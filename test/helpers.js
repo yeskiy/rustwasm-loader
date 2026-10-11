@@ -41,11 +41,14 @@ function isolatedCrate(prefix, { marker = true, buildFolder = false } = {}) {
     return dir;
 }
 
-// Removes a temp crate and the shared cargo target folder of its manifest.
+// Removes a temp crate and the shared cargo target folder of the manifest in `manifestFolder`.
 // A set CARGO_TARGET_DIR belongs to the user, so its folder stays.
-function removeCrate(dir) {
+function removeCrate(dir, manifestFolder = dir) {
     if (!process.env.CARGO_TARGET_DIR) {
-        fs.rmSync(sharedTargetFolderOf(dir), { recursive: true, force: true });
+        fs.rmSync(sharedTargetFolderOf(manifestFolder), {
+            recursive: true,
+            force: true,
+        });
     }
     fs.rmSync(dir, { recursive: true, force: true });
 }

@@ -2,7 +2,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { parse: tomlToJson } = require("toml");
+const { parse: tomlToJson } = require("smol-toml");
 const { CARGO_TOML, locateCargo } = require("./findNearestCargo.util");
 
 const WASM_TARGET = "wasm32-unknown-unknown";

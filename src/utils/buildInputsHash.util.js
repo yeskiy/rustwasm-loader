@@ -2,6 +2,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const { CARGO_TOML, CARGO_LOCK } = require("./findNearestCargo.util");
+const { cargoInputsFor } = require("./cargoManifest.util");
 const { recordedSources } = require("./rustSources.util");
 const { manifestFolderFor } = require("./cargoTarget.util");
 
@@ -21,10 +22,14 @@ const readOr = (folder, name, fallback) =>
         ? fs.readFileSync(path.join(folder, name), "utf8")
         : fallback;
 
-// Hashes the `.rs` entry, its recorded module files, and the crate `Cargo.toml` and `Cargo.lock`.
-// The digest names the build folder and the wasm, because a dependency change alters both.
+const readFile = (file) =>
+    fs.existsSync(file) ? fs.readFileSync(file) : MISSING_FILE;
+
+// Hashes the `.rs` entry, its recorded module files, the crate `Cargo.toml`, the lock it builds
+// against, and the manifests of its workspace root and local path dependencies.
 module.exports = function buildInputsHash(source, resourcePath, baseFolder) {
     const folder = manifestFolderFor(resourcePath, baseFolder);
+    const { lock, manifests } = cargoInputsFor(folder);
     return recordedSources(resourcePath)
         .reduce(
             (hash, file) =>
@@ -32,32 +37,33 @@ module.exports = function buildInputsHash(source, resourcePath, baseFolder) {
                     .update(FIELD_SEPARATOR)
                     .update(file)
                     .update(FIELD_SEPARATOR)
-                    .update(
-                        fs.existsSync(file)
-                            ? fs.readFileSync(file)
-                            : MISSING_FILE,
-                    ),
-            crypto
-                .createHash("sha256")
-                .update(source)
-                .update(FIELD_SEPARATOR)
-                .update(readOr(folder, CARGO_TOML, ""))
-                .update(FIELD_SEPARATOR)
-                .update(readOr(folder, CARGO_LOCK, NO_LOCK)),
+                    .update(readFile(file)),
+            manifests.reduce(
+                (hash, file) =>
+                    hash.update(FIELD_SEPARATOR).update(readFile(file)),
+                crypto
+                    .createHash("sha256")
+                    .update(source)
+                    .update(FIELD_SEPARATOR)
+                    .update(readOr(folder, CARGO_TOML, ""))
+                    .update(FIELD_SEPARATOR)
+                    .update(readOr(path.dirname(lock), CARGO_LOCK, NO_LOCK)),
+            ),
         )
         .digest("hex");
 };
 
-// Lists the cargo manifests that the digest reads. A loader declares them as build dependencies,
+// Lists the cargo files that the digest reads. A loader declares them as build dependencies,
 // so that a dependency change rebuilds the wasm.
 module.exports.cargoManifestsFor = function cargoManifestsFor(
     resourcePath,
     baseFolder,
 ) {
     const folder = manifestFolderFor(resourcePath, baseFolder);
-    return [CARGO_TOML, CARGO_LOCK]
-        .map((name) => path.join(folder, name))
-        .filter((file) => fs.existsSync(file));
+    const { lock, manifests } = cargoInputsFor(folder);
+    return [path.join(folder, CARGO_TOML), lock, ...manifests].filter((file) =>
+        fs.existsSync(file),
+    );
 };
 
 // Lists the files to watch for an entry: the module files of the last build and the manifests.

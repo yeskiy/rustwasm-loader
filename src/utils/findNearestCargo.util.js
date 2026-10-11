@@ -1,22 +1,24 @@
 const path = require("node:path");
-const jsonToToml = require("json2toml");
 const fs = require("node:fs");
-const { parse: tomlToJson } = require("toml");
-
-const CARGO_TOML = "Cargo.toml";
-const CARGO_LOCK = "Cargo.lock";
+const { stringify } = require("smol-toml");
+const {
+    CARGO_TOML,
+    CARGO_LOCK,
+    readManifest,
+    resolveManifest,
+} = require("./cargoManifest.util");
 
 // Walks up to the first manifest that owns the `.rs` entry. It is separate from findNearestCargo,
 // because the build folder name is a hash of the manifest, so the hash reads it first.
 function locateCargo(currentFolder, endFolder, fileEntry) {
-    const tomlFile = path.join(currentFolder, CARGO_TOML);
-    if (fs.existsSync(tomlFile)) {
-        const data = tomlToJson(fs.readFileSync(tomlFile, "utf8"));
-        // A manifest whose `lib.path` names another file belongs to another crate.
+    if (fs.existsSync(path.join(currentFolder, CARGO_TOML))) {
+        const data = readManifest(currentFolder);
+        // A manifest without a package, or whose `lib.path` names another file, owns no entry here.
         if (
-            !data.lib.path ||
-            path.normalize(path.resolve(currentFolder, data.lib.path)) ===
-                fileEntry
+            data.package &&
+            (!data.lib?.path ||
+                path.normalize(path.resolve(currentFolder, data.lib.path)) ===
+                    fileEntry)
         ) {
             return { folder: currentFolder, data };
         }
@@ -50,19 +52,18 @@ function libPath(fileEntry, buildFolder) {
         : fileEntry;
 }
 
+// The `Cargo.toml` for the build folder, and the `Cargo.lock` of the crate or of its workspace.
 function findNearestCargo(currentFolder, endFolder, fileEntry, buildFolder) {
-    const { folder, data } = locateCargo(currentFolder, endFolder, fileEntry);
-    const lockPath = path.join(folder, CARGO_LOCK);
+    const { folder } = locateCargo(currentFolder, endFolder, fileEntry);
+    const { manifest, rootFolder } = resolveManifest(folder);
+    const lock = path.join(rootFolder ?? folder, CARGO_LOCK);
     return {
-        [CARGO_TOML]: jsonToToml(
-            {
-                ...data,
-                lib: { ...data.lib, path: libPath(fileEntry, buildFolder) },
-            },
-            { indent: 2, newlineAfterSection: true },
-        ),
-        ...(fs.existsSync(lockPath)
-            ? { [CARGO_LOCK]: fs.readFileSync(lockPath, "utf-8") }
+        [CARGO_TOML]: stringify({
+            ...manifest,
+            lib: { ...manifest.lib, path: libPath(fileEntry, buildFolder) },
+        }),
+        ...(fs.existsSync(lock)
+            ? { [CARGO_LOCK]: fs.readFileSync(lock, "utf-8") }
             : {}),
     };
 }
