@@ -55,6 +55,16 @@ jobs:
             -   name: Verify wasm-pack installation
                 run: npm exec --no -- wasm-pack --version
                 working-directory: ${{ matrix.test }}
+            # sudo gives the cache root to another user. TMPDIR keeps the real /tmp root untouched.
+            -   name: Test a cache root of another user
+                if: matrix.test == '.' && startsWith(matrix.os, 'ubuntu-')
+                shell: bash
+                run: |
+                    scratch="$(mktemp -d)"
+                    sudo install -d -o nobody -g nogroup -m 0700 "${scratch:?}/rust-wasmpack-loader"
+                    TMPDIR="$scratch" RWL_FOREIGN_CACHE_ROOT="${scratch:?}/rust-wasmpack-loader" \
+                        node --test src/foreignCacheRoot.test.js
+                    sudo rm -rf "${scratch:?}"
             -   name: Run tests
                 run: npm test
                 working-directory: ${{ matrix.test }}
