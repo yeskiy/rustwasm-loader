@@ -1,11 +1,11 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const buildInputsHash = require("./buildInputsHash.util");
 
 const { recordPathFor } = require("./rustSources.util");
+const { tempDir } = require("../../test/helpers");
 
 const { cargoManifestsFor, watchFilesFor } = buildInputsHash;
 
@@ -39,9 +39,7 @@ const lockWith = (version) =>
 // A throwaway crate on disk. The hash reads the manifest pair off the file
 // system, so the fixtures are files rather than strings.
 function crate({ manifest = MANIFEST, lock = lockWith("0.2.95") } = {}) {
-    const dir = fs.realpathSync(
-        fs.mkdtempSync(path.join(os.tmpdir(), "rs-inputs-")),
-    );
+    const dir = tempDir("rs-inputs-");
     fs.writeFileSync(path.join(dir, "math.rs"), SOURCE);
     fs.writeFileSync(path.join(dir, "Cargo.toml"), manifest);
     if (lock !== null) {
@@ -137,9 +135,7 @@ test("reads the manifest pair of the crate that owns a nested entry", () => {
 });
 
 test("throws when no manifest owns the entry", () => {
-    const dir = fs.realpathSync(
-        fs.mkdtempSync(path.join(os.tmpdir(), "rs-inputs-bare-")),
-    );
+    const dir = tempDir("rs-inputs-bare-");
     try {
         fs.writeFileSync(path.join(dir, "math.rs"), SOURCE);
         assert.throws(() => hashOf(dir), {

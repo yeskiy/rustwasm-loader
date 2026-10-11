@@ -32,7 +32,7 @@ module.exports = {
         ],
     },
     resolve: {
-        extensions: [".js", ".ts"],
+        extensions: [".js"],
     },
     experiments: {
         syncWebAssembly: true,

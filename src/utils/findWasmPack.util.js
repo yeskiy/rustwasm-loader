@@ -3,10 +3,8 @@ const fs = require("node:fs");
 const os = require("node:os");
 const which = require("which");
 
-// Older wasm-pack npm releases delivered the executable through the
-// `binary-install` package. A new install does not contain that package. For
-// this reason, a resolution failure only means that this candidate does not
-// apply, and the search continues with the next one.
+// Some wasm-pack npm releases ship the executable through `binary-install`.
+// When that package does not resolve, the search continues with the next candidate.
 function binaryInstallCandidate() {
     try {
         return path.join(

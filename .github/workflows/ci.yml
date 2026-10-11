@@ -36,10 +36,8 @@ jobs:
             -   name: Verify Rust installation
                 run: rustc --version
 
-            # Lifecycle scripts stay off. Two dependencies deliver their binary
-            # through such a script, so the lines below run those installers by
-            # hand. wasm-pack sits at the repository root, and every example
-            # reads it through the linked loader. Only example/node-bun has bun.
+            # Lifecycle scripts stay off, so the lines below run the wasm-pack and bun
+            # installers by hand. Every example reads wasm-pack from the repository root.
             -   name: Install dependencies
                 shell: bash
                 env:

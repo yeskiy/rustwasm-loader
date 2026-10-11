@@ -316,11 +316,11 @@ import module from "./lib.rs";
 
 async function main() {
     try {
-        console.log("🦀 Loading Rust WebAssembly module...");
+        console.log("Loading Rust WebAssembly module...");
 
         // Load the WASM module
         if (typeof module !== "undefined") {
-            console.log("✅ WebAssembly module loaded successfully!");
+            console.log("WebAssembly module loaded successfully!");
         }
 
         // Test basic functionality
@@ -328,19 +328,19 @@ async function main() {
         console.log(greeting);
 
         // Test mathematical operations
-        console.log("\n📊 Mathematical Operations:");
+        console.log("\nMathematical Operations:");
         const primeCount = module.calculate_prime_count(1000);
         console.log(`Prime numbers up to 1000: ${primeCount}`);
 
         // Test data processing
-        console.log("\n🔄 Data Processing:");
+        console.log("\nData Processing:");
         const inputData = new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
         const processedData = module.process_data(inputData);
         console.log("Input data:", Array.from(inputData));
         console.log("Processed data:", Array.from(processedData));
 
         // Test text analysis
-        console.log("\n📝 Text Analysis:");
+        console.log("\nText Analysis:");
         const sampleText = `
             Rust and WebAssembly provide excellent performance
             for computationally intensive tasks in Node.js applications.
@@ -350,7 +350,7 @@ async function main() {
         console.log(analysis);
 
         // Test performance
-        console.log("\n⚡ Performance Test:");
+        console.log("\nPerformance Test:");
         const start = process.hrtime.bigint();
         const result = module.heavy_computation(1000000);
         const end = process.hrtime.bigint();
@@ -360,16 +360,16 @@ async function main() {
         console.log(`Execution time: ${duration.toFixed(2)}ms`);
 
         // Test array processing
-        console.log("\n🔢 Array Processing:");
+        console.log("\nArray Processing:");
         const numbers = [1, 2, 3, 4, 5];
         const processed = module.process_numbers(numbers);
         console.log("Input numbers:", numbers);
         console.log("Processed (f(x) = x² + 2x + 1):", Array.from(processed));
 
-        console.log("\n🎉 All tests completed successfully!");
+        console.log("\nAll tests completed successfully!");
 
     } catch (error) {
-        console.error("❌ Error loading or executing WASM module:", error);
+        console.error("Error loading or executing WASM module:", error);
         process.exit(1);
     }
 }
@@ -389,14 +389,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 import wasmModule from "../src/lib.rs";
 
 describe("Rust WebAssembly Module", () => {
-    let module;
-
-    beforeAll(async () => {
-        module = wasmModule;
-    });
-
     test("should greet correctly", () => {
-        const result = module.greet("Test User");
+        const result = wasmModule.greet("Test User");
         expect(result)
             .toContain("Hello, Test User!");
         expect(result)
@@ -404,14 +398,14 @@ describe("Rust WebAssembly Module", () => {
     });
 
     test("should calculate prime count correctly", () => {
-        const result = module.calculate_prime_count(10);
+        const result = wasmModule.calculate_prime_count(10);
         expect(result)
             .toBe(4); // Primes up to 10: 2, 3, 5, 7
     });
 
     test("should process data correctly", () => {
         const input = new Uint8Array([1, 2, 3]);
-        const result = module.process_data(input);
+        const result = wasmModule.process_data(input);
         expect(result)
             .toHaveLength(3);
         expect(Array.from(result))
@@ -420,7 +414,7 @@ describe("Rust WebAssembly Module", () => {
 
     test("should analyze text correctly", () => {
         const text = "Hello world test";
-        const result = module.analyze_text(text);
+        const result = wasmModule.analyze_text(text);
         expect(result)
             .toContain("Words: 3");
         expect(result)
@@ -428,7 +422,7 @@ describe("Rust WebAssembly Module", () => {
     });
 
     test("should perform heavy computation", () => {
-        const result = module.heavy_computation(1000);
+        const result = wasmModule.heavy_computation(1000);
         expect(typeof result)
             .toBe("number");
         expect(result)
@@ -437,7 +431,7 @@ describe("Rust WebAssembly Module", () => {
 
     test("should process numbers array", () => {
         const input = [1, 2, 3];
-        const result = module.process_numbers(input);
+        const result = wasmModule.process_numbers(input);
         expect(Array.from(result))
             .toEqual([4, 9, 16]); // f(x) = x² + 2x + 1
     });

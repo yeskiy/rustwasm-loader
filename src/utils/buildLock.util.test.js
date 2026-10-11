@@ -13,15 +13,22 @@ const delay = (ms) =>
         setTimeout(resolve, ms);
     });
 
+// A task that logs its start and end into `order`.
+const task = (order, name) => async () => {
+    order.push(`${name}:start`);
+    await delay(30);
+    order.push(`${name}:end`);
+};
+
 test("holds the lock directory for the duration of the task", async () => {
     const dir = scratch();
     try {
         const buildFolder = path.join(dir, "build");
         const lockDir = `${buildFolder}.lock`;
-        const seenInside = await withBuildLock(buildFolder, () =>
-            fs.existsSync(lockDir),
+        assert.equal(
+            await withBuildLock(buildFolder, () => fs.existsSync(lockDir)),
+            true,
         );
-        assert.equal(seenInside, true);
         assert.equal(fs.existsSync(lockDir), false);
     } finally {
         fs.rmSync(dir, { recursive: true, force: true });
@@ -49,14 +56,9 @@ test("serializes overlapping tasks on the same build folder", async () => {
     try {
         const buildFolder = path.join(dir, "build");
         const order = [];
-        const task = (name) => async () => {
-            order.push(`${name}:start`);
-            await delay(30);
-            order.push(`${name}:end`);
-        };
         await Promise.all([
-            withBuildLock(buildFolder, task("a")),
-            withBuildLock(buildFolder, task("b")),
+            withBuildLock(buildFolder, task(order, "a")),
+            withBuildLock(buildFolder, task(order, "b")),
         ]);
         assert.equal(order.length, 4);
         assert.equal(order[1], order[0].replace(":start", ":end"));
@@ -70,14 +72,9 @@ test("runs tasks on different build folders concurrently", async () => {
     const dir = scratch();
     try {
         const order = [];
-        const task = (name) => async () => {
-            order.push(`${name}:start`);
-            await delay(30);
-            order.push(`${name}:end`);
-        };
         await Promise.all([
-            withBuildLock(path.join(dir, "one"), task("a")),
-            withBuildLock(path.join(dir, "two"), task("b")),
+            withBuildLock(path.join(dir, "one"), task(order, "a")),
+            withBuildLock(path.join(dir, "two"), task(order, "b")),
         ]);
         assert.deepEqual(order, ["a:start", "b:start", "a:end", "b:end"]);
     } finally {
@@ -90,11 +87,13 @@ test("re-enters the same lock without deadlocking and releases once", async () =
     try {
         const buildFolder = path.join(dir, "build");
         const lockDir = `${buildFolder}.lock`;
-        const stillLocked = await withBuildLock(buildFolder, async () => {
-            await withBuildLock(buildFolder, () => delay(10));
-            return fs.existsSync(lockDir);
-        });
-        assert.equal(stillLocked, true);
+        assert.equal(
+            await withBuildLock(buildFolder, async () => {
+                await withBuildLock(buildFolder, () => delay(10));
+                return fs.existsSync(lockDir);
+            }),
+            true,
+        );
         assert.equal(fs.existsSync(lockDir), false);
     } finally {
         fs.rmSync(dir, { recursive: true, force: true });
@@ -130,8 +129,7 @@ test("takes over a lock whose owner process is gone", async () => {
             path.join(lockDir, "owner.json"),
             JSON.stringify({ pid: 0x7ffffffe, at: Date.now() }),
         );
-        const ran = await withBuildLock(buildFolder, () => true);
-        assert.equal(ran, true);
+        assert.equal(await withBuildLock(buildFolder, () => true), true);
         assert.equal(fs.existsSync(lockDir), false);
     } finally {
         fs.rmSync(dir, { recursive: true, force: true });
@@ -148,7 +146,7 @@ test("waits for a lock held by another process", async () => {
                 "-e",
                 `const withBuildLock = require(${JSON.stringify(path.join(__dirname, "buildLock.util.js"))});
                  withBuildLock(${JSON.stringify(buildFolder)}, async () => {
-                     process.send ? process.send("held") : console.log("held");
+                     console.log("held");
                      await new Promise((r) => setTimeout(r, 700));
                  });`,
             ],

@@ -9,10 +9,8 @@ const CONTENT_TYPES = {
     ".html": "text/html",
 };
 
-// The `web` delivery with `asyncLoading` fetches the emitted `.wasm` from an
-// absolute URL path. This server gives that path an origin, as a browser does.
-// One bundle sets `output.publicPath` to `/assets/`, so the output folder also
-// answers under that prefix, as a deployment behind that public path does.
+// Serves the output folder for the `asyncLoading` wasm fetch, at the root and
+// under `/assets/`, the public path of one bundle.
 module.exports = async function startAssetServer() {
     const server = http.createServer((request, response) => {
         const target = path.join(

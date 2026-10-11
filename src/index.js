@@ -1,5 +1,4 @@
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const loaderUtils = require("loader-utils");
 const schemaUtils = require("schema-utils");
@@ -9,12 +8,25 @@ const buildInputsHash = require("./utils/buildInputsHash.util");
 const edgeWasmPath = require("./utils/edgeCache.util");
 
 const { cargoManifestsFor, watchFilesFor } = buildInputsHash;
-const withBuildLock = require("./utils/buildLock.util");
+const {
+    sharedOptionProperties,
+    tempBuildFolder,
+    packWithImport,
+} = require("./shared-load.util");
 const bun = require("./bun");
 const esbuild = require("./esbuild");
 const rollup = require("./rollup");
 const vite = require("./vite");
 const next = require("./next");
+
+const constants = Object.seal({
+    supportedTargets: ["web", "node"],
+    electronTargets: {
+        "electron-main": "node",
+        "electron-preload": "node",
+        "electron-renderer": "web",
+    },
+});
 
 const optionsSchema = {
     type: "object",
@@ -51,20 +63,11 @@ const optionsSchema = {
         },
         target: {
             type: "string",
-            enum: ["web", "node"],
+            enum: constants.supportedTargets,
             description:
                 "Build target (`web` or `node`). Overrides webpack's `target` when set.",
         },
-        logLevel: {
-            type: "string",
-            description:
-                "Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)",
-        },
-        types: {
-            type: "boolean",
-            description:
-                "Also write the `<name>.d.rs.ts` sidecar next to each `.rs` source during the build (off by default)",
-        },
+        ...sharedOptionProperties,
         import: {
             description:
                 'Opt-in import-based wasm delivery. `strategy: "module"` ships the wasm as a pre-compiled WebAssembly.Module via a `?module` import, the only form the Next.js Edge runtime can instantiate.',
@@ -82,60 +85,17 @@ const optionsSchema = {
     additionalProperties: false,
 };
 
-const constants = Object.seal({
-    supportedTargets: ["web", "node"],
-    electronTargets: {
-        "electron-main": "node",
-        "electron-preload": "node",
-        "electron-renderer": "web",
-    },
-});
-
-// The import binding the generated Edge glue inits from; the preamble pulls the
-// pre-compiled module into it via `?module`.
+// The binding the Edge glue starts from. The preamble imports the compiled module into it with `?module`.
 const moduleBinding = "__wbg_wasm_module";
 
-// Neither delivery this loader emits through pack (inline first pass, then
-// import) calls back, so a no-op keeps the module path independent of
-// `this.emitFile`, which Turbopack's loader context omits.
-const noopEmit = () => undefined;
-
-/**
- * Edge delivery: the wasm reaches the Edge bundle as a pre-compiled
- * WebAssembly.Module through a `?module` import, the only form the Edge runtime
- * can instantiate. Build once so the bytes land in the temp pkg dir, copy them to
- * a project-local cache path both bundlers can resolve, then regenerate the glue
- * around an `import <binding> from "<cache>?module"` line. The second pass is a
- * wasm-pack cache hit on the same content-addressed dir, so Rust never recompiles.
- * The build-folder lock spans both passes and the copy between them. No other
- * process can rewrite the pkg dir while the bytes are read out of it.
- *
- * The build-input digest names the cache file, so a crate whose dependencies
- * changed reaches the bundler under a specifier of its own. A bundler that
- * caches the compiled module against the specifier then compiles the current
- * wasm rather than serving the module of the dependency set before it, which no
- * longer matches the glue.
- * @param {import("./pack").Options} basePackParams
- * @param {string} inputsHash the crate-input digest that names the cache file
- * @param {(file: string) => void} addDependency declares a build dependency, or does nothing on a host without a loader context
- * @returns {Promise<string>}
- */
-async function buildModuleDelivery(basePackParams, inputsHash, addDependency) {
-    return withBuildLock(basePackParams.buildFolder, async () => {
-        await pack(basePackParams, noopEmit);
+// Copies the wasm to a project cache file named by the input digest, then rebuilds the glue around a `?module`
+// import, the only wasm form the Edge runtime accepts. It emits no asset: Turbopack has no `emitFile`.
+const buildModuleDelivery = (basePackParams, inputsHash, addDependency) =>
+    packWithImport(basePackParams, (bytes) => {
         const cachePath = edgeWasmPath(basePackParams.baseFolder, inputsHash);
         fs.mkdirSync(path.dirname(cachePath), { recursive: true });
-        const bytes = fs.readFileSync(
-            path.join(
-                basePackParams.buildFolder,
-                "pkg",
-                basePackParams.wasmName,
-            ),
-        );
-        // The name carries the input digest, so a file already here holds this
-        // build's bytes. Rewriting it would only move its timestamp, and the
-        // loader declares it below, which turns a moved timestamp into another
-        // rebuild in watch mode.
+        // A file with this digest name already holds these bytes. Do not rewrite it, because
+        // a new timestamp on a declared dependency starts another rebuild in watch mode.
         if (
             !fs.existsSync(cachePath) ||
             !fs.readFileSync(cachePath).equals(bytes)
@@ -143,40 +103,23 @@ async function buildModuleDelivery(basePackParams, inputsHash, addDependency) {
             fs.writeFileSync(cachePath, bytes);
         }
         addDependency(cachePath);
-        // Reference the cache file relatively to the `.rs` resource. Turbopack
-        // only applies its native `.wasm?module` transform to in-tree relative
-        // specifiers (an absolute path is treated as an external native module
-        // and fails to load). Webpack resolves the relative specifier against
-        // the resource too.
+        // Turbopack applies its `.wasm?module` transform only to a relative specifier.
+        // It treats an absolute path as an external native module, which does not load.
         const relativeWasm = path
             .relative(path.dirname(basePackParams.resourcePath), cachePath)
             .split(path.sep)
             .join("/");
-        const wasmSpecifier = relativeWasm.startsWith(".")
-            ? `${relativeWasm}?module`
-            : `./${relativeWasm}?module`;
-        return pack(
-            {
-                ...basePackParams,
-                import: {
-                    strategy: "module",
-                    urlExpression: moduleBinding,
-                    preamble: `import ${moduleBinding} from ${JSON.stringify(wasmSpecifier)};`,
-                },
-            },
-            noopEmit,
-        );
+        return {
+            strategy: "module",
+            urlExpression: moduleBinding,
+            preamble: `import ${moduleBinding} from ${JSON.stringify(
+                `${relativeWasm.startsWith(".") ? "" : "./"}${relativeWasm}?module`,
+            )};`,
+        };
     });
-}
 
-/**
- * Reads the values the loader takes from its host. Webpack and Rspack expose
- * `_compilation`, and Turbopack's core loader API does not. When it is present the
- * values are the webpack ones. When it is absent the plain loader-context
- * fields keep the inline path running.
- * @param {object} loaderContext the loader `this`
- * @returns {{fileNameStruct: string, baseFolder: string, resourcePath: string}}
- */
+// Webpack and Rspack supply `_compilation`. Turbopack does not, so the plain
+// loader-context fields are the fallback.
 const loaderParams = (loaderContext) => ({
     fileNameStruct:
         loaderContext._compilation?.outputOptions?.webassemblyModuleFilename ||
@@ -188,17 +131,8 @@ const loaderParams = (loaderContext) => ({
     resourcePath: loaderContext.resourcePath,
 });
 
-/**
- * Picks the build strategy. The loader option wins over the host's own target.
- *
- * Electron's webpack targets map onto the two strategies we already have: the
- * main and preload processes are Node, the renderer is a browser. Both build
- * with inlined bytes. webpack normalizes versioned targets (for example
- * `electron20-main`) down to these three strings before the loader sees them.
- * @param {string|undefined} optionTarget the `target` loader option
- * @param {string|undefined} contextTarget the target the host declares
- * @returns {string} `web` or `node`
- */
+// The loader option overrides the host target. Webpack reduces a versioned Electron
+// target, for example `electron20-main`, to one of the `electronTargets` keys.
 function resolveTarget(optionTarget, contextTarget) {
     const requested = optionTarget ?? contextTarget;
     const target = constants.electronTargets[requested] ?? requested;
@@ -212,60 +146,23 @@ function resolveTarget(optionTarget, contextTarget) {
     return target;
 }
 
-/**
- * Declares a build dependency on a host that has a loader context, and does
- * nothing on a host that has not. Only the webpack-style hosts supply the call.
- * The Bun, esbuild, Rollup and Vite paths have no loader context.
- * @param {object} loaderContext the loader `this`
- * @returns {(file: string) => void}
- */
+// The Bun, esbuild, Rollup, and Vite paths have no `addDependency`, so they get a no-op.
 const dependencyDeclarer = (loaderContext) =>
     typeof loaderContext.addDependency === "function"
         ? (file) => loaderContext.addDependency(file)
         : () => undefined;
 
-/**
- * Makes the per-source, per-target temp build dir and returns it. Keying on the
- * target as well as the build inputs keeps concurrent builds of the same `.rs`
- * for different environments (Next runs the server and client passes in
- * parallel) in separate directories, so their wasm-pack runs never collide. The
- * `module` delivery shares the `web` target with the browser build but runs in
- * its own Turbopack worker, where the in-process build queue cannot serialize
- * it, so it gets a distinct dir too.
- * @param {string} resourcePath absolute path of the `.rs` file
- * @param {string} inputsHash the crate-input digest
- * @param {string} target `web` or `node`
- * @param {boolean} moduleDelivery true for the Edge `module` delivery
- * @returns {string} absolute path of the build dir
- */
-function buildFolderFor(resourcePath, inputsHash, target, moduleDelivery) {
-    const buildFolder = path.join(
-        os.tmpdir(),
-        `${path.parse(path.normalize(resourcePath)).base}.${inputsHash}.${
-            moduleDelivery ? `${target}.module` : target
-        }`,
+// One dir for each target and delivery, because Next builds the server, client, and Edge
+// passes of one `.rs` at the same time, and Turbopack workers do not share the build queue.
+const buildFolderFor = (resourcePath, inputsHash, target, moduleDelivery) =>
+    tempBuildFolder(
+        resourcePath,
+        inputsHash,
+        moduleDelivery ? `${target}.module` : target,
     );
 
-    if (!fs.existsSync(buildFolder)) {
-        fs.mkdirSync(buildFolder, { recursive: true });
-    }
-
-    return buildFolder;
-}
-
-/**
- * Names the wasm file. Webpack and Rspack feed it through `interpolateName`.
- * Under Turbopack the loader context is thinner, so when interpolation cannot
- * run we derive a content-hashed name directly. The name is internal scratch
- * for the inline path and never surfaces, so the exact shape does not matter.
- * A host that has a compilation gets the interpolation error itself.
- * The `[hash]` comes from the crate-input digest, so an edit of a module file
- * or a manifest also gives a new name.
- * @param {object} loaderContext the loader `this`
- * @param {string} fileNameStruct the name template
- * @param {string} inputsHash the crate-input digest
- * @returns {string}
- */
+// `[hash]` is the crate-input digest. Turbopack cannot run `interpolateName`, so it
+// gets a digest name, which only the inline path uses internally.
 function resolveWasmName(loaderContext, fileNameStruct, inputsHash) {
     try {
         return loaderUtils.interpolateName(loaderContext, fileNameStruct, {
@@ -279,17 +176,8 @@ function resolveWasmName(loaderContext, fileNameStruct, inputsHash) {
     }
 }
 
-/**
- * Resolves the public path for the one web delivery that fetches the emitted
- * asset at runtime. Every other delivery slices it off, so it stays empty and
- * we avoid dereferencing compilation internals. The `web.publicPath` option is
- * the documented opt-out.
- * @param {object} loaderContext the loader `this`
- * @param {object} webOptions the `web` loader options
- * @param {string} target `web` or `node`
- * @param {string} wasmName the emitted asset name
- * @returns {string}
- */
+// Only the async web delivery fetches the asset at runtime and reads the public path.
+// Every other delivery gets an empty string and does not read compilation internals.
 function resolvePublicPath(loaderContext, webOptions, target, wasmName) {
     if (
         target !== "web" ||
@@ -320,7 +208,6 @@ function resolvePublicPath(loaderContext, webOptions, target, wasmName) {
 }
 
 async function rustWasmLoader(source) {
-    // this loader is async
     const callback = this.async();
 
     const params = loaderParams(this);
@@ -348,11 +235,8 @@ async function rustWasmLoader(source) {
         const target = resolveTarget(options.target, this.target);
         const moduleDelivery = options.import?.strategy === "module";
 
-        // The generated module is a function of the `.rs` source and of the
-        // cargo manifests beside it, so the manifests are build dependencies.
-        // Without them a bundler reuses the module it cached against an
-        // unchanged source and never rebuilds the wasm after a dependency
-        // change.
+        // The output also depends on the cargo manifests. Declare them, so that a
+        // dependency change rebuilds a cached module whose source did not change.
         const addDependency = dependencyDeclarer(this);
         cargoManifestsFor(params.resourcePath, params.baseFolder).forEach(
             addDependency,

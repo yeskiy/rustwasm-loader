@@ -3,15 +3,13 @@ const path = require("node:path");
 
 const OWNER_FILE = "owner.json";
 const POLL_MS = 100;
-// The holder restamps its owner file on this interval. A waiter that sees no
-// stamp for STALE_MS takes the lock over, which bounds the wait when the owner
-// pid died and the operating system gave the number to an unrelated process.
+// The holder restamps its owner file every HEARTBEAT_MS. A waiter takes over a lock with no stamp
+// for STALE_MS, because the pid of a dead owner can belong to an unrelated process.
 const HEARTBEAT_MS = 1000;
 const STALE_MS = 5 * 60 * 1000;
 
-// Lock directories this process already owns, each with its heartbeat timer. The
-// two-pass import delivery wraps the passes it makes, so a nested acquisition
-// reuses the outer lock. Without that it would wait on itself.
+// Lock directories that this process owns, with their heartbeat timers. A nested acquisition
+// from the two-pass import delivery reuses the outer lock, so that it does not wait on itself.
 const owned = new Map();
 
 const delay = (ms) =>
@@ -76,23 +74,8 @@ const acquire = async (lockDir) => {
     await acquire(lockDir);
 };
 
-/**
- * Runs `task` while this process holds an exclusive lock on `buildFolder`.
- *
- * wasm-pack owns the whole build directory. It deletes `pkg/package.json` early
- * in a build and reads the same file back at the end. Two wasm-pack runs over one
- * directory therefore make the slower run parse the file of the faster run, and
- * that run fails. The directory is content-addressed, so every build of the same
- * `.rs` shares it. Turbopack runs its loader passes in separate Node worker
- * processes, so the lock must be visible outside this process.
- *
- * An atomic `mkdir` gives that with no new dependency. A lock left behind by a
- * killed build is taken over when its owner process is gone.
- * @template T
- * @param {string} buildFolder - the build directory to lock
- * @param {() => T | Promise<T>} task - runs while the lock is held
- * @returns {Promise<T>} whatever `task` returns
- */
+// Runs `task` under a cross-process `mkdir` lock on `buildFolder`. Two wasm-pack runs in one
+// directory fail, and Turbopack runs loader passes in separate worker processes.
 async function withBuildLock(buildFolder, task) {
     const lockDir = `${buildFolder}.lock`;
     if (owned.has(lockDir)) {
@@ -105,7 +88,7 @@ async function withBuildLock(buildFolder, task) {
             try {
                 stamp(lockDir);
             } catch {
-                // the lock directory is gone. The release below handles it
+                // The lock directory is gone. The release in `finally` handles it.
             }
         }, HEARTBEAT_MS).unref(),
     );

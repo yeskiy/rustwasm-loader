@@ -1,23 +1,11 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const ts = require("typescript");
 const init = require("./tsserver");
 const { buildTypedDts } = require("./utils/generateTypes.util");
-const findWasmPack = require("./utils/findWasmPack.util");
-
-const CRATE = path.join(__dirname, "..", "example", "typed-imports");
-
-const skip = (() => {
-    try {
-        findWasmPack();
-        return false;
-    } catch {
-        return "wasm-pack is not installed";
-    }
-})();
+const { isolatedCrate, skip, waitFor } = require("../test/helpers");
 
 const COMPILER_OPTIONS = {
     noEmit: true,
@@ -37,41 +25,13 @@ const IMPORTER = [
     "",
 ].join("\n");
 
-// An isolated copy of the example crate with a unique marker, so the test owns
-// its content-addressed build dir.
-function isolatedCrate() {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rs-ls-"));
-    ["Cargo.toml", "Cargo.lock", "math.rs"].forEach((file) =>
-        fs.copyFileSync(path.join(CRATE, file), path.join(dir, file)),
-    );
-    fs.appendFileSync(
-        path.join(dir, "math.rs"),
-        `\n// ${path.basename(dir)}\n`,
-    );
-    return dir;
-}
-
-function waitFor(predicate, timeoutMs) {
-    const start = Date.now();
-    const attempt = async () => {
-        if (predicate()) return true;
-        if (Date.now() - start > timeoutMs) return false;
-        await new Promise((resolve) => {
-            setTimeout(resolve, 100);
-        });
-        return attempt();
-    };
-    return attempt();
-}
-
 const messagesOf = (diagnostics) =>
     diagnostics.map((diagnostic) =>
         ts.flattenDiagnosticMessageText(diagnostic.messageText, "\n"),
     );
 
-// A real `ts.createLanguageService` over a virtual host that holds the `.ts`
-// importer and serves the rest (the `.rs` and the lib files) from disk. The
-// plugin's `create` decorates it exactly as tsserver would.
+// A real language service over a host that holds the `.ts` importer in memory
+// and reads the rest from disk. The plugin decorates it as tsserver does.
 function harness(dir) {
     // tsserver hands the host forward-slash paths, so key in-memory files the
     // same way and normalize every lookup.
@@ -134,7 +94,7 @@ test(
     "serves the floor first, then precise types that flag a bad call",
     { skip },
     async () => {
-        const dir = isolatedCrate();
+        const dir = isolatedCrate("rs-ls-");
         const { languageService, importer, refreshed } = harness(dir);
         try {
             // Before the build lands, the floor keeps every member callable, so
@@ -147,13 +107,12 @@ test(
             // The first snapshot read enqueued the background build; wait for it
             // to finish and ask the project to refresh.
             assert.ok(
-                await waitFor(() => refreshed.length > 0, 180000),
+                await waitFor(() => refreshed.length > 0, 180000, 100),
                 "the background build never completed",
             );
 
-            // The precise sidecar now overrides the floor. The only error is the
-            // unknown export: `lib.nope()` is rejected, while the valid
-            // `lib.fibonacci(1)` produces none (a bad call would be a second one).
+            // The sidecar overrides the floor. The only error is the unknown
+            // export `lib.nope()`. The valid `lib.fibonacci(1)` gives no error.
             const messages = messagesOf(
                 languageService.getSemanticDiagnostics(importer),
             );

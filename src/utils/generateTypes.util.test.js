@@ -1,42 +1,16 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const generateTypes = require("./generateTypes.util");
 const { buildTypedDts } = require("./generateTypes.util");
-const findWasmPack = require("./findWasmPack.util");
-
-const CRATE = path.join(__dirname, "..", "..", "example", "typed-imports");
-
-const skip = (() => {
-    try {
-        findWasmPack();
-        return false;
-    } catch {
-        return "wasm-pack is not installed";
-    }
-})();
-
-// An isolated copy of the example crate with a unique marker, so this test never
-// shares the content-addressed wasm-pack build dir or the sidecar with another.
-function isolatedCrate() {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "rs-gen-"));
-    ["Cargo.toml", "Cargo.lock", "math.rs"].forEach((file) =>
-        fs.copyFileSync(path.join(CRATE, file), path.join(dir, file)),
-    );
-    fs.appendFileSync(
-        path.join(dir, "math.rs"),
-        `\n// ${path.basename(dir)}\n`,
-    );
-    return dir;
-}
+const { assertSidecar, isolatedCrate, skip } = require("../../test/helpers");
 
 test(
     "buildTypedDts returns the raw wasm-bindgen .d.ts and writes nothing",
     { skip },
     async () => {
-        const dir = isolatedCrate();
+        const dir = isolatedCrate("rs-gen-");
         try {
             const dts = await buildTypedDts(path.join(dir, "math.rs"));
             assert.match(dts, /export function fibonacci/);
@@ -56,16 +30,11 @@ test(
     "writes a sidecar with the precise function and class signatures",
     { skip },
     async () => {
-        const dir = isolatedCrate();
+        const dir = isolatedCrate("rs-gen-");
         try {
             const out = await generateTypes(path.join(dir, "math.rs"));
             assert.equal(out, path.join(dir, "math.d.rs.ts"));
-            const content = fs.readFileSync(out, "utf8");
-            assert.match(content, /fibonacci\(n: number\): number;/);
-            assert.match(content, /cap\(s: string\): string;/);
-            assert.match(content, /declare class Point \{/);
-            assert.match(content, /Point: typeof Point;/);
-            assert.doesNotMatch(content, /initSync|\[key: string\]/);
+            assertSidecar(fs.readFileSync(out, "utf8"));
         } finally {
             fs.rmSync(dir, { recursive: true, force: true });
         }

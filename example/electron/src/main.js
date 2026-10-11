@@ -6,9 +6,8 @@ const NUM = 10;
 // and this runs under plain Node as well, which the test depends on.
 console.log(`fibonacci(${NUM}) = ${lib.fibonacci_bindgen(NUM)}`);
 
-// The window bootstrap only runs inside Electron. Under plain Node
-// process.versions.electron is undefined, so it stays dormant and the bundle
-// still executes the inlined wasm above.
+// The window opens only inside Electron. Under plain Node the bundle runs the
+// inlined wasm above and skips this block.
 if (process.versions.electron) {
     const path = require("node:path");
     const { app, BrowserWindow } = require("electron");

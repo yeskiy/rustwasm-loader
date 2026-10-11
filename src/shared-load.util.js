@@ -7,18 +7,6 @@ const buildInputsHash = require("./utils/buildInputsHash.util");
 const { watchFilesFor } = buildInputsHash;
 const withBuildLock = require("./utils/buildLock.util");
 
-/** @typedef {Object} SharedLoadParams
- * @property {string} resourcePath - absolute path to the .rs file being loaded
- * @property {string} target - pack target ("node" or "web")
- * @property {string} logLevel - log level passed to wasm-pack
- * @property {string} [baseFolder] - project root used to resolve Cargo.toml (defaults to cwd)
- * @property {"inline" | "import"} [delivery] - how the wasm reaches the consumer (defaults to "inline")
- * @property {"fetch" | "fs" | "module"} [strategy] - import-delivery consumption mode (required when delivery is "import")
- * @property {(bytes: Buffer, wasmName: string) => string} [emitWasm] - emits the wasm as a host asset and returns the JS expression that resolves to its URL (import delivery only)
- * @property {string} [preamble] - source prepended to the generated module (import delivery only)
- * @property {boolean} [emitTypes] - also write the `<name>.d.rs.ts` sidecar from this build (defaults to false)
- */
-
 const inlineWebOptions = {
     asyncLoading: false,
     publicPath: "",
@@ -27,51 +15,76 @@ const inlineWebOptions = {
 
 const inlineNodeOptions = { bundle: true };
 
-// Per-source temp build dir, content-addressed by the source and the cargo
-// manifests so rebuilds are cache-friendly and a dependency bump never reuses
-// the artifacts of the set before it. Mirrors the scheme the Webpack loader
-// computes inline.
-function resolveBuildContext(resourcePath, baseFolder) {
-    const source = fs.readFileSync(resourcePath, "utf8");
-    const { base } = path.parse(path.normalize(resourcePath));
-    const hash = buildInputsHash(source, resourcePath, baseFolder);
-    const buildFolder = path.join(os.tmpdir(), `${base}.${hash}`);
-    if (!fs.existsSync(buildFolder)) {
-        fs.mkdirSync(buildFolder, { recursive: true });
-    }
-    return { buildFolder, wasmName: `${hash}.wasm` };
-}
-
-const noopEmit = async () => {
-    // ignore: inline and import deliveries never emit through pack
+// The option schema properties that every loader and plugin accepts.
+const sharedOptionProperties = {
+    logLevel: {
+        type: "string",
+        description: "Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)",
+    },
+    types: {
+        type: "boolean",
+        description:
+            "Also write the `<name>.d.rs.ts` sidecar next to each `.rs` source during the build (off by default)",
+    },
 };
 
-/**
- * Shared build core for non-Webpack integrations (Bun, esbuild, Rollup, Vite).
- * Reads the .rs source, builds it through wasm-pack into a per-source temp dir,
- * and returns the generated JS module.
- *
- * Default (no `emitWasm`): the wasm is inlined as bytes, byte-for-byte identical
- * to the original behavior every esbuild-style integration relies on.
- *
- * Opt-in import delivery (`delivery: "import"` + `emitWasm`): the wasm is built to
- * disk, handed to the host bundler via `emitWasm` (which returns the runtime URL
- * expression), and the module inits from that URL instead of carrying the bytes.
- * @param {SharedLoadParams} params
- * @returns {Promise<string>} the generated JavaScript module source
- */
-async function buildRsModule(params) {
-    const baseFolder = params.baseFolder || process.cwd();
-    const { buildFolder, wasmName } = resolveBuildContext(
-        params.resourcePath,
-        baseFolder,
-    );
+// Other plugins can add a `?query` or `#hash` to the module id. Strip it before the extension test.
+const cleanId = (id) => id.split("?")[0].split("#")[0];
 
+const isRustModule = (id) => cleanId(id).endsWith(".rs");
+
+// The inline and import deliveries emit no asset through pack.
+const noopEmit = () => undefined;
+
+// Makes the temp build dir `<source file name>.<name parts>`.
+function tempBuildFolder(resourcePath, ...nameParts) {
+    const buildFolder = path.join(
+        os.tmpdir(),
+        [path.parse(path.normalize(resourcePath)).base, ...nameParts].join("."),
+    );
+    fs.mkdirSync(buildFolder, { recursive: true });
+    return buildFolder;
+}
+
+// The asset URL exists only after the first build, so a second pass makes the glue around it.
+// The second pass does not compile Rust again. The lock covers both passes and `importFor`.
+function packWithImport(basePackParams, importFor) {
+    return withBuildLock(basePackParams.buildFolder, async () => {
+        await pack(basePackParams, noopEmit);
+        return pack(
+            {
+                ...basePackParams,
+                import: importFor(
+                    fs.readFileSync(
+                        path.join(
+                            basePackParams.buildFolder,
+                            "pkg",
+                            basePackParams.wasmName,
+                        ),
+                    ),
+                ),
+            },
+            noopEmit,
+        );
+    });
+}
+
+// Builds a `.rs` file for Bun, esbuild, Rollup, and Vite. The wasm bytes are inline, unless `delivery` is
+// "import": then `emitWasm(bytes, name)` gives the wasm to the host and returns the JS expression for its URL.
+async function buildRsModule(params) {
+    // The digest of the source and the cargo manifests names the build dir, so that
+    // a dependency change never reuses the artifacts of an earlier build.
+    const hash = buildInputsHash(
+        fs.readFileSync(params.resourcePath, "utf8"),
+        params.resourcePath,
+        params.baseFolder,
+    );
+    const wasmName = `${hash}.wasm`;
     const basePackParams = {
         resourcePath: params.resourcePath,
-        baseFolder,
+        baseFolder: params.baseFolder,
         target: params.target,
-        buildFolder,
+        buildFolder: tempBuildFolder(params.resourcePath, hash),
         wasmName,
         logLevel: params.logLevel,
         emitTypes: params.emitTypes === true,
@@ -79,55 +92,22 @@ async function buildRsModule(params) {
         node: inlineNodeOptions,
     };
 
-    if (params.delivery !== "import" || !params.emitWasm) {
-        return pack(basePackParams, noopEmit);
-    }
-
-    // Import delivery needs the host to own the asset, but its URL only exists
-    // after the bytes do. Build once so the wasm lands in the pkg dir, emit those
-    // bytes to get the URL expression, then let pack regenerate the glue around
-    // `params.import`. The second pass is a wasm-pack cache hit on the same
-    // content-addressed dir, so no Rust recompilation happens. The lock spans
-    // both passes and the read between them. No other process can rewrite the
-    // pkg dir while the bytes are read out of it.
-    return withBuildLock(buildFolder, async () => {
-        await pack(basePackParams, noopEmit);
-        const wasmBytes = fs.readFileSync(
-            path.join(buildFolder, "pkg", wasmName),
-        );
-        return pack(
-            {
-                ...basePackParams,
-                import: {
-                    urlExpression: params.emitWasm(wasmBytes, wasmName),
-                    strategy: params.strategy,
-                    preamble: params.preamble,
-                },
-            },
-            noopEmit,
-        );
-    });
+    return params.delivery === "import" && params.emitWasm
+        ? packWithImport(basePackParams, (wasmBytes) => ({
+              urlExpression: params.emitWasm(wasmBytes, wasmName),
+              strategy: params.strategy,
+              preamble: params.preamble,
+          }))
+        : pack(basePackParams, noopEmit);
 }
 
-/**
- * Lists the files a bundler must watch for one `.rs` entry: the entry itself,
- * the module files its last build compiled, and the cargo manifests.
- * @param {string} resourcePath absolute path to the `.rs` entry
- * @param {string} [baseFolder] project root (defaults to cwd)
- * @returns {string[]}
- */
+// The files to watch for one `.rs` entry: the entry, the module files of its last build, and the cargo manifests.
 const rsWatchFiles = (resourcePath, baseFolder) => [
     path.resolve(resourcePath),
-    ...watchFilesFor(resourcePath, baseFolder || process.cwd()),
+    ...watchFilesFor(resourcePath, baseFolder),
 ];
 
-/**
- * Shared onLoad routine for esbuild-compatible plugins (Bun and esbuild).
- * Wraps {@link buildRsModule} in the `{ contents, loader, watchFiles }` shape
- * esbuild expects. Bun ignores `watchFiles`.
- * @param {SharedLoadParams} params
- * @returns {Promise<{ contents: string, loader: "js", watchFiles: string[] }>}
- */
+// The onLoad result for Bun and esbuild. Bun ignores `watchFiles`.
 async function sharedLoad(params) {
     return {
         contents: await buildRsModule(params),
@@ -139,3 +119,8 @@ async function sharedLoad(params) {
 module.exports = sharedLoad;
 module.exports.buildRsModule = buildRsModule;
 module.exports.rsWatchFiles = rsWatchFiles;
+module.exports.sharedOptionProperties = sharedOptionProperties;
+module.exports.tempBuildFolder = tempBuildFolder;
+module.exports.packWithImport = packWithImport;
+module.exports.cleanId = cleanId;
+module.exports.isRustModule = isRustModule;

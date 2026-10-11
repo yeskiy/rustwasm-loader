@@ -30,10 +30,8 @@ describe(`the pinned Next.js (${nextVersion})`, () => {
     });
 });
 
-// Next.js 15.3 reads the Turbopack block at a top-level `turbopack` key, and up
-// to 15.5 it reads a rule MAP keyed by condition rather than the Next.js 16 rule
-// list. The helper picks the shape from the running version, so this asserts the
-// config actually handed to the Next.js this example pins.
+// Next.js 15.3 to 15.5 reads a top-level `turbopack` key with a rule map keyed by
+// condition. This checks the shape that the helper gives the pinned Next.js.
 describe(`withRustWasm writes the Next.js 15 Turbopack shape (next ${nextVersion})`, () => {
     const config = rustWasmLoader.next({});
 
@@ -101,10 +99,8 @@ const stopServer = (server) =>
         ? spawnSync("taskkill", ["/pid", String(server.pid), "/T", "/F"])
         : process.kill(-server.pid, "SIGTERM");
 
-// Builds the example with the given bundler flags, then serves it and waits for
-// readiness. The Rust compile makes the build slow, so callers give it a generous
-// timeout. Edge routes need a server, so the proof runs against `next start`
-// over HTTP.
+// Builds the example, then serves it with `next start`, because Edge routes need
+// a server. The Rust compile is slow, so callers set a long timeout.
 const buildAndServe = async (buildArgs, port) => {
     const build = spawnSync("npx", ["next", "build", ...buildArgs], {
         cwd: root,

@@ -6,23 +6,17 @@ const path = require("node:path");
 const Module = require("node:module");
 const which = require("which");
 const findWasmPack = require("./findWasmPack.util");
+const { withEnv } = require("../../test/helpers");
 
 const CARGO_BIN = path.join(os.homedir(), ".cargo", "bin", "wasm-pack");
 
-// Runs `findWasmPack` against a host the test describes: the `WASM_PACK_PATH`
-// value, the result of the PATH lookup, the presence of `binary-install`, and
-// the set of files on disk. Every stub goes back after the call.
+// Runs `findWasmPack` on a stubbed host: env var, PATH lookup, binary-install,
+// and files on disk. The stubs are restored after the call.
 function onHost({ env, inPath, binaryInstall, files = [] }, run) {
-    const originalEnv = process.env.WASM_PACK_PATH;
     const originalWhich = which.sync;
     const originalExists = fs.existsSync;
     const originalResolve = Module._resolveFilename;
 
-    if (env === undefined) {
-        delete process.env.WASM_PACK_PATH;
-    } else {
-        process.env.WASM_PACK_PATH = env;
-    }
     which.sync = () => inPath ?? null;
     fs.existsSync = (target) => files.includes(target);
     Module._resolveFilename = function resolveFilename(request, ...rest) {
@@ -38,13 +32,8 @@ function onHost({ env, inPath, binaryInstall, files = [] }, run) {
     };
 
     try {
-        return run();
+        return withEnv({ WASM_PACK_PATH: env }, run);
     } finally {
-        if (originalEnv === undefined) {
-            delete process.env.WASM_PACK_PATH;
-        } else {
-            process.env.WASM_PACK_PATH = originalEnv;
-        }
         which.sync = originalWhich;
         fs.existsSync = originalExists;
         Module._resolveFilename = originalResolve;
@@ -56,8 +45,9 @@ const binaryInstallBin = (entry) =>
 
 test("WASM_PACK_PATH wins over every other candidate", () => {
     assert.equal(
-        onHost({ env: "/custom/wasm-pack", inPath: "/usr/bin/wasm-pack" }, () =>
-            findWasmPack(),
+        onHost(
+            { env: "/custom/wasm-pack", inPath: "/usr/bin/wasm-pack" },
+            findWasmPack,
         ),
         "/custom/wasm-pack",
     );
@@ -65,8 +55,9 @@ test("WASM_PACK_PATH wins over every other candidate", () => {
 
 test("the PATH lookup comes before the package candidates", () => {
     assert.equal(
-        onHost({ inPath: "/usr/bin/wasm-pack", files: [CARGO_BIN] }, () =>
-            findWasmPack(),
+        onHost(
+            { inPath: "/usr/bin/wasm-pack", files: [CARGO_BIN] },
+            findWasmPack,
         ),
         "/usr/bin/wasm-pack",
     );
@@ -85,22 +76,19 @@ test("uses the binary-install location when that package is installed", () => {
                 binaryInstall: entry,
                 files: [binaryInstallBin(entry), CARGO_BIN],
             },
-            () => findWasmPack(),
+            findWasmPack,
         ),
         binaryInstallBin(entry),
     );
 });
 
 test("falls through to the cargo bin when binary-install is absent", () => {
-    assert.equal(
-        onHost({ files: [CARGO_BIN] }, () => findWasmPack()),
-        CARGO_BIN,
-    );
+    assert.equal(onHost({ files: [CARGO_BIN] }, findWasmPack), CARGO_BIN);
 });
 
 test("names wasm-pack when no candidate is found", () => {
     assert.throws(
-        () => onHost({}, () => findWasmPack()),
+        () => onHost({}, findWasmPack),
         (error) => {
             assert.match(error.message, /wasm-pack/);
             assert.match(error.message, /WASM_PACK_PATH/);

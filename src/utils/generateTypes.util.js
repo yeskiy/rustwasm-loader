@@ -1,55 +1,32 @@
 const fs = require("node:fs");
-const os = require("node:os");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const findNearestCargoBy = require("./findNearestCargo.util");
+const {
+    findNearestCargo,
+    writeCargoFiles,
+} = require("./findNearestCargo.util");
 const spawnWasmPack = require("./spawnWasmPack.util");
 const writeSidecar = require("./writeSidecar.util");
 const withBuildLock = require("./buildLock.util");
+const { logLevelSelector } = require("../pack");
+const { tempBuildFolder } = require("../shared-load.util");
 
-const constants = Object.freeze({
-    CARGO_TOML: "Cargo.toml",
-    CARGO_LOCK: "Cargo.lock",
-    OUT_NAME: "types",
-});
+const OUT_NAME = "types";
 
-function logLevelArgs(level) {
-    switch (level) {
-        case "quiet":
-            return ["--quiet"];
-        case "verbose":
-            return ["--verbose"];
-        default:
-            return ["--log-level", level];
-    }
-}
+// Build folder named after the source hash, so an unchanged `.rs` reuses the cache.
+// The `.types` suffix keeps the typed build apart from the normal build of the same source.
+const typedBuildFolder = (resourcePath) =>
+    tempBuildFolder(
+        resourcePath,
+        crypto
+            .createHash("sha256")
+            .update(fs.readFileSync(resourcePath))
+            .digest("hex"),
+        "types",
+    );
 
-// Per-source build dir, content-addressed by the source hash so an unchanged
-// `.rs` is a wasm-pack cache hit on the next run. The `.types` suffix keeps the
-// typed build separate from the loader's normal inline build of the same source.
-function typedBuildFolder(resourcePath) {
-    const hash = crypto
-        .createHash("sha256")
-        .update(fs.readFileSync(resourcePath))
-        .digest("hex");
-    const { base } = path.parse(path.normalize(resourcePath));
-    const buildFolder = path.join(os.tmpdir(), `${base}.${hash}.types`);
-    if (!fs.existsSync(buildFolder)) {
-        fs.mkdirSync(buildFolder, { recursive: true });
-    }
-    return buildFolder;
-}
-
-/**
- * Builds a `.rs` source with wasm-bindgen typings enabled and returns the raw
- * wasm-bindgen `.d.ts` source, without writing anything next to the `.rs`.
- * Reuses the loader's Cargo-discovery and wasm-pack pipeline; idempotent across
- * runs. The tsserver plugin uses this to type `.rs` imports live without
- * touching disk; `generateTypes` layers the on-disk sidecar write on top.
- * @param {string} resourcePath absolute path to the `.rs` file
- * @param {{ baseFolder?: string, logLevel?: string }} [options]
- * @returns {Promise<string>} the wasm-bindgen `.d.ts` source
- */
+// Builds a `.rs` source with typings and returns the wasm-bindgen `.d.ts` without a write
+// next to the source. The tsserver plugin uses it, and `generateTypes` adds the sidecar write.
 async function buildTypedDts(resourcePath, options = {}) {
     const baseFolder = path.normalize(options.baseFolder || process.cwd());
     const fileEntry = path.normalize(resourcePath);
@@ -58,49 +35,25 @@ async function buildTypedDts(resourcePath, options = {}) {
     const outDir = path.join(buildFolder, "pkg");
 
     return withBuildLock(buildFolder, async () => {
-        const cargoData = findNearestCargoBy(constants)(
-            dir,
-            baseFolder,
-            fileEntry,
+        writeCargoFiles(
             buildFolder,
+            findNearestCargo(dir, baseFolder, fileEntry, buildFolder),
         );
-        fs.writeFileSync(
-            path.join(buildFolder, constants.CARGO_TOML),
-            cargoData[constants.CARGO_TOML],
-            { encoding: "utf8" },
-        );
-        if (cargoData[constants.CARGO_LOCK]) {
-            fs.writeFileSync(
-                path.join(buildFolder, constants.CARGO_LOCK),
-                cargoData[constants.CARGO_LOCK],
-                { encoding: "utf8" },
-            );
-        }
 
         await spawnWasmPack({
             cwd: buildFolder,
             outDir,
-            outName: constants.OUT_NAME,
+            outName: OUT_NAME,
             typescript: true,
-            args: logLevelArgs(options.logLevel || "info"),
+            args: logLevelSelector(options.logLevel || "info"),
             extraArgs: ["--target", "web"],
         });
 
-        return fs.readFileSync(
-            path.join(outDir, `${constants.OUT_NAME}.d.ts`),
-            "utf8",
-        );
+        return fs.readFileSync(path.join(outDir, `${OUT_NAME}.d.ts`), "utf8");
     });
 }
 
-/**
- * Builds a `.rs` source with wasm-bindgen typings enabled, transforms the
- * generated `.d.ts` into a sidecar matching the loader's runtime default export,
- * and writes `<name>.d.rs.ts` next to the source.
- * @param {string} resourcePath absolute path to the `.rs` file
- * @param {{ baseFolder?: string, logLevel?: string }} [options]
- * @returns {Promise<string>} the written sidecar path
- */
+// Builds the typings of a `.rs` source and writes the `<name>.d.rs.ts` sidecar next to it.
 async function generateTypes(resourcePath, options = {}) {
     return writeSidecar(
         resourcePath,

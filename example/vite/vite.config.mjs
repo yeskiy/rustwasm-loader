@@ -1,9 +1,8 @@
 import { defineConfig } from "vite";
 import rustWasmLoader from "rust-wasmpack-loader";
 
-// The same `.rs` import compiles to the `node` strategy for SSR and the `web`
-// strategy for the client; the plugin decides per load. `npm run build` runs the
-// client build below, the test drives the SSR build programmatically.
+// The plugin uses `node` for SSR and `web` for the client. `npm run build` runs
+// the client build below, and the test runs the SSR build.
 export default defineConfig({
     plugins: [rustWasmLoader.vite({ logLevel: "info" })],
     build: {

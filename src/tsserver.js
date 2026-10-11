@@ -1,35 +1,14 @@
-/**
- * tsserver Language Service plugin: gives `.rs` imports their precise
- * wasm-bindgen types live in any tsserver-based editor (VS Code, JetBrains,
- * Neovim) with no editor extension. A `.rs` file masquerades as a TypeScript
- * declaration: module resolution points `import x from "./foo.rs"` at the `.rs`
- * itself, `getScriptKind` reports it as TS, and `getScriptSnapshot` serves the
- * generated `.d.ts`.
- *
- * The generator is a wasm-pack build, so it is slow. Synchronous language-service
- * calls never block on it: they serve the cached, on-disk, or floor types right
- * away and enqueue a background build. When the build lands, the per-file version
- * counter bumps and the project is asked to refresh, so the editor repaints with
- * the precise types a moment later.
- *
- * The plugin never writes to disk (the M1/M2 on-disk sidecar already serves
- * `tsc`, ESLint, and cold start); it only reads that sidecar to warm its cache.
- *
- * VS Code note: the editor must run the workspace TypeScript ("TypeScript:
- * Select TypeScript Version" -> "Use Workspace Version"), since plugins load from
- * the active tsserver. Because the first build lags the first import, a fresh
- * `.rs` shows the loose floor until the build finishes; saving the file once more
- * after it lands refreshes the precise types.
- */
+// A tsserver plugin that serves the generated `.d.ts` of a `.rs` import as a TypeScript declaration.
+// It never writes to disk. It reads the on-disk sidecar only to fill its cache.
 const path = require("node:path");
 const fs = require("node:fs");
 const crypto = require("node:crypto");
 const dtsToSidecar = require("./utils/dtsTransform.util");
+const { sidecarPathOf } = require("./utils/writeSidecar.util");
 const { buildTypedDts } = require("./utils/generateTypes.util");
 
-// The loose floor served for a `.rs` module before its precise types finish
-// building, and the fallback if a build fails. Every export is callable, so the
-// import never errors; the generated sidecar overrides it once the build lands.
+// The loose types of a `.rs` module before its build completes, or after the build fails.
+// Every export is callable, so the import never gives an error.
 const FLOOR = [
     "declare const _default: Record<string, (...args: any[]) => any>;",
     "export default _default;",
@@ -40,23 +19,17 @@ const isRs = (fileName) => fileName.endsWith(".rs");
 
 const hashOf = (text) => crypto.createHash("sha256").update(text).digest("hex");
 
-// Reads the M1/M2 on-disk sidecar (`<stem>.d.rs.ts`) if a prior build, the CLI,
-// or a bundler left one, so a cold editor shows precise types before its own
-// background build finishes.
+// Reads the `<stem>.d.rs.ts` sidecar of an earlier build, so that a cold editor
+// shows the precise types before its own build completes.
 function diskSidecarOf(resourcePath) {
-    const { dir, name } = path.parse(resourcePath);
-    const sidecar = path.join(dir, `${name}.d.rs.ts`);
+    const sidecar = sidecarPathOf(resourcePath);
     return fs.existsSync(sidecar)
         ? fs.readFileSync(sidecar, "utf8")
         : undefined;
 }
 
-/**
- * The async type cache. `versionOf`/`snapshotOf` are synchronous and never block:
- * they serve the cached, on-disk, or floor types and enqueue a background build,
- * deduped by content hash. On completion the per-file counter bumps (so the
- * script version changes) and `onGenerated` fires so the host can refresh.
- */
+// `versionOf` and `snapshotOf` do not wait for a build. They serve the available types and start one
+// background build for each content hash. A completed build changes the script version and calls `onGenerated`.
 function createTypeCache({
     build,
     readFile,
@@ -111,10 +84,8 @@ const rsResolution = (tsm, specifier, containingFile) => ({
     resolvedFileName: path.resolve(path.dirname(containingFile), specifier),
 });
 
-// Layers `.rs` handling over the real host: `.rs` reads come from the cache, the
-// rest pass through. Only the resolution method the host already implements is
-// wrapped, so `.rs` specifiers resolve to a declaration while every other import
-// keeps the host's own resolution.
+// Serves `.rs` files from the cache and passes other files to the host. It wraps only the
+// resolution method that the host has, so that other imports keep the host resolution.
 function buildHostOverrides({ tsm, host, cache }) {
     const wrapLiterals = (literals, containingFile, resolved) =>
         literals.map((literal, index) =>

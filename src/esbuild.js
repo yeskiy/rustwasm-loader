@@ -2,20 +2,11 @@ const { merge } = require("lodash");
 const schemaUtils = require("schema-utils");
 const sharedLoad = require("./shared-load.util");
 
+const { sharedOptionProperties } = sharedLoad;
+
 const optionsSchema = {
     type: "object",
-    properties: {
-        logLevel: {
-            type: "string",
-            description:
-                "Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)",
-        },
-        types: {
-            type: "boolean",
-            description:
-                "Also write the `<name>.d.rs.ts` sidecar next to each `.rs` source during the build (off by default)",
-        },
-    },
+    properties: sharedOptionProperties,
     additionalProperties: false,
 };
 
@@ -38,7 +29,7 @@ module.exports = function esbuild(config) {
     return {
         name: "rust-wasmpack-loader",
         setup(build) {
-            build.onLoad({ filter: /\.rs$/ }, async (args) =>
+            build.onLoad({ filter: /\.rs$/ }, (args) =>
                 sharedLoad({
                     resourcePath: args.path,
                     baseFolder:

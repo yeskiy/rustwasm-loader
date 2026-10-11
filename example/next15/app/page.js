@@ -1,9 +1,8 @@
 import rsLib from "../lib.rs";
 import Result from "./Result";
 
-// Server Component: the `.rs` is built with the `node` strategy, so `rsLib`
-// resolves synchronously from inlined bytes. Next prerenders this page at build
-// time, which runs the wasm and bakes the result into the HTML.
+// Server Component built with the `node` strategy. Next prerenders it at build
+// time, which runs the wasm and writes the result into the HTML.
 const NUM = 9;
 
 export default function Home() {

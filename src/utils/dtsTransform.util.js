@@ -1,7 +1,7 @@
 const ts = require("typescript");
 
-// wasm-bindgen's own bootstrap export, never a user function. The default init
-// (`__wbg_init`) is filtered separately via the Default modifier flag.
+// The wasm-bindgen bootstrap export, never a user function. `isPublicExport` drops the
+// default init (`__wbg_init`) through its Default modifier.
 const SYNC_INIT_NAME = "initSync";
 
 // A named top-level declaration the module exports, but not as its default.
@@ -28,23 +28,20 @@ function isPublicFunction(node) {
     );
 }
 
-// Keeps the public `#[wasm_bindgen]` structs, which wasm-bindgen declares as
-// `export class`. The loader names them on the default export beside the
-// functions, so they belong in the sidecar too.
+// Keeps the public `#[wasm_bindgen]` structs, which the glue declares as `export class`.
+// The loader puts them on the default export, so the sidecar types them too.
 function isPublicClass(node) {
     return ts.isClassDeclaration(node) && isPublicExport(node);
 }
 
-// Everything from the declaration name onward, dropping the `export function` or
-// `export class` prefix and any leading JSDoc. Slicing the raw source survives
-// multi-line signatures and class bodies that a regex would not.
+// The source from the declaration name onward, without the `export` prefix and JSDoc.
+// A slice of the source keeps multi-line signatures and class bodies intact.
 function fromName(node, sourceFile, source) {
     return source.slice(node.name.getStart(sourceFile), node.end).trim();
 }
 
-// Renders a declaration as an object-type member. A function keeps its own
-// signature. A class is named by its constructor type, so `new lib.Point(...)`
-// resolves to the declared instance type.
+// Renders a declaration as an object-type member. A class gets its constructor type,
+// so that `new lib.Point(...)` resolves to the declared instance type.
 function toMember(node, sourceFile, source) {
     if (isPublicClass(node)) {
         return `${node.name.text}: typeof ${node.name.text};`;
@@ -53,17 +50,8 @@ function toMember(node, sourceFile, source) {
     return text.endsWith(";") ? text : `${text};`;
 }
 
-/**
- * Transforms wasm-bindgen's generated `.d.ts` into a sidecar declaration whose
- * default export matches the loader's runtime `export default {...bindings}`
- * shape. The public exported functions and classes are typed. The init
- * functions, the `InitOutput`/`InitInput` types, and raw wasm internals are
- * omitted. Each class is declared module-locally and named on the default
- * export, because the loader emits no named export to import it by. No index
- * signature, so unknown member access stays a type error.
- * @param {string} wasmBindgenDts wasm-bindgen `.d.ts` source
- * @returns {string} the sidecar module source
- */
+// Turns the wasm-bindgen `.d.ts` into a sidecar that types the default export of the loader.
+// Classes are module-local, and no index signature exists, so an unknown member is a type error.
 module.exports = function dtsToSidecar(wasmBindgenDts) {
     const sourceFile = ts.createSourceFile(
         "wasm-bindgen.d.ts",
@@ -76,7 +64,7 @@ module.exports = function dtsToSidecar(wasmBindgenDts) {
         (node) => isPublicFunction(node) || isPublicClass(node),
     );
 
-    return `${[
+    return [
         ...kept
             .filter(isPublicClass)
             .map(
@@ -90,5 +78,5 @@ module.exports = function dtsToSidecar(wasmBindgenDts) {
         "};",
         "export default _default;",
         "",
-    ].join("\n")}`;
+    ].join("\n");
 };

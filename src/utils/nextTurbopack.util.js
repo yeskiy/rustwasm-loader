@@ -1,43 +1,30 @@
 const fs = require("node:fs");
 
-// Next.js moved the Turbopack block twice, so one config shape cannot serve
-// every release the package supports.
-//
-// Up to 15.2 the block is `experimental.turbo`. Next 15.3 promoted it to a
-// top-level `turbopack` key and kept `experimental.turbo` as a deprecated alias.
-// Next 16 dropped the alias, so a config written under it is ignored.
-//
-// The rule value changed too. Up to 15.5 a per-environment rule is a map keyed
-// by a builtin condition (`edge-light`, `browser`, `default`). Next 16 replaced
-// that map with a list of `{ condition, loaders, as }` entries and dropped the
-// `default` key. The two shapes are exclusive: each major warns about the other
-// and then drops the rule, which leaves `.rs` files unhandled.
+// The block is `experimental.turbo` up to Next 15.2 and `turbopack` from 15.3. A rule is a map
+// keyed by condition up to 15.5 and a list from 16. Each major ignores the other rule shape.
 const TOP_LEVEL_KEY_SINCE = [15, 3];
 const RULE_LIST_SINCE = [16, 0];
 
-// The three passes Next.js runs, in the order a rule list must declare them.
-// `edge-light` comes first so it wins over the broader `{ not: "browser" }`
-// condition that also matches the Edge bundle. The Edge pass takes the `module`
-// delivery because the Edge runtime cannot instantiate wasm from bytes. The
-// other two passes inline the bytes.
+// The loader options of the Edge pass, shared with the webpack config and the Edge pre-build.
+const EDGE_PASS_OPTIONS = { target: "web", import: { strategy: "module" } };
+
+// The Next.js passes in rule-list order. `edge-light` is first to win over `{ not: "browser" }`.
+// It uses the `module` delivery, because the Edge runtime cannot instantiate wasm from bytes.
 const PASSES = [
     {
         mapKey: "edge-light",
         condition: "edge-light",
-        target: "web",
-        options: { import: { strategy: "module" } },
+        options: EDGE_PASS_OPTIONS,
     },
     {
         mapKey: "browser",
         condition: "browser",
-        target: "web",
-        options: { web: { asyncLoading: false } },
+        options: { target: "web", web: { asyncLoading: false } },
     },
     {
         mapKey: "default",
         condition: { not: "browser" },
-        target: "node",
-        options: { node: { bundle: true } },
+        options: { target: "node", node: { bundle: true } },
     },
 ];
 
@@ -50,7 +37,7 @@ const ruleBody = (pass, loader, shared) => ({
     loaders: [
         {
             loader,
-            options: { target: pass.target, ...pass.options, ...shared },
+            options: { ...pass.options, ...shared },
         },
     ],
     as: "*.js",
@@ -67,12 +54,8 @@ const ruleMap = (loader, shared) =>
         PASSES.map((pass) => [pass.mapKey, ruleBody(pass, loader, shared)]),
     );
 
-/**
- * Reads the version of the Next.js the consumer runs. Resolution starts at the
- * project directory so a linked copy of this package still sees the app's own
- * Next.js, and falls back to this package's own resolution path.
- * @returns {string|null} the version, or null when Next.js is not resolvable
- */
+// Reads the Next.js version of the project, or null. Resolution starts at the project directory,
+// so that a linked copy of this package finds the Next.js of the app.
 function detectNextVersion() {
     try {
         return JSON.parse(
@@ -88,15 +71,8 @@ function detectNextVersion() {
     }
 }
 
-/**
- * Builds the Turbopack part of the Next.js config in the shape the given
- * Next.js reads. An unknown version takes the newest shape.
- * @param {import("next").NextConfig} nextConfig - the config being extended
- * @param {string} loader - absolute path to the webpack loader
- * @param {object} shared - loader options every pass carries
- * @param {string|null} version - the running Next.js version
- * @returns {object} a partial config to spread over `nextConfig`
- */
+// Builds the Turbopack part of the Next.js config in the shape that `version` reads.
+// An unknown version gets the newest shape.
 function turbopackSection(nextConfig, loader, shared, version) {
     const rules = {
         "*.rs":
@@ -125,4 +101,4 @@ function turbopackSection(nextConfig, loader, shared, version) {
     };
 }
 
-module.exports = { detectNextVersion, turbopackSection };
+module.exports = { EDGE_PASS_OPTIONS, detectNextVersion, turbopackSection };

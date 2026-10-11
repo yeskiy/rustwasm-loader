@@ -11,14 +11,12 @@ const rustWasmLoader = require("rust-wasmpack-loader");
 
 const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const isWin = process.platform === "win32";
-// The suite titles carry the Next.js version that actually ran, so a failure
-// names the release it broke on. The weekly drift job builds this example
-// against the newest releases its ranges allow, which is where it varies.
+// The suite titles carry the Next.js version that ran, so a failure names the
+// release. The weekly drift job builds against the newest allowed releases.
 const nextVersion = require("next/package.json").version;
 
-// Drives the helper's webpack() for one Next.js pass against a throwaway config
-// and returns the single rule it added (the helper returns a new config rather
-// than mutating the one it receives).
+// Runs the helper webpack() for one Next.js pass on an empty config and returns
+// the rule that it added. The helper returns a new config.
 const pushedRuleFor = (context) =>
     rustWasmLoader.next({}, {}).webpack({ module: { rules: [] } }, context)
         .module.rules[0];
@@ -101,10 +99,8 @@ const stopServer = (server) =>
         ? spawnSync("taskkill", ["/pid", String(server.pid), "/T", "/F"])
         : process.kill(-server.pid, "SIGTERM");
 
-// Builds the example with the given bundler flags, then serves it and waits for
-// readiness. The Rust compile makes the build slow, so callers give it a generous
-// timeout. Edge routes need a server (the static export of earlier versions could
-// not host one), so the proof runs against `next start` over HTTP.
+// Builds the example, then serves it with `next start`, because Edge routes need
+// a server. The Rust compile is slow, so callers set a long timeout.
 const buildAndServe = async (buildArgs, port) => {
     const build = spawnSync("npx", ["next", "build", ...buildArgs], {
         cwd: root,

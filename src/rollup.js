@@ -1,6 +1,12 @@
 const { merge } = require("lodash");
 const schemaUtils = require("schema-utils");
-const { buildRsModule, rsWatchFiles } = require("./shared-load.util");
+const {
+    buildRsModule,
+    rsWatchFiles,
+    sharedOptionProperties,
+    cleanId,
+    isRustModule,
+} = require("./shared-load.util");
 
 const optionsSchema = {
     type: "object",
@@ -11,32 +17,13 @@ const optionsSchema = {
             description:
                 "Build strategy for the inlined wasm (`web` or `node`). Rollup has no platform of its own, so pick the one that matches your output.",
         },
-        logLevel: {
-            type: "string",
-            description:
-                "Log Level (`verbose`, `info`, `warn`, `error`, `quiet`)",
-        },
-        types: {
-            type: "boolean",
-            description:
-                "Also write the `<name>.d.rs.ts` sidecar next to each `.rs` source during the build (off by default)",
-        },
+        ...sharedOptionProperties,
     },
     additionalProperties: false,
 };
 
-// Rollup passes the resolved module id, which may carry a `?query` or `#hash`
-// suffix added by other plugins. Strip it before testing the extension.
-const isRustModule = (id) => id.split("?")[0].split("#")[0].endsWith(".rs");
-
-/**
- * Builds a Rollup plugin that compiles `.rs` modules to inline-wasm JavaScript.
- * Exposed as a factory so adjacent integrations (such as Vite, whose plugins are
- * a superset of Rollup's) can wrap the returned object and add their own hooks.
- * @param {{ target?: "web" | "node", logLevel?: string, types?: boolean }} [config]
- * @param {Partial<import("rollup").Plugin>} [overrides] - extra plugin fields merged on top
- * @returns {import("rollup").Plugin}
- */
+// Makes a Rollup plugin that compiles `.rs` modules to JavaScript with inline wasm.
+// `overrides` adds plugin fields, so that another integration can add its own hooks.
 function createRustWasmRollupPlugin(config, overrides) {
     const options = merge({ target: "web", logLevel: "info" }, config);
 
@@ -50,7 +37,7 @@ function createRustWasmRollupPlugin(config, overrides) {
             if (!isRustModule(id)) {
                 return null;
             }
-            const resourcePath = id.split("?")[0].split("#")[0];
+            const resourcePath = cleanId(id);
             const code = await buildRsModule({
                 resourcePath,
                 baseFolder: process.cwd(),
