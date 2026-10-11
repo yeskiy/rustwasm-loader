@@ -1,5 +1,6 @@
 import rsLib from "./lib.rs";
 import fibonacci from "./fibonacci";
+import square from "./square.rs";
 
 describe("node-webpack", () => {
     test("fibonacci_bindgen", () => {
@@ -15,5 +16,11 @@ describe("node-webpack", () => {
 
     test("fibonacci", () => {
         expect(fibonacci(10)).toBe(55);
+    });
+
+    test("a second entry of the same crate keeps its own exports", () => {
+        expect(square.square(7)).toBe(49);
+        expect(square.fibonacci_bindgen).toBeUndefined();
+        expect(rsLib.square).toBeUndefined();
     });
 });
