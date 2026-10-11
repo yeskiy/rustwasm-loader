@@ -93,7 +93,7 @@ works across different setups:
 Contributions are welcome. See [CONTRIBUTING.md](https://yeskiy.github.io/rustwasm-loader/contributing) for how to get
 started. Bug reports, feature suggestions, documentation fixes, and pull requests all help.
 
-To report a vulnerability, follow the [security policy](https://github.com/yeskiy/rustwasm-loader/security/policy).
+Everyone in the project follows the [code of conduct](https://github.com/yeskiy/rustwasm-loader/blob/main/CODE_OF_CONDUCT.md). To report a vulnerability, follow the [security policy](https://github.com/yeskiy/rustwasm-loader/security/policy).
 
 ## Acknowledgements
 
