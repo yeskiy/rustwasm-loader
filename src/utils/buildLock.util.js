@@ -101,4 +101,27 @@ async function withBuildLock(buildFolder, task) {
     }
 }
 
+// The in-process queue of each target lock, so that two tasks of one process take turns.
+const targetQueues = new Map();
+
+// Runs `task` while no other task of this or another process holds `lockPath`.
+// Unlike `withBuildLock`, a second task of the same process waits.
+function withTargetLock(lockPath, task) {
+    const run = (targetQueues.get(lockPath) || Promise.resolve()).then(() =>
+        withBuildLock(lockPath, task),
+    );
+    const settled = run.then(
+        () => undefined,
+        () => undefined,
+    );
+    targetQueues.set(lockPath, settled);
+    settled.then(() => {
+        if (targetQueues.get(lockPath) === settled) {
+            targetQueues.delete(lockPath);
+        }
+    });
+    return run;
+}
+
 module.exports = withBuildLock;
+module.exports.withTargetLock = withTargetLock;

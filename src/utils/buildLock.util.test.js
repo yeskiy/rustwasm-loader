@@ -173,3 +173,38 @@ test("waits for a lock held by another process", async () => {
         fs.rmSync(dir, { recursive: true, force: true });
     }
 });
+
+test("target lock serializes two tasks of one process", async () => {
+    const dir = scratch();
+    try {
+        const lockPath = path.join(dir, "target");
+        const order = [];
+        await Promise.all([
+            withBuildLock.withTargetLock(lockPath, task(order, "a")),
+            withBuildLock.withTargetLock(lockPath, task(order, "b")),
+        ]);
+        assert.deepEqual(order, ["a:start", "a:end", "b:start", "b:end"]);
+        assert.equal(fs.existsSync(`${lockPath}.lock`), false);
+    } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
+});
+
+test("target lock releases the queue when a task throws", async () => {
+    const dir = scratch();
+    try {
+        const lockPath = path.join(dir, "target");
+        await assert.rejects(
+            withBuildLock.withTargetLock(lockPath, () => {
+                throw new Error("boom");
+            }),
+            /boom/,
+        );
+        assert.equal(
+            await withBuildLock.withTargetLock(lockPath, () => "next"),
+            "next",
+        );
+    } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
+});
