@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const rollup = require("./rollup");
-const { isolatedCrate, skip } = require("../test/helpers");
+const { isolatedCrate, removeCrate, skip } = require("../test/helpers");
 
 const pluginContext = { addWatchFile: () => undefined };
 
@@ -40,7 +40,7 @@ test(
                 "the default (no `types`) must not write a sidecar",
             );
         } finally {
-            fs.rmSync(dir, { recursive: true, force: true });
+            removeCrate(dir);
         }
     },
 );

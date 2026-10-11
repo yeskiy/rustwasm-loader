@@ -5,7 +5,12 @@ const path = require("node:path");
 const ts = require("typescript");
 const init = require("./tsserver");
 const { buildTypedDts } = require("./utils/generateTypes.util");
-const { isolatedCrate, skip, waitFor } = require("../test/helpers");
+const {
+    isolatedCrate,
+    removeCrate,
+    skip,
+    waitFor,
+} = require("../test/helpers");
 
 const COMPILER_OPTIONS = {
     noEmit: true,
@@ -123,7 +128,7 @@ test(
             );
             assert.match(messages[0], /Property 'nope' does not exist/);
         } finally {
-            fs.rmSync(dir, { recursive: true, force: true });
+            removeCrate(dir);
         }
     },
 );

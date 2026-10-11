@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { recordPathFor } = require("./utils/rustSources.util");
-const { tempDir } = require("../test/helpers");
+const { removeCrate, tempDir } = require("../test/helpers");
 
 // A stand-in build, so the test checks the declared files without wasm-pack.
 require.cache[require.resolve("./pack")] = {
@@ -34,7 +34,7 @@ const startFolder = process.cwd();
 test.after(() => {
     process.chdir(startFolder);
     fs.rmSync(recordPathFor(entry), { force: true });
-    fs.rmSync(dir, { recursive: true, force: true });
+    removeCrate(dir);
 });
 
 const collector = () => {

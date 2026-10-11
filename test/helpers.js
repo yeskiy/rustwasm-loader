@@ -3,6 +3,7 @@ const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
 const findWasmPack = require("../src/utils/findWasmPack.util");
+const { sharedTargetFolderOf } = require("../src/utils/cargoTarget.util");
 
 const CRATE = path.join(__dirname, "..", "example", "typed-imports");
 
@@ -38,6 +39,15 @@ function isolatedCrate(prefix, { marker = true, buildFolder = false } = {}) {
         fs.mkdirSync(path.join(dir, "build"), { recursive: true });
     }
     return dir;
+}
+
+// Removes a temp crate and the shared cargo target folder of its manifest.
+// A set CARGO_TARGET_DIR belongs to the user, so its folder stays.
+function removeCrate(dir) {
+    if (!process.env.CARGO_TARGET_DIR) {
+        fs.rmSync(sharedTargetFolderOf(dir), { recursive: true, force: true });
+    }
+    fs.rmSync(dir, { recursive: true, force: true });
 }
 
 function waitFor(predicate, timeoutMs, intervalMs = 250) {
@@ -121,6 +131,7 @@ module.exports = {
     assertSidecar,
     isolatedCrate,
     packParams,
+    removeCrate,
     skip,
     tempDir,
     waitFor,

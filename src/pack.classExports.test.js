@@ -4,7 +4,12 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const pack = require("./pack");
-const { isolatedCrate, packParams, skip } = require("../test/helpers");
+const {
+    isolatedCrate,
+    packParams,
+    removeCrate,
+    skip,
+} = require("../test/helpers");
 
 // The seven deliveries `selectDelivery` can pick, named as the loader reports
 // them: the four target/option combinations plus the three import strategies.
@@ -83,7 +88,7 @@ test(
                 Promise.resolve(),
             );
         } finally {
-            fs.rmSync(dir, { recursive: true, force: true });
+            removeCrate(dir);
         }
     },
 );
@@ -130,7 +135,7 @@ test(
                 Promise.resolve(),
             );
         } finally {
-            fs.rmSync(dir, { recursive: true, force: true });
+            removeCrate(dir);
         }
     },
 );
