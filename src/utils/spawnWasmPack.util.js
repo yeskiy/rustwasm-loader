@@ -7,6 +7,7 @@ module.exports = function spawnWasmPack({
     outName,
     isDebug,
     cwd,
+    targetDir,
     typescript = false,
     args = [],
     extraArgs = [],
@@ -24,6 +25,12 @@ module.exports = function spawnWasmPack({
             ...(typescript ? [] : ["--no-typescript"]),
             ...extraArgs,
         ],
-        { cwd, stdio: "inherit" },
+        {
+            cwd,
+            stdio: "inherit",
+            ...(targetDir && {
+                env: { ...process.env, CARGO_TARGET_DIR: targetDir },
+            }),
+        },
     );
 };

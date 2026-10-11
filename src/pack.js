@@ -4,7 +4,7 @@ const {
     findNearestCargo,
     writeCargoFiles,
 } = require("./utils/findNearestCargo.util");
-const spawnWasmPack = require("./utils/spawnWasmPack.util");
+const buildCrate = require("./utils/cargoBuild.util");
 const writeSidecar = require("./utils/writeSidecar.util");
 const stripGlueFooter = require("./utils/stripGlueFooter.util");
 const stripTypesBanner = require("./utils/stripTypesBanner.util");
@@ -12,7 +12,6 @@ const buildGlueImports = require("./utils/buildGlueImports.util");
 const buildExportedBindings = require("./utils/buildExportedBindings.util");
 const buildWasmUrl = require("./utils/buildWasmUrl.util");
 const withBuildLock = require("./utils/buildLock.util");
-const { recordSources } = require("./utils/rustSources.util");
 
 const toArrayBuffer = `function toArrayBuffer(buffer) {\n    const ab = new ArrayBuffer(buffer.length);\n    const view = new Uint8Array(ab);\n    for (var i = 0; i < buffer.length; ++i) {\n        view[i] = buffer[i];\n    }\n    return ab;\n}`;
 
@@ -83,19 +82,21 @@ async function doPack(params, emitFile) {
         ),
     );
 
-    await spawnWasmPack({
-        cwd: params.buildFolder,
-        outDir: wasmBuildSource,
-        outName: params.wasmName,
-        // Keep the wasm-bindgen `.d.ts` only when the typings sidecar is requested.
-        typescript: !!params.emitTypes,
-        args: logLevelSelector(params.logLevel),
-        // use `web` target because the generated file of this target modifies easily
-        extraArgs: ["--target", "web"],
+    // The build also records the module files that cargo compiled, for the next digest and watch list.
+    await buildCrate({
+        resourcePath: params.resourcePath,
+        baseFolder: params.baseFolder,
+        buildFolder: params.buildFolder,
+        wasmPack: {
+            outDir: wasmBuildSource,
+            outName: params.wasmName,
+            // Keep the wasm-bindgen `.d.ts` only when the typings sidecar is requested.
+            typescript: !!params.emitTypes,
+            args: logLevelSelector(params.logLevel),
+            // use `web` target because the generated file of this target modifies easily
+            extraArgs: ["--target", "web"],
+        },
     });
-
-    // Record the module files cargo compiled, so the next digest and watch list cover them.
-    recordSources(params.resourcePath, params.buildFolder);
 
     if (assetEmittingDeliveries.has(delivery)) {
         emitFile(params.wasmName, fs.readFileSync(wasmPath));
@@ -216,8 +217,8 @@ async function doPack(params, emitFile) {
         : patch[params.target](generatedJs);
 }
 
-// Parallel cargo builds fail on a cold shared cache, so this queue runs one build at a time.
-// The lock also covers other processes, for example Turbopack workers.
+// This queue runs one build at a time. The build-folder lock comes first, then the lock
+// of the shared cargo target folder, and both also cover other processes.
 const buildQueue = { tail: Promise.resolve() };
 module.exports = function pack(params, emitFile) {
     const guarded = () =>

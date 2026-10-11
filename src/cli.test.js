@@ -3,7 +3,12 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const { spawn, spawnSync } = require("node:child_process");
-const { isolatedCrate, skip, waitFor } = require("../test/helpers");
+const {
+    isolatedCrate,
+    removeCrate,
+    skip,
+    waitFor,
+} = require("../test/helpers");
 
 const BIN = path.join(__dirname, "..", "bin", "rust-wasmpack-loader.js");
 
@@ -21,7 +26,7 @@ test("gen-types writes a sidecar and exits 0", { skip }, () => {
             /fibonacci\(n: number\): number;/,
         );
     } finally {
-        fs.rmSync(dir, { recursive: true, force: true });
+        removeCrate(dir);
     }
 });
 
@@ -74,7 +79,7 @@ test("--watch regenerates the sidecar on source change", { skip }, async () => {
         // Windows can hold the directory briefly after the child exits.
         await waitFor(() => {
             try {
-                fs.rmSync(dir, { recursive: true, force: true });
+                removeCrate(dir);
                 return true;
             } catch {
                 return false;

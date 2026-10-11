@@ -4,7 +4,12 @@ const fs = require("node:fs");
 const path = require("node:path");
 const generateTypes = require("./generateTypes.util");
 const { buildTypedDts } = require("./generateTypes.util");
-const { assertSidecar, isolatedCrate, skip } = require("../../test/helpers");
+const {
+    assertSidecar,
+    isolatedCrate,
+    removeCrate,
+    skip,
+} = require("../../test/helpers");
 
 test(
     "buildTypedDts returns the raw wasm-bindgen .d.ts and writes nothing",
@@ -21,7 +26,7 @@ test(
                 "buildTypedDts must not write a sidecar",
             );
         } finally {
-            fs.rmSync(dir, { recursive: true, force: true });
+            removeCrate(dir);
         }
     },
 );
@@ -36,7 +41,7 @@ test(
             assert.equal(out, path.join(dir, "math.d.rs.ts"));
             assertSidecar(fs.readFileSync(out, "utf8"));
         } finally {
-            fs.rmSync(dir, { recursive: true, force: true });
+            removeCrate(dir);
         }
     },
 );

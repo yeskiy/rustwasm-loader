@@ -3,7 +3,12 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const withRustWasm = require("./next");
-const { PROBE_MANIFEST, PROBE_SOURCE, tempDir } = require("../test/helpers");
+const {
+    PROBE_MANIFEST,
+    PROBE_SOURCE,
+    removeCrate,
+    tempDir,
+} = require("../test/helpers");
 
 // A throwaway project that holds one buildable crate, so a pre-build that
 // scanned it would find real work.
@@ -76,7 +81,7 @@ test("an empty list asks for no pre-build work", async (t) => {
     } finally {
         readdir.mock.restore();
         process.chdir(cwd);
-        fs.rmSync(dir, { recursive: true, force: true });
+        removeCrate(dir);
     }
 });
 

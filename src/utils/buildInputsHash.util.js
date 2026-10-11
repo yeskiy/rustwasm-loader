@@ -1,13 +1,10 @@
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
-const {
-    CARGO_TOML,
-    CARGO_LOCK,
-    locateCargo,
-} = require("./findNearestCargo.util");
+const { CARGO_TOML, CARGO_LOCK } = require("./findNearestCargo.util");
 const { cargoInputsFor } = require("./cargoManifest.util");
 const { recordedSources } = require("./rustSources.util");
+const { manifestFolderFor } = require("./cargoTarget.util");
 
 // Stands in for a missing `Cargo.lock`. The value is constant, because a value that changes
 // on every build would force a full Rust rebuild of each crate without a lock.
@@ -25,20 +22,13 @@ const readOr = (folder, name, fallback) =>
         ? fs.readFileSync(path.join(folder, name), "utf8")
         : fallback;
 
-const folderOf = (resourcePath, baseFolder) =>
-    locateCargo(
-        path.parse(path.normalize(resourcePath)).dir,
-        path.normalize(baseFolder),
-        path.normalize(resourcePath),
-    ).folder;
-
 const readFile = (file) =>
     fs.existsSync(file) ? fs.readFileSync(file) : MISSING_FILE;
 
 // Hashes the `.rs` entry, its recorded module files, the crate `Cargo.toml`, the lock it builds
 // against, and the manifests of its workspace root and local path dependencies.
 module.exports = function buildInputsHash(source, resourcePath, baseFolder) {
-    const folder = folderOf(resourcePath, baseFolder);
+    const folder = manifestFolderFor(resourcePath, baseFolder);
     const { lock, manifests } = cargoInputsFor(folder);
     return recordedSources(resourcePath)
         .reduce(
@@ -69,7 +59,7 @@ module.exports.cargoManifestsFor = function cargoManifestsFor(
     resourcePath,
     baseFolder,
 ) {
-    const folder = folderOf(resourcePath, baseFolder);
+    const folder = manifestFolderFor(resourcePath, baseFolder);
     const { lock, manifests } = cargoInputsFor(folder);
     return [path.join(folder, CARGO_TOML), lock, ...manifests].filter((file) =>
         fs.existsSync(file),

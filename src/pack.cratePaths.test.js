@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const pack = require("./pack");
-const { packParams, skip, tempDir } = require("../test/helpers");
+const { packParams, removeCrate, skip, tempDir } = require("../test/helpers");
 
 const BINDGEN_LIB = [
     "use wasm_bindgen::prelude::*;",
@@ -26,8 +26,8 @@ function writeTree(dir, files) {
 }
 
 // Builds `entry` of the crate tree with the loader into a build folder outside the tree,
-// then imports the inline module and calls `quadruple`.
-async function buildAndRun(files, entry) {
+// then imports the inline module and calls `quadruple`. `crate` is the folder of its manifest.
+async function buildAndRun(files, entry, crate) {
     const dir = tempDir("rs-pack-paths-");
     const buildFolder = tempDir("rs-pack-paths-build-");
     try {
@@ -47,9 +47,8 @@ async function buildAndRun(files, entry) {
             3,
         );
     } finally {
-        [dir, buildFolder].forEach((folder) =>
-            fs.rmSync(folder, { recursive: true, force: true }),
-        );
+        removeCrate(dir, path.join(dir, crate));
+        fs.rmSync(buildFolder, { recursive: true, force: true });
     }
 }
 
@@ -81,6 +80,7 @@ test(
                     "child/lib.rs": BINDGEN_LIB,
                 },
                 path.join("child", "lib.rs"),
+                "child",
             ),
             12,
         );
@@ -130,6 +130,7 @@ test(
                     "app/src/lib.rs": BINDGEN_LIB,
                 },
                 path.join("app", "src", "lib.rs"),
+                "app",
             ),
             12,
         );

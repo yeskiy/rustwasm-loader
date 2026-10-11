@@ -9,7 +9,6 @@ const {
     recordPathFor,
     recordedSources,
     recordSources,
-    targetFolderFor,
 } = require("./rustSources.util");
 const { tempDir, withEnv } = require("../../test/helpers");
 
@@ -65,19 +64,26 @@ test("drops cargo home, rustup home and target folder files", () => {
     fs.rmSync(root, { recursive: true, force: true });
 });
 
-test("resolves the target folder from CARGO_TARGET_DIR", () => {
-    withEnv({ CARGO_TARGET_DIR: undefined }, () => {
-        assert.equal(
-            targetFolderFor(path.resolve("/b")),
-            path.resolve("/b/target"),
+test("depInfoPathFor reads the dep-info file from the given target folder", () => {
+    const dir = tempDir("rs-depinfo-");
+    try {
+        fs.writeFileSync(
+            path.join(dir, "Cargo.toml"),
+            '[package]\nname = "two-entries"\n\n[lib]\ncrate-type = ["cdylib"]\n',
         );
-    });
-    withEnv({ CARGO_TARGET_DIR: "shared" }, () => {
         assert.equal(
-            targetFolderFor(path.resolve("/b")),
-            path.resolve("/b/shared"),
+            depInfoPathFor(dir, path.join(dir, "shared")),
+            path.join(
+                dir,
+                "shared",
+                "wasm32-unknown-unknown",
+                "release",
+                "two_entries.d",
+            ),
         );
-    });
+    } finally {
+        fs.rmSync(dir, { recursive: true, force: true });
+    }
 });
 
 test("records the local sources of a build, without the entry", () => {
@@ -89,20 +95,19 @@ test("records the local sources of a build, without the entry", () => {
         path.join(build, "Cargo.toml"),
         '[package]\nname = "my-crate"\n\n[lib]\npath = "x.rs"\n',
     );
-    withEnv({ CARGO_TARGET_DIR: undefined }, () => {
-        const depInfo = depInfoPathFor(build);
-        assert.equal(path.basename(depInfo), "my_crate.d");
-        assert.deepEqual(recordedSources(entry), []);
-        assert.deepEqual(recordSources(entry, build), []);
+    const target = path.join(build, "target");
+    const depInfo = depInfoPathFor(build, target);
+    assert.equal(path.basename(depInfo), "my_crate.d");
+    assert.deepEqual(recordedSources(entry), []);
+    assert.deepEqual(recordSources(entry, build, target), []);
 
-        fs.mkdirSync(path.dirname(depInfo), { recursive: true });
-        fs.writeFileSync(
-            depInfo,
-            `${build}/out.wasm: ${entry} \\\n ${util.replaceAll(" ", "\\ ")}\n`,
-        );
-        assert.deepEqual(recordSources(entry, build), [util]);
-        assert.deepEqual(recordedSources(entry), [util]);
-    });
+    fs.mkdirSync(path.dirname(depInfo), { recursive: true });
+    fs.writeFileSync(
+        depInfo,
+        `${build}/out.wasm: ${entry} \\\n ${util.replaceAll(" ", "\\ ")} \\\n ${path.join(target, "gen.rs")}\n`,
+    );
+    assert.deepEqual(recordSources(entry, build, target), [util]);
+    assert.deepEqual(recordedSources(entry), [util]);
     fs.rmSync(recordPathFor(entry), { force: true });
     [project, build].forEach((dir) =>
         fs.rmSync(dir, { recursive: true, force: true }),

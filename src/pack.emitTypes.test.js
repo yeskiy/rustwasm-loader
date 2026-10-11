@@ -7,6 +7,7 @@ const {
     assertSidecar,
     isolatedCrate,
     packParams,
+    removeCrate,
     skip,
 } = require("../test/helpers");
 
@@ -47,7 +48,7 @@ test(
             // side effect, never a change to what consumers import.
             assert.equal(glueOn, glueOff);
         } finally {
-            fs.rmSync(dir, { recursive: true, force: true });
+            removeCrate(dir);
         }
     },
 );

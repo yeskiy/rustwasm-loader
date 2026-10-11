@@ -8,6 +8,7 @@ const buildInputsHash = require("./buildInputsHash.util");
 const {
     PROBE_MANIFEST: MANIFEST,
     PROBE_SOURCE: SOURCE,
+    removeCrate,
     tempDir,
 } = require("../../test/helpers");
 
@@ -29,7 +30,7 @@ function project() {
     return dir;
 }
 
-const cleanup = (dir) => fs.rmSync(dir, { recursive: true, force: true });
+const cleanup = removeCrate;
 
 test("finds the .rs files a project owns", () => {
     const dir = project();

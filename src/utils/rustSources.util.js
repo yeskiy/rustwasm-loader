@@ -2,33 +2,12 @@ const crypto = require("node:crypto");
 const fs = require("node:fs");
 const os = require("node:os");
 const path = require("node:path");
-const { parse: tomlToJson } = require("smol-toml");
+const { crateNamesOf, wasmOutputPathFor } = require("./cargoTarget.util");
 
-const WASM_TARGET = "wasm32-unknown-unknown";
-const PROFILE = "release";
-
-// The cargo target folder of a build. A relative `CARGO_TARGET_DIR` resolves against `buildFolder`.
-const targetFolderFor = (buildFolder) =>
-    process.env.CARGO_TARGET_DIR
-        ? path.resolve(buildFolder, process.env.CARGO_TARGET_DIR)
-        : path.join(buildFolder, "target");
-
-function crateNameOf(buildFolder) {
-    const manifest = tomlToJson(
-        fs.readFileSync(path.join(buildFolder, "Cargo.toml"), "utf8"),
-    );
-    return (manifest.lib?.name || manifest.package?.name || "").replaceAll(
-        "-",
-        "_",
-    );
-}
-
-const depInfoPathFor = (buildFolder) =>
-    path.join(
-        targetFolderFor(buildFolder),
-        WASM_TARGET,
-        PROFILE,
-        `${crateNameOf(buildFolder)}.d`,
+const depInfoPathFor = (buildFolder, targetFolder) =>
+    wasmOutputPathFor(targetFolder, crateNamesOf(buildFolder).libName).replace(
+        /\.wasm$/,
+        ".d",
     );
 
 // Reads the prerequisites of the first rule of a Makefile dep-info file.
@@ -119,14 +98,14 @@ const writeAtomically = (file, content) => {
 
 // Records the local sources from the dep-info file of a finished build of the entry.
 // When the build left no dep-info file, the previous record stays.
-function recordSources(resourcePath, buildFolder) {
-    const depInfo = depInfoPathFor(buildFolder);
+function recordSources(resourcePath, buildFolder, targetFolder) {
+    const depInfo = depInfoPathFor(buildFolder, targetFolder);
     if (!fs.existsSync(depInfo)) {
         return recordedSources(resourcePath);
     }
     const sources = localSources(
         parseDepInfo(fs.readFileSync(depInfo, "utf8")),
-        targetFolderFor(buildFolder),
+        targetFolder,
     ).filter((file) => file !== path.resolve(resourcePath));
     const content = JSON.stringify(sources);
     const record = recordPathFor(resourcePath);
@@ -137,7 +116,6 @@ function recordSources(resourcePath, buildFolder) {
 }
 
 module.exports = {
-    targetFolderFor,
     depInfoPathFor,
     parseDepInfo,
     localSources,

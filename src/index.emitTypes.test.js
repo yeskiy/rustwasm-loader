@@ -3,7 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const rustWasmLoader = require(".");
-const { isolatedCrate, skip } = require("../test/helpers");
+const { isolatedCrate, removeCrate, skip } = require("../test/helpers");
 
 // Drives the loader with a thin loader context (the Turbopack-style shape: no
 // `_compilation`, inline node build), the same surface the loader falls back to.
@@ -58,7 +58,7 @@ test(
                 "the default (no `types`) must not write a sidecar",
             );
         } finally {
-            fs.rmSync(dir, { recursive: true, force: true });
+            removeCrate(dir);
         }
     },
 );

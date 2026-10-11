@@ -126,6 +126,20 @@ The first build of an entry has no record yet. The next build of that entry reco
 
 Bun is the exception. The Bun plugin API cannot declare watch files, so `bun --watch` and `bun --hot` do not reload after an edit of a `.rs` file. Restart Bun, or save a `.js` file that imports the module.
 
+## Build cache
+
+All builds of the entries of one `Cargo.toml` share one cargo target folder. This includes the typed builds of the `types` option and the `rust-wasmpack-loader` CLI. An edit of one entry compiles only that crate again. The dependencies, such as `wasm-bindgen`, come from the cache.
+
+The cache folder is `rust-wasmpack-loader/target-<key>` in the temp folder of the operating system. The key comes from the absolute folder of the `Cargo.toml`. One crate with `wasm-bindgen` uses about 120 MB. To clear the cache, delete the `rust-wasmpack-loader` folder while no build runs.
+
+If you set `CARGO_TARGET_DIR`, the loader uses that folder instead. A relative value resolves against the temp build folder of the entry.
+
+The loader creates the cache folder with mode `0o700`. Before each build, it checks that the folder is not a symlink and that it belongs to the current user. If a check fails, the build stops with an error. Remove the folder, or set `CARGO_TARGET_DIR`. On Linux and macOS, if a cache folder of the current user also gives permissions to the group or to other users, the loader changes its mode to `0o700`.
+
+Cargo decides from file modification times whether an output is current. For this reason, the loader also records the input digest next to each output. If the digest does not match, the loader makes cargo compile the crate again. If cargo still does not write a new output, the build stops with an error.
+
+Entries of one `Cargo.toml` build one after the other. Entries of different manifests build in parallel.
+
 ## Configuration options by build tool
 
 ### Webpack options

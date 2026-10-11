@@ -26,6 +26,21 @@ test("omits the .d.ts by default", { skip }, async () => {
     );
 });
 
+test("writes the cargo output to targetDir", { skip }, async () => {
+    const targetDir = fs.mkdtempSync(path.join(os.tmpdir(), "rs-tdir-"));
+    try {
+        await buildInto({ targetDir });
+        assert.equal(
+            fs.existsSync(
+                path.join(targetDir, "wasm32-unknown-unknown", "release"),
+            ),
+            true,
+        );
+    } finally {
+        fs.rmSync(targetDir, { recursive: true, force: true });
+    }
+});
+
 test("emits the .d.ts when typescript is true", { skip }, async () => {
     assert.equal(
         fs.existsSync(

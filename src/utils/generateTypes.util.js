@@ -5,7 +5,7 @@ const {
     findNearestCargo,
     writeCargoFiles,
 } = require("./findNearestCargo.util");
-const spawnWasmPack = require("./spawnWasmPack.util");
+const buildCrate = require("./cargoBuild.util");
 const writeSidecar = require("./writeSidecar.util");
 const withBuildLock = require("./buildLock.util");
 const { logLevelSelector } = require("../pack");
@@ -40,13 +40,17 @@ async function buildTypedDts(resourcePath, options = {}) {
             findNearestCargo(dir, baseFolder, fileEntry, buildFolder),
         );
 
-        await spawnWasmPack({
-            cwd: buildFolder,
-            outDir,
-            outName: OUT_NAME,
-            typescript: true,
-            args: logLevelSelector(options.logLevel || "info"),
-            extraArgs: ["--target", "web"],
+        await buildCrate({
+            resourcePath: fileEntry,
+            baseFolder,
+            buildFolder,
+            wasmPack: {
+                outDir,
+                outName: OUT_NAME,
+                typescript: true,
+                args: logLevelSelector(options.logLevel || "info"),
+                extraArgs: ["--target", "web"],
+            },
         });
 
         return fs.readFileSync(path.join(outDir, `${OUT_NAME}.d.ts`), "utf8");
