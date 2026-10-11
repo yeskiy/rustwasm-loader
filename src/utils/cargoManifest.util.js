@@ -217,9 +217,15 @@ const inheritDependency = (workspace, rootFolder) => (entry, name) => {
         typeof shared === "string"
             ? { version: shared }
             : withAbsolutePath(rootFolder)(shared);
-    const { workspace: inherit, features = [], ...own } = entry;
+    const { features = [], ...rest } = entry;
     const merged = [...new Set([...(base.features ?? []), ...features])];
-    return { ...base, ...own, ...(merged.length ? { features: merged } : {}) };
+    return {
+        ...base,
+        ...Object.fromEntries(
+            Object.entries(rest).filter(([key]) => key !== "workspace"),
+        ),
+        ...(merged.length ? { features: merged } : {}),
+    };
 };
 
 // Replaces each `workspace = true` field and dependency with the value of the workspace root.
