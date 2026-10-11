@@ -95,11 +95,10 @@
     "author": "Yehor Brodskiy",
     "license": "MIT",
     "dependencies": {
-        "json2toml": "^7.0.1",
         "loader-utils": "^3.3.1",
         "lodash": "^4.18.1",
         "schema-utils": "^4.5.0",
-        "toml": "^5.0.0",
+        "smol-toml": "1.9.0",
         "typescript": "^6.0.3",
         "wasm-pack": "^0.15.0",
         "which": "^7.0.0"

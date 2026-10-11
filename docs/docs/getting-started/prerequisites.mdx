@@ -114,6 +114,8 @@ volta list  # Should show the installed Node.js version
 
 Rust compiles your `.rs` files to WebAssembly. The build uses wasm-pack 0.15, which requires Rust 1.88.0 or higher.
 
+The crate can use relative path dependencies, and it can be a member of a cargo workspace. The loader uses the same `Cargo.toml` as `cargo build`. See [Crate manifests and workspaces](../api#crate-manifests-and-workspaces).
+
 #### Installation
 
 <Tabs groupId="operating-systems" queryString="current-os">
