@@ -10,7 +10,7 @@ When you import a `.rs` file, the loader:
 
 1. Detects the `.rs` file in your project
 2. Finds the nearest `Cargo.toml`
-3. Compiles the Rust code to WebAssembly with `wasm-pack`
+3. Compiles the Rust code to WebAssembly with `wasm-pack`, with one cargo cache for each `Cargo.toml`
 4. Generates JavaScript bindings with `wasm-bindgen`
 5. Wires the compiled module into your bundle
 
