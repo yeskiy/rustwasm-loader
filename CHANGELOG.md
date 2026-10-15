@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [4.5.0](https://github.com/yeskiy/rustwasm-loader/compare/v4.4.1...v4.5.0) (2026-10-15)
+
+### Features
+
+* **build:** add an in-process queue for target folder locks ([c46e4cd](https://github.com/yeskiy/rustwasm-loader/commit/c46e4cdd0061643801c8011098b3718d448679ea))
+* **build:** reuse one cargo target folder across the builds of a crate ([cd1cc38](https://github.com/yeskiy/rustwasm-loader/commit/cd1cc38e174726ff5a684d8eacfb44ca189ac51e))
+
+### Bug Fixes
+
+* build crates with relative paths and workspace membership ([92b44b6](https://github.com/yeskiy/rustwasm-loader/commit/92b44b61479c56fd43eb9fa8139852fcf2517713))
+* **next:** skip rust module files in the edge prebuild ([4216101](https://github.com/yeskiy/rustwasm-loader/commit/42161011b83471564424336de5327b1595b3eb59))
+* rebuild when any rust source file of an entry changes ([ec0a78f](https://github.com/yeskiy/rustwasm-loader/commit/ec0a78f56c014763b809395f8f2e3d791f3ce861))
+* sort recorded sources with an explicit compare function ([94ed5c6](https://github.com/yeskiy/rustwasm-loader/commit/94ed5c60f7a3e023b7ae13828e7c1ca0f47b8cec))
+
 ## [4.4.1](https://github.com/yeskiy/rustwasm-loader/compare/v4.4.0...v4.4.1) (2026-09-20)
 
 ### Bug Fixes
